@@ -1,0 +1,5 @@
+.agents/
+node_modules/
+dist/
+packages/*/dist/
+bun.lock

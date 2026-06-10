@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "globex",
+  "name": "Globex Design System",
+  "description": "A warm, modern Design System for approachable innovation narratives.",
+  "brandKit": {
+    "colors": [
+      {
+        "id": "primary",
+        "name": "Globex Purple",
+        "value": "#5B2C83",
+        "description": "Use for primary brand presence, hero moments, and distinctive section headers."
+      },
+      {
+        "id": "secondary",
+        "name": "Orbit Teal",
+        "value": "#008C95",
+        "description": "Use for supporting graphics, secondary actions, and optimistic contrast."
+      },
+      {
+        "id": "accent",
+        "name": "Solar Coral",
+        "value": "#FF6F61",
+        "description": "Use for energetic highlights, important annotations, and selective emphasis."
+      },
+      {
+        "id": "neutral-950",
+        "name": "Night",
+        "value": "#0B1020",
+        "description": "Use for premium dark backgrounds and high-impact title slides."
+      },
+      {
+        "id": "neutral-50",
+        "name": "Mist",
+        "value": "#FAFAF7",
+        "description": "Use for clean backgrounds where warmth is preferred over stark white."
+      },
+      {
+        "id": "warning",
+        "name": "Comet Gold",
+        "value": "#D99A00",
+        "description": "Use for cautionary states, risk markers, and important operational notes."
+      }
+    ]
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "acme",
+  "name": "Acme Design System",
+  "description": "A confident enterprise Design System for clear product and sales communication.",
+  "brandKit": {
+    "colors": [
+      {
+        "id": "primary",
+        "name": "Acme Blue",
+        "value": "#1B3A8F",
+        "description": "Use for primary actions, key headings, and moments that need strong Acme recognition."
+      },
+      {
+        "id": "primary-dark",
+        "name": "Deep Acme Blue",
+        "value": "#10245C",
+        "description": "Use for high-contrast backgrounds and serious executive sections."
+      },
+      {
+        "id": "accent",
+        "name": "Signal Amber",
+        "value": "#F5A623",
+        "description": "Use sparingly to highlight important metrics, calls to action, or alerts."
+      },
+      {
+        "id": "neutral-900",
+        "name": "Ink",
+        "value": "#111827",
+        "description": "Use for primary body text and dense information that must remain highly legible."
+      },
+      {
+        "id": "neutral-100",
+        "name": "Cloud",
+        "value": "#F3F4F6",
+        "description": "Use for subtle panels, page backgrounds, and low-emphasis separation."
+      },
+      {
+        "id": "success",
+        "name": "Growth Green",
+        "value": "#2E7D32",
+        "description": "Use for positive performance, confirmed states, and growth-oriented signals."
+      }
+    ]
+  }
+}
