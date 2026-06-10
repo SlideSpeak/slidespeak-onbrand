@@ -7,10 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "cd packages/onbrand && tsx watch src/onbrand-mcp/stdio.ts",
-    "start": "cd packages/onbrand && tsx src/onbrand-mcp/stdio.ts",
     "mcp": "cd packages/onbrand && tsx src/onbrand-mcp/stdio.ts",
-    "mcp:watch": "cd packages/onbrand && tsx watch src/onbrand-mcp/stdio.ts",
     "build": "cd packages/onbrand && vite build --config ../../vite.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",

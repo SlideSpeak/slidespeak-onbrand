@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { slugSchema } from "@onbrand/string";
 import { brandKitSchema } from "./brand-kit/brand-kit";
+import { presentationKitSchema } from "./presentation-kit/presentation-kit";
 
 export const designSystemIdSchema = slugSchema;
 
@@ -11,6 +12,7 @@ export const designSystemSchema = z
     name: z.string().min(1),
     description: z.string().min(1).optional(),
     brandKit: brandKitSchema,
+    presentationKit: presentationKitSchema,
   })
   .strict();
 
