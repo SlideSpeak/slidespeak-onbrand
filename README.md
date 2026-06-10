@@ -5,16 +5,7 @@ matching your brand.
 
 ## Quick start
 
-```sh
-bun install
-bun run mcp:watch
-```
-
-This starts the local stdio MCP server from source in watch mode.
-
-## Connect to an MCP client
-
-Run these commands from this repository root.
+Run any of these commands from this repository root.
 
 Codex CLI:
 
@@ -31,9 +22,6 @@ claude mcp add --transport stdio onbrand -- bun run --cwd "$PWD" --silent mcp
 ## Available tools
 
 - `list_design_systems` — lists available Design Systems.
-- `get_brand_kit` — returns the Brand Kit for a Design System id.
-
-## Example Design Systems
-
-Examples live under `examples/design-systems`. Each example has a `design-system.json` file with
-Brand Kit Color Tokens.
+- `get_design_system` — returns the Brand Kit and Presentation Kit for a Design System id.
+- `check_presentation_conformance` — checks a Conformance Manifest against a Design System's
+  Persistent Layout Elements.

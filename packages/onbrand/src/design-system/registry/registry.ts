@@ -3,7 +3,7 @@ import path from "node:path";
 import { z } from "zod";
 import { ensureUniqueColorTokenIds } from "../brand-kit/colors";
 import { designSystemSchema, type DesignSystem, type DesignSystemSummary } from "../design-system";
-import { type BrandKit } from "../brand-kit/brand-kit";
+import { ensureUniquePersistentLayoutElementIds } from "../presentation-kit/presentation-kit";
 
 export class UnknownDesignSystemError extends Error {
   constructor(readonly designSystemId: string) {
@@ -14,9 +14,10 @@ export class UnknownDesignSystemError extends Error {
 
 export interface DesignSystemRegistry {
   listDesignSystems(): readonly DesignSystemSummary[];
-  getBrandKit(designSystemId: string): Readonly<{
+  getDesignSystem(designSystemId: string): Readonly<{
     designSystem: DesignSystemSummary;
-    brandKit: BrandKit;
+    brandKit: DesignSystem["brandKit"];
+    presentationKit: DesignSystem["presentationKit"];
   }>;
 }
 
@@ -65,7 +66,7 @@ const loadDesignSystem = async (folderPath: string, folderName: string): Promise
     throw new Error(`Design System folder '${folderName}' does not match id '${result.data.id}'`);
   }
 
-  ensureUniqueColorTokenIds(result.data.brandKit.colors, { designSystemId: result.data.id });
+  validateDesignSystemReferences(result.data);
   return deepFreeze(result.data);
 };
 
@@ -74,16 +75,56 @@ class InMemoryDesignSystemRegistry implements DesignSystemRegistry {
 
   listDesignSystems = (): readonly DesignSystemSummary[] => [...this.byId.values()].map(toSummary);
 
-  getBrandKit = (
+  getDesignSystem = (
     designSystemId: string,
-  ): Readonly<{ designSystem: DesignSystemSummary; brandKit: BrandKit }> => {
+  ): Readonly<{
+    designSystem: DesignSystemSummary;
+    brandKit: DesignSystem["brandKit"];
+    presentationKit: DesignSystem["presentationKit"];
+  }> => {
     const designSystem = this.byId.get(designSystemId);
     if (!designSystem) {
       throw new UnknownDesignSystemError(designSystemId);
     }
-    return deepFreeze({ designSystem: toSummary(designSystem), brandKit: designSystem.brandKit });
+    return deepFreeze({
+      designSystem: toSummary(designSystem),
+      brandKit: designSystem.brandKit,
+      presentationKit: designSystem.presentationKit,
+    });
   };
 }
+
+const validateDesignSystemReferences = (designSystem: DesignSystem): void => {
+  ensureUniqueColorTokenIds(designSystem.brandKit.colors, { designSystemId: designSystem.id });
+  ensureUniquePersistentLayoutElementIds(designSystem.presentationKit.persistentElements, {
+    designSystemId: designSystem.id,
+  });
+
+  const colorTokenIds = new Set(designSystem.brandKit.colors.map((color) => color.id));
+
+  for (const element of designSystem.presentationKit.persistentElements) {
+    const colorTokenId = colorTokenIdFor(element);
+    if (colorTokenId && !colorTokenIds.has(colorTokenId)) {
+      throw new Error(
+        `Unknown Color Token id '${colorTokenId}' referenced by Persistent Layout Element '${element.id}' in Design System '${designSystem.id}'`,
+      );
+    }
+  }
+};
+
+const colorTokenIdFor = (
+  element: DesignSystem["presentationKit"]["persistentElements"][number],
+): string | undefined => {
+  switch (element.kind) {
+    case "slideNumber":
+    case "text":
+      return element.textStyle.colorTokenId;
+    case "shape":
+      return element.shapeStyle.fillColorTokenId;
+    case "logo":
+      return undefined;
+  }
+};
 
 const toSummary = (
   designSystem: Pick<DesignSystem, "id" | "name" | "description">,

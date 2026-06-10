@@ -4,14 +4,15 @@ import {
   type DesignSystemRegistry,
   UnknownDesignSystemError,
 } from "../design-system/registry/registry";
+import { checkPresentationConformance } from "../design-system/presentation-conformance/conformance";
 
-export const serverInfo = {
+export const SERVER_INFO = {
   name: "onbrand",
   version: "0.1.0",
 } as const;
 
 export const createOnbrandMcpServer = (registry: DesignSystemRegistry): McpServer => {
-  const server = new McpServer(serverInfo);
+  const server = new McpServer(SERVER_INFO);
 
   server.registerTool(
     "list_design_systems",
@@ -23,16 +24,49 @@ export const createOnbrandMcpServer = (registry: DesignSystemRegistry): McpServe
   );
 
   server.registerTool(
-    "get_brand_kit",
+    "get_design_system",
     {
-      description: "Get the Brand Kit for a Design System.",
+      description: "Get the Design System, including Brand Kit and Presentation Kit.",
       inputSchema: {
         designSystemId: z.string().describe("Design System id."),
       },
     },
     async ({ designSystemId }) => {
       try {
-        return toToolResult(registry.getBrandKit(designSystemId));
+        return toToolResult(registry.getDesignSystem(designSystemId));
+      } catch (error) {
+        if (error instanceof UnknownDesignSystemError) {
+          return {
+            isError: true,
+            content: [{ type: "text" as const, text: error.message }],
+          };
+        }
+        throw error;
+      }
+    },
+  );
+
+  server.registerTool(
+    "check_presentation_conformance",
+    {
+      description: "Check a Conformance Manifest against a Design System's Presentation Kit.",
+      inputSchema: {
+        designSystemId: z.string().describe("Design System id."),
+        manifest: z.unknown().describe("Conformance Manifest to check."),
+      },
+    },
+    async ({ designSystemId, manifest }) => {
+      try {
+        const designSystem = registry.getDesignSystem(designSystemId);
+        return toToolResult(
+          checkPresentationConformance({
+            designSystem: {
+              id: designSystem.designSystem.id,
+              presentationKit: designSystem.presentationKit,
+            },
+            manifest,
+          }),
+        );
       } catch (error) {
         if (error instanceof UnknownDesignSystemError) {
           return {
