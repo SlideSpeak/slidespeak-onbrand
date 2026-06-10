@@ -1,0 +1,13 @@
+{
+  "name": "@onbrand/string",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./slug": "./src/slug.ts"
+  },
+  "dependencies": {
+    "zod": "latest"
+  }
+}

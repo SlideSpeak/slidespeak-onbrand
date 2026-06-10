@@ -1,0 +1,23 @@
+{
+  "name": "onbrand",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "onbrand": "./dist/stdio.js"
+  },
+  "scripts": {
+    "dev": "tsx watch src/onbrand-mcp/stdio.ts",
+    "start": "tsx src/onbrand-mcp/stdio.ts",
+    "mcp": "tsx src/onbrand-mcp/stdio.ts",
+    "mcp:watch": "tsx watch src/onbrand-mcp/stdio.ts",
+    "build": "vite build --config ../../vite.config.ts",
+    "typecheck": "tsc --noEmit -p ../../tsconfig.json",
+    "test": "vitest run --config ../../vitest.config.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "latest",
+    "@onbrand/string": "workspace:*",
+    "zod": "latest"
+  }
+}

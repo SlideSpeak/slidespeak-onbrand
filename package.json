@@ -1,0 +1,33 @@
+{
+  "name": "slidespeak-onbrand-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "cd packages/onbrand && tsx watch src/onbrand-mcp/stdio.ts",
+    "start": "cd packages/onbrand && tsx src/onbrand-mcp/stdio.ts",
+    "mcp": "cd packages/onbrand && tsx src/onbrand-mcp/stdio.ts",
+    "mcp:watch": "cd packages/onbrand && tsx watch src/onbrand-mcp/stdio.ts",
+    "build": "cd packages/onbrand && vite build --config ../../vite.config.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "latest",
+    "eslint": "^10.4.1",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.4",
+    "tsx": "latest",
+    "typescript": "latest",
+    "typescript-eslint": "^8.61.0",
+    "vite": "latest",
+    "vitest": "latest"
+  }
+}
