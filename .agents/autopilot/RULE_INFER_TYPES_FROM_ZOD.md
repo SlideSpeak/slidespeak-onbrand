@@ -14,8 +14,10 @@
 
 ## Why
 
-Duplicating schemas and types creates drift. Zod is the source of truth for validated data shapes in this project.
+Duplicating schemas and types creates drift. Zod is the source of truth for validated data shapes in
+this project.
 
 ## Fix
 
-Infer the type from the schema with `z.infer<typeof schema>`, then derive narrower types with TypeScript utilities such as `Pick`, `Omit`, or indexed access when needed.
+Infer the type from the schema with `z.infer<typeof schema>`, then derive narrower types with
+TypeScript utilities such as `Pick`, `Omit`, or indexed access when needed.

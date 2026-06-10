@@ -2,8 +2,10 @@
 
 ## Flag when
 
-- A domain schema is exported as a direct alias of another domain schema only because the current shape matches.
-- A domain concept imports another domain concept's id/value schema instead of depending on a shared primitive.
+- A domain schema is exported as a direct alias of another domain schema only because the current
+  shape matches.
+- A domain concept imports another domain concept's id/value schema instead of depending on a shared
+  primitive.
 - The alias makes one domain concept appear owned by another unrelated domain concept.
 
 ## Do not flag
@@ -14,8 +16,10 @@
 
 ## Why
 
-Schemas encode domain ownership. Borrowing another domain's schema creates misleading coupling and makes future divergence harder.
+Schemas encode domain ownership. Borrowing another domain's schema creates misleading coupling and
+makes future divergence harder.
 
 ## Fix
 
-Extract or import a shared primitive schema, or define a domain-owned schema that composes the primitive.
+Extract or import a shared primitive schema, or define a domain-owned schema that composes the
+primitive.
