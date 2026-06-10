@@ -46,7 +46,17 @@
       "name": "Primary Logo",
       "source": "./assets/logo-primary.svg",
       "description": "Use as the standard logo on light slide backgrounds."
-    }
+    },
+    "designPrompt": "Generate HTML and CSS that feels unmistakably Globex: warm, modern, optimistic, and innovation-oriented without becoming childish or chaotic. Use approachable compositions with rounded geometry, spacious cards, gentle layering, and a sense of orbital movement through arcs, offset circles, pill shapes, or subtle radial motifs. Build semantic, accessible HTML and maintainable CSS with custom properties for every Brand Kit color token. Use Globex Purple (#5B2C83) for primary brand presence, hero sections, distinctive headings, and anchor elements; use Orbit Teal (#008C95) for supporting graphics, secondary actions, and optimistic contrast; use Solar Coral (#FF6F61) selectively for energetic highlights, annotations, and moments of emphasis; use Night (#0B1020) for premium dark sections and high-impact title moments; use Mist (#FAFAF7) as the preferred warm light background instead of pure white; use Comet Gold (#D99A00) only for caution, risk, or operational warnings. Favor warm off-white surfaces, purple-to-teal balance, and coral micro-accents rather than heavy blocks of saturated color. Typography should be contemporary, human, and clear: expressive headings, comfortable body line-height, friendly card labels, and concise metric treatments. Use CSS grid and flexbox for responsive structure, with soft shadows, rounded cards, thin borders, and layered accent shapes that support the content. Motion, if requested, should be subtle and orbital: slow fades, gentle reveals, and small transforms. Avoid cold corporate gray, harsh black-on-white pages, excessive sharp corners, generic tech-blue palettes, and overuse of coral. Logo placement should remain calm and readable on light backgrounds. The final HTML/CSS should look like a premium innovation narrative: inviting, future-facing, practical, and polished.",
+    "assets": [
+      {
+        "id": "logo-primary",
+        "name": "Primary Logo SVG",
+        "source": "./assets/logo-primary.svg",
+        "mediaType": "image/svg+xml",
+        "description": "Copy this logo asset next to generated HTML and reference it with a local relative path."
+      }
+    ]
   },
   "presentationKit": {
     "canvas": {

@@ -24,6 +24,8 @@ const validDesignSystem = (overrides: Record<string, unknown> = {}) => ({
       source: "./assets/logo.svg",
       description: "Use on light backgrounds.",
     },
+    designPrompt:
+      "Generate HTML and CSS that feels unmistakably Acme: confident, enterprise-ready, precise, and highly legible. Use Brand Kit color tokens as CSS custom properties, preserve clear hierarchy, and favor structured layouts.",
   },
   presentationKit: {
     canvas: { width: 1920, height: 1080, unit: "px" },
@@ -82,10 +84,11 @@ describe("Design System Registry", () => {
     });
     expect(designSystem.brandKit.logo).toEqual({
       name: "Primary Logo",
-      source: "./assets/logo.svg",
+      source: path.join(rootDir, "acme", "assets", "logo.svg"),
       description: "Use on light backgrounds.",
     });
     expect(designSystem.brandKit.colors).toHaveLength(2);
+    expect(designSystem.brandKit.designPrompt).toContain("Generate HTML and CSS");
     expect(designSystem.presentationKit.canvas).toEqual({ width: 1920, height: 1080, unit: "px" });
     expect(designSystem.presentationKit.persistentElements).toHaveLength(3);
   });

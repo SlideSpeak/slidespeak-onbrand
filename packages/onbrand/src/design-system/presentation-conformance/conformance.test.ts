@@ -13,6 +13,8 @@ const designSystem: DesignSystem = {
       { id: "neutral-900", name: "Neutral 900", value: "#111827", description: "Text." },
     ],
     logo: { name: "Primary Logo", source: "./logo.svg", description: "Logo." },
+    assets: [],
+    designPrompt: "Generate Acme HTML and CSS with strict token usage and clear hierarchy.",
   },
   presentationKit: {
     canvas: { width: 1920, height: 1080, unit: "px" },

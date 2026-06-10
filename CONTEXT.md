@@ -13,11 +13,20 @@ design rules. In this context, each Design System contains one **Brand Kit** and
 Kit**. _Avoid_: Design context, brand, brand definition
 
 **Brand Kit**: The identity-focused part of a **Design System**, such as colors, logos, typography,
-imagery, icons, and voice/tone. _Avoid_: Brand, brand assets when referring to the whole kit
+imagery, icons, voice/tone, and a Design Prompt. _Avoid_: Brand, brand assets when referring to the
+whole kit
+
+**Design Prompt**: A Brand Kit field containing extensive, brand-specific instructions for AI agents
+that generate HTML/CSS. It translates identity rules into concrete layout, color, typography,
+accessibility, and anti-pattern guidance. _Avoid_: Generic prompt, system prompt
 
 **Logo**: The governed brand logo in a **Brand Kit**. Presentation-specific logo uses reference the
 Brand Kit logo rather than redefining logo source details in the Presentation Kit. _Avoid_: Logo
 Asset, logo variant
+
+**Brand Asset**: A file referenced by a Brand Kit, such as a logo SVG or background SVG, that client
+agents should copy into the generated-output folder and reference through local relative paths from
+HTML/CSS. _Avoid_: remote dependency, decorative element
 
 **Presentation Kit**: The slide-focused part of a **Design System**, such as persistent layout
 elements, slide canvas, spacing conventions, grids, and presentation-specific composition rules. It

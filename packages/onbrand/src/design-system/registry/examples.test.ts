@@ -15,23 +15,42 @@ describe("example Design Systems", () => {
         .listDesignSystems()
         .map((system) => system.id)
         .sort(),
-    ).toEqual(["acme", "globex"]);
-    expect(registry.getDesignSystem("acme").brandKit.colors).toHaveLength(6);
-    expect(registry.getDesignSystem("globex").brandKit.colors).toHaveLength(6);
-    expect(registry.getDesignSystem("acme").brandKit.logo.source).toBe("./assets/logo-primary.svg");
-    expect(registry.getDesignSystem("globex").presentationKit.persistentElements).toHaveLength(3);
+    ).toEqual(["mckinsey"]);
+    expect(registry.getDesignSystem("mckinsey").brandKit.colors).toHaveLength(12);
+    expect(registry.getDesignSystem("mckinsey").brandKit.logo.source).toMatch(
+      /examples\/design-systems\/mckinsey\/assets\/logo\.svg$/,
+    );
+    expect(
+      registry.getDesignSystem("mckinsey").brandKit.assets.map(({ id, source, mediaType }) => ({
+        id,
+        source: source.replace(/^.*examples\/design-systems\/mckinsey\//, ""),
+        mediaType,
+      })),
+    ).toEqual([
+      { id: "logo", source: "assets/logo.svg", mediaType: "image/svg+xml" },
+      { id: "loop-pattern", source: "assets/bg.svg", mediaType: "image/svg+xml" },
+    ]);
+    expect(registry.getDesignSystem("mckinsey").brandKit.designPrompt).toContain(
+      "McKinsey-Style Presentation",
+    );
+    expect(registry.getDesignSystem("mckinsey").presentationKit.canvas).toEqual({
+      width: 1280,
+      height: 720,
+      unit: "px",
+    });
   });
 
-  test("shipped example logo relative sources exist", async () => {
+  test("shipped example relative asset sources exist", async () => {
     const rootDir = exampleDesignSystemsRoot(import.meta.url);
     const registry = await loadDesignSystemRegistry({ rootDir });
 
     await Promise.all(
-      registry
-        .listDesignSystems()
-        .map((system) => ({ system, logo: registry.getDesignSystem(system.id).brandKit.logo }))
-        .filter(({ logo }) => logo.source.startsWith("./"))
-        .map(({ system, logo }) => access(path.join(rootDir, system.id, logo.source))),
+      registry.listDesignSystems().flatMap((system) => {
+        const brandKit = registry.getDesignSystem(system.id).brandKit;
+        return [brandKit.logo, ...brandKit.assets]
+          .filter((asset) => asset.source.startsWith("./"))
+          .map((asset) => access(path.join(rootDir, system.id, asset.source)));
+      }),
     );
   });
 });

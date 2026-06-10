@@ -5,7 +5,7 @@ import { createOnbrandMcpServer, toToolResult } from "./server";
 describe("Onbrand MCP tools", () => {
   test("serializes structured content as matching JSON text", () => {
     const result = {
-      designSystems: [{ id: "acme", name: "Acme Design System" }],
+      designSystems: [{ id: "mckinsey", name: "McKinsey Design System" }],
     };
 
     expect(toToolResult(result)).toEqual({
@@ -14,7 +14,7 @@ describe("Onbrand MCP tools", () => {
     });
   });
 
-  test("exposes full Design System and Presentation Conformance tools without Brand Kit-only retrieval", () => {
+  test("exposes Design System discovery and retrieval tools", () => {
     const server = createOnbrandMcpServer(registryStub());
     const tools = (server as unknown as { _registeredTools: Record<string, unknown> })
       ._registeredTools;
@@ -22,21 +22,22 @@ describe("Onbrand MCP tools", () => {
       ._registeredPrompts;
     const underlyingServer = server.server as unknown as { _instructions?: string };
 
-    expect(Object.keys(tools).sort()).toEqual([
-      "check_presentation_conformance",
-      "get_design_system",
-      "list_design_systems",
-    ]);
+    expect(Object.keys(tools).sort()).toEqual(["get_design_system", "list_design_systems"]);
     expect(Object.keys(prompts)).toEqual([]);
     expect(underlyingServer._instructions).toBeUndefined();
   });
 });
 
 const registryStub = (): DesignSystemRegistry => ({
-  listDesignSystems: () => [{ id: "acme", name: "Acme Design System" }],
+  listDesignSystems: () => [{ id: "mckinsey", name: "McKinsey Design System" }],
   getDesignSystem: () => ({
-    designSystem: { id: "acme", name: "Acme Design System" },
-    brandKit: { colors: [], logo: { name: "Logo", source: "./logo.svg", description: "Logo." } },
+    designSystem: { id: "mckinsey", name: "McKinsey Design System" },
+    brandKit: {
+      colors: [],
+      logo: { name: "Logo", source: "./logo.svg", description: "Logo." },
+      assets: [],
+      designPrompt: "Generate on-brand HTML and CSS for this Brand Kit.",
+    },
     presentationKit: { canvas: { width: 1920, height: 1080, unit: "px" }, persistentElements: [] },
   }),
 });

@@ -1,6 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
+import { ensureUniqueBrandAssetIds } from "../brand-kit/assets";
 import { ensureUniqueColorTokenIds } from "../brand-kit/colors";
 import { designSystemSchema, type DesignSystem, type DesignSystemSummary } from "../design-system";
 import { ensureUniquePersistentLayoutElementIds } from "../presentation-kit/presentation-kit";
@@ -67,7 +68,7 @@ const loadDesignSystem = async (folderPath: string, folderName: string): Promise
   }
 
   validateDesignSystemReferences(result.data);
-  return deepFreeze(result.data);
+  return deepFreeze(resolveLocalAssetSources(result.data, folderPath));
 };
 
 class InMemoryDesignSystemRegistry implements DesignSystemRegistry {
@@ -94,8 +95,30 @@ class InMemoryDesignSystemRegistry implements DesignSystemRegistry {
   };
 }
 
+const resolveLocalAssetSources = (
+  designSystem: DesignSystem,
+  folderPath: string,
+): DesignSystem => ({
+  ...designSystem,
+  brandKit: {
+    ...designSystem.brandKit,
+    logo: {
+      ...designSystem.brandKit.logo,
+      source: resolveLocalSource(designSystem.brandKit.logo.source, folderPath),
+    },
+    assets: designSystem.brandKit.assets.map((asset) => ({
+      ...asset,
+      source: resolveLocalSource(asset.source, folderPath),
+    })),
+  },
+});
+
+const resolveLocalSource = (source: string, folderPath: string): string =>
+  source.startsWith("./") || source.startsWith("../") ? path.resolve(folderPath, source) : source;
+
 const validateDesignSystemReferences = (designSystem: DesignSystem): void => {
   ensureUniqueColorTokenIds(designSystem.brandKit.colors, { designSystemId: designSystem.id });
+  ensureUniqueBrandAssetIds(designSystem.brandKit.assets, { designSystemId: designSystem.id });
   ensureUniquePersistentLayoutElementIds(designSystem.presentationKit.persistentElements, {
     designSystemId: designSystem.id,
   });

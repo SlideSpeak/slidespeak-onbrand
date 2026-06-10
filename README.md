@@ -22,6 +22,6 @@ claude mcp add --transport stdio onbrand -- bun run --cwd "$PWD" --silent mcp
 ## Available tools
 
 - `list_design_systems` — lists available Design Systems.
-- `get_design_system` — returns the Brand Kit and Presentation Kit for a Design System id.
-- `check_presentation_conformance` — checks a Conformance Manifest against a Design System's
-  Persistent Layout Elements.
+- `get_design_system` — returns the Brand Kit, including dynamically resolved local Brand Asset
+  source paths to copy beside generated HTML, its brand-specific HTML/CSS design prompt, and the
+  Presentation Kit for a Design System id.

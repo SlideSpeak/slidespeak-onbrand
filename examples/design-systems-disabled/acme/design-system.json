@@ -46,7 +46,17 @@
       "name": "Primary Logo",
       "source": "./assets/logo-primary.svg",
       "description": "Use as the standard logo on light slide backgrounds."
-    }
+    },
+    "designPrompt": "Generate HTML and CSS that feels unmistakably Acme: confident, enterprise-ready, precise, and highly legible. Use a clean modern layout system with generous whitespace, disciplined alignment, and clear visual hierarchy. Prefer strong rectangular geometry, structured panels, subtle dividing rules, and data-friendly compositions over playful or decorative treatments. Build every screen or slide from semantic HTML with accessible landmarks, meaningful headings, and CSS custom properties that map directly to the Brand Kit color tokens. Use Acme Blue (#1B3A8F) for primary navigation, hero accents, key headings, and decisive calls to action; use Deep Acme Blue (#10245C) for executive, high-contrast, or premium sections; use Signal Amber (#F5A623) only as a sparing highlight for important metrics, alerts, or calls to action; use Ink (#111827) for primary text; use Cloud (#F3F4F6) for quiet surfaces and subtle panels; use Growth Green (#2E7D32) only for confirmed success, positive movement, or growth signals. Keep backgrounds mostly white or Cloud with restrained blue blocks. Typography should be crisp, professional, and easy to scan: large confident titles, medium-weight section headers, compact supporting copy, and tabular numerals for metrics. Favor CSS grid and flexbox, consistent spacing increments, rounded corners only when subtle, and soft shadows only when they clarify hierarchy. Avoid gradients unless extremely subtle, avoid neon colors, avoid whimsical illustration styles, avoid excessive animation, and never let amber dominate the composition. Logo placement should be clear and uncluttered on light backgrounds. The final HTML/CSS should look like a polished enterprise SaaS presentation or product marketing page: authoritative, calm, measurable, and trustworthy.",
+    "assets": [
+      {
+        "id": "logo-primary",
+        "name": "Primary Logo SVG",
+        "source": "./assets/logo-primary.svg",
+        "mediaType": "image/svg+xml",
+        "description": "Copy this logo asset next to generated HTML and reference it with a local relative path."
+      }
+    ]
   },
   "presentationKit": {
     "canvas": {

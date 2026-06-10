@@ -4,7 +4,6 @@ import {
   type DesignSystemRegistry,
   UnknownDesignSystemError,
 } from "../design-system/registry/registry";
-import { checkPresentationConformance } from "../design-system/presentation-conformance/conformance";
 
 export const SERVER_INFO = {
   name: "onbrand",
@@ -17,7 +16,8 @@ export const createOnbrandMcpServer = (registry: DesignSystemRegistry): McpServe
   server.registerTool(
     "list_design_systems",
     {
-      description: "List available Design Systems.",
+      description:
+        "Use when the user wants to create presentations/slides/decks. Pull all the design systems and pick the most suitable one for the request of the user. Then, generate the presentation via HTML/CSS",
       inputSchema: {},
     },
     async () => toToolResult({ designSystems: registry.listDesignSystems() }),
@@ -26,7 +26,8 @@ export const createOnbrandMcpServer = (registry: DesignSystemRegistry): McpServe
   server.registerTool(
     "get_design_system",
     {
-      description: "Get the Design System, including Brand Kit and Presentation Kit.",
+      description:
+        "Get the Design System, including Brand Kit asset source paths that client agents should copy locally beside generated HTML before rendering; do not synthesize replacement assets. Also returns the Presentation Kit.",
       inputSchema: {
         designSystemId: z.string().describe("Design System id."),
       },
@@ -36,43 +37,7 @@ export const createOnbrandMcpServer = (registry: DesignSystemRegistry): McpServe
         return toToolResult(registry.getDesignSystem(designSystemId));
       } catch (error) {
         if (error instanceof UnknownDesignSystemError) {
-          return {
-            isError: true,
-            content: [{ type: "text" as const, text: error.message }],
-          };
-        }
-        throw error;
-      }
-    },
-  );
-
-  server.registerTool(
-    "check_presentation_conformance",
-    {
-      description: "Check a Conformance Manifest against a Design System's Presentation Kit.",
-      inputSchema: {
-        designSystemId: z.string().describe("Design System id."),
-        manifest: z.unknown().describe("Conformance Manifest to check."),
-      },
-    },
-    async ({ designSystemId, manifest }) => {
-      try {
-        const designSystem = registry.getDesignSystem(designSystemId);
-        return toToolResult(
-          checkPresentationConformance({
-            designSystem: {
-              id: designSystem.designSystem.id,
-              presentationKit: designSystem.presentationKit,
-            },
-            manifest,
-          }),
-        );
-      } catch (error) {
-        if (error instanceof UnknownDesignSystemError) {
-          return {
-            isError: true,
-            content: [{ type: "text" as const, text: error.message }],
-          };
+          return toErrorToolResult(error.message);
         }
         throw error;
       }
@@ -87,4 +52,11 @@ export const toToolResult = <T extends object>(
 ): { structuredContent: T; content: [{ type: "text"; text: string }] } => ({
   structuredContent: result,
   content: [{ type: "text", text: JSON.stringify(result) }],
+});
+
+const toErrorToolResult = (
+  message: string,
+): { isError: true; content: [{ type: "text"; text: string }] } => ({
+  isError: true,
+  content: [{ type: "text", text: message }],
 });
