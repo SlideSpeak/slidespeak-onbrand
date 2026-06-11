@@ -53,56 +53,6 @@
       "width": 1920,
       "height": 1080,
       "unit": "px"
-    },
-    "persistentElements": [
-      {
-        "id": "brand-logo",
-        "name": "Brand Logo",
-        "description": "Required recurring logo placement for every slide.",
-        "kind": "logo",
-        "usagePolicy": "required",
-        "placement": {
-          "x": 80,
-          "y": 980,
-          "width": 160,
-          "height": 48
-        }
-      },
-      {
-        "id": "slide-number",
-        "name": "Slide Number",
-        "description": "Required recurring slide number placement for every slide.",
-        "kind": "slideNumber",
-        "usagePolicy": "required",
-        "placement": {
-          "x": 1760,
-          "y": 1010,
-          "width": 80,
-          "height": 32
-        },
-        "textStyle": {
-          "fontSize": 12,
-          "fontWeight": 400,
-          "colorTokenId": "neutral-950"
-        }
-      },
-      {
-        "id": "accent-corner",
-        "name": "Accent Corner",
-        "description": "Optional governed accent shape for slides that need additional brand energy.",
-        "kind": "shape",
-        "usagePolicy": "optional",
-        "shape": "rectangle",
-        "placement": {
-          "x": -80,
-          "y": -80,
-          "width": 240,
-          "height": 240
-        },
-        "shapeStyle": {
-          "fillColorTokenId": "accent"
-        }
-      }
-    ]
+    }
   }
 }

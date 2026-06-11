@@ -4,7 +4,6 @@ import {
   type DesignSystemRegistry,
   UnknownDesignSystemError,
 } from "../design-system/registry/registry";
-import { checkPresentationConformance } from "../design-system/presentation-conformance/conformance";
 
 export const SERVER_INFO = {
   name: "onbrand",
@@ -17,7 +16,7 @@ export const createOnbrandMcpServer = (registry: DesignSystemRegistry): McpServe
   server.registerTool(
     "list_design_systems",
     {
-      description: "List available Design Systems.",
+      description: "List available Design Systems. use to grab all necessary context before generating slides, presentations or decks.",
       inputSchema: {},
     },
     async () => toToolResult({ designSystems: registry.listDesignSystems() }),
@@ -34,39 +33,6 @@ export const createOnbrandMcpServer = (registry: DesignSystemRegistry): McpServe
     async ({ designSystemId }) => {
       try {
         return toToolResult(registry.getDesignSystem(designSystemId));
-      } catch (error) {
-        if (error instanceof UnknownDesignSystemError) {
-          return {
-            isError: true,
-            content: [{ type: "text" as const, text: error.message }],
-          };
-        }
-        throw error;
-      }
-    },
-  );
-
-  server.registerTool(
-    "check_presentation_conformance",
-    {
-      description: "Check a Conformance Manifest against a Design System's Presentation Kit.",
-      inputSchema: {
-        designSystemId: z.string().describe("Design System id."),
-        manifest: z.unknown().describe("Conformance Manifest to check."),
-      },
-    },
-    async ({ designSystemId, manifest }) => {
-      try {
-        const designSystem = registry.getDesignSystem(designSystemId);
-        return toToolResult(
-          checkPresentationConformance({
-            designSystem: {
-              id: designSystem.designSystem.id,
-              presentationKit: designSystem.presentationKit,
-            },
-            manifest,
-          }),
-        );
       } catch (error) {
         if (error instanceof UnknownDesignSystemError) {
           return {

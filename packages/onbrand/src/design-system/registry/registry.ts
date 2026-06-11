@@ -1,9 +1,8 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { ensureUniqueColorTokenIds } from "../brand-kit/colors";
+import { ensureUniqueColorTokenIds } from "../brand-kit/color";
 import { designSystemSchema, type DesignSystem, type DesignSystemSummary } from "../design-system";
-import { ensureUniquePersistentLayoutElementIds } from "../presentation-kit/presentation-kit";
 
 export class UnknownDesignSystemError extends Error {
   constructor(readonly designSystemId: string) {
@@ -96,34 +95,6 @@ class InMemoryDesignSystemRegistry implements DesignSystemRegistry {
 
 const validateDesignSystemReferences = (designSystem: DesignSystem): void => {
   ensureUniqueColorTokenIds(designSystem.brandKit.colors, { designSystemId: designSystem.id });
-  ensureUniquePersistentLayoutElementIds(designSystem.presentationKit.persistentElements, {
-    designSystemId: designSystem.id,
-  });
-
-  const colorTokenIds = new Set(designSystem.brandKit.colors.map((color) => color.id));
-
-  for (const element of designSystem.presentationKit.persistentElements) {
-    const colorTokenId = colorTokenIdFor(element);
-    if (colorTokenId && !colorTokenIds.has(colorTokenId)) {
-      throw new Error(
-        `Unknown Color Token id '${colorTokenId}' referenced by Persistent Layout Element '${element.id}' in Design System '${designSystem.id}'`,
-      );
-    }
-  }
-};
-
-const colorTokenIdFor = (
-  element: DesignSystem["presentationKit"]["persistentElements"][number],
-): string | undefined => {
-  switch (element.kind) {
-    case "slideNumber":
-    case "text":
-      return element.textStyle.colorTokenId;
-    case "shape":
-      return element.shapeStyle.fillColorTokenId;
-    case "logo":
-      return undefined;
-  }
 };
 
 const toSummary = (

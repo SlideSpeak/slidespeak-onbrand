@@ -7,7 +7,7 @@
     "onbrand": "./dist/stdio.js"
   },
   "scripts": {
-    "mcp": "tsx src/onbrand-mcp/stdio.ts",
+    "mcp": "tsx src/mcp-server/stdio.ts",
     "build": "vite build --config ../../vite.config.ts",
     "typecheck": "tsc --noEmit -p ../../tsconfig.json",
     "test": "vitest run --config ../../vitest.config.ts"

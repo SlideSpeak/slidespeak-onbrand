@@ -19,7 +19,11 @@ describe("example Design Systems", () => {
     expect(registry.getDesignSystem("acme").brandKit.colors).toHaveLength(6);
     expect(registry.getDesignSystem("globex").brandKit.colors).toHaveLength(6);
     expect(registry.getDesignSystem("acme").brandKit.logo.source).toBe("./assets/logo-primary.svg");
-    expect(registry.getDesignSystem("globex").presentationKit.persistentElements).toHaveLength(3);
+    expect(registry.getDesignSystem("globex").presentationKit.canvas).toEqual({
+      width: 1920,
+      height: 1080,
+      unit: "px",
+    });
   });
 
   test("shipped example logo relative sources exist", async () => {
