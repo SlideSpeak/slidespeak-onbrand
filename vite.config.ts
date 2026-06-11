@@ -4,7 +4,7 @@ export default defineConfig({
   root: ".",
   build: {
     target: "node22",
-    ssr: "src/onbrand-mcp/stdio.ts",
+    ssr: "src/mcp-server/stdio.ts",
     outDir: "dist",
     rollupOptions: {
       output: {

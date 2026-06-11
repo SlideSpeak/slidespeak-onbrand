@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "mcp": "cd packages/onbrand && tsx src/onbrand-mcp/stdio.ts",
+    "mcp": "cd packages/onbrand && tsx src/mcp-server/stdio.ts",
     "build": "cd packages/onbrand && vite build --config ../../vite.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
