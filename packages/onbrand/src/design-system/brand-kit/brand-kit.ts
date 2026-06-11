@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { colorTokensSchema } from "./colors";
-import { logoSchema } from "./logos";
+import { colorTokensSchema } from "./color";
+import { logoSchema } from "./logo";
 
 export const brandKitSchema = z
   .object({

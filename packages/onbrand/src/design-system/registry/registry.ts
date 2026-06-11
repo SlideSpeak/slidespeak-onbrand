@@ -1,7 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { ensureUniqueColorTokenIds } from "../brand-kit/colors";
+import { ensureUniqueColorTokenIds } from "../brand-kit/color";
 import { designSystemSchema, type DesignSystem, type DesignSystemSummary } from "../design-system";
 
 export class UnknownDesignSystemError extends Error {
