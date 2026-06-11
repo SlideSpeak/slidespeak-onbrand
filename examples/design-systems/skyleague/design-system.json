@@ -1,0 +1,242 @@
+{
+  "schemaVersion": 1,
+  "id": "skyleague",
+  "name": "SKYLEAGUE Design System",
+  "description": "A high-energy SKYLEAGUE presentation Design System for technology-partner decks: black/purple/cyan/lime, Azo Sans typography, crisp geometric blocks, ambitious fintech language, and Webflow-native brand assets.",
+  "brandKit": {
+    "colors": [
+      {
+        "id": "purple",
+        "name": "SKYLEAGUE Purple",
+        "value": "#6800FF",
+        "description": "Primary brand field color from the live site and logo mark. Use for covers, dividers, footer bands, card panels, and high-energy emphasis blocks."
+      },
+      {
+        "id": "cyan",
+        "name": "Innovation Cyan",
+        "value": "#00CCFF",
+        "description": "Primary electric accent used in the logo, eyebrow text, links, chart highlights, separators, and geometric accents."
+      },
+      {
+        "id": "lime",
+        "name": "Action Lime",
+        "value": "#CDFF00",
+        "description": "High-impact call-to-action accent from the site. Use sparingly for decisive recommendations, positive movement, and selected buttons."
+      },
+      {
+        "id": "black",
+        "name": "SKYLEAGUE Black",
+        "value": "#101010",
+        "description": "Default dark background for content sections and serious technology/business slides."
+      },
+      {
+        "id": "ink",
+        "name": "Near Black",
+        "value": "#000000",
+        "description": "Highest-contrast text and button color on lime, cyan, or white surfaces."
+      },
+      {
+        "id": "paper",
+        "name": "White",
+        "value": "#FFFFFF",
+        "description": "Logo wordmark color, reversed text, and occasional clean content surface."
+      },
+      {
+        "id": "soft-white",
+        "name": "Soft White",
+        "value": "#E3E7F5",
+        "description": "Softer white for secondary text on dark backgrounds, inspired by site hover and body copy tones."
+      },
+      {
+        "id": "blue-focus",
+        "name": "Focus Blue",
+        "value": "#0050BD",
+        "description": "Accessible focus/outline color and restrained secondary blue for technical labels."
+      },
+      {
+        "id": "yellow",
+        "name": "Deep Yellow",
+        "value": "#FFD500",
+        "description": "Optional tertiary signal from site CSS; use rarely for warnings or secondary categorical series."
+      },
+      {
+        "id": "line",
+        "name": "White Rule",
+        "value": "#FFFFFF",
+        "description": "One-pixel white dividers and footer rules on purple or black fields."
+      }
+    ],
+    "logo": {
+      "name": "SKYLEAGUE Logo",
+      "source": "./assets/logo.svg",
+      "description": "Exact white SKYLEAGUE wordmark plus geometric SK mark from skyleague.io. Use on black, purple, or dark image backgrounds only; do not recolor, typeset, trace, or recreate."
+    },
+    "designPrompt": "# NON-NEGOTIABLE ASSET HANDOFF\n\nThis Design System exposes exact local asset paths in `brandKit.assets[].source`; the registry resolves repository-relative asset paths dynamically at load time. Before creating or previewing any HTML deck, the client agent MUST create an `assets/` directory beside the HTML and copy:\n\n1. `brandKit.assets[id=\"logo\"].source` byte-for-byte to `assets/logo.svg`\n2. `brandKit.assets[id=\"hero-orb\"].source` byte-for-byte to `assets/hero.png`\n3. `brandKit.assets[id=\"circle\"] .source` byte-for-byte to `assets/circle.svg`\n4. `brandKit.assets[id=\"icon-1\"].source` byte-for-byte to `assets/icon-1.svg`\n5. `brandKit.assets[id=\"icon-2\"].source` byte-for-byte to `assets/icon-2.svg`\n\nDo not draw, regenerate, approximate, simplify, trace, recolor, or replace the logo. Do not create a text-based SKYLEAGUE logo. The HTML should reference copied local files, never remote CDN URLs.\n\n---\n\n# SKYLEAGUE Presentation Master Prompt (HTML/CSS)\n\n## Brand Essence\n\nCreate a deck that feels like SKYLEAGUE's live site: ambitious, direct, technology-led, and built for financial-services innovation. The visual language is dark, confident, geometric, and electric: black and purple fields, cyan technical accents, lime action moments, all-Azo-Sans typography, sharp rectangular layouts, large circular/semicircular brand geometry, and compact business copy that talks about making technology work.\n\nPrimary voice cues from the brand: \"Turning innovation ideas into action\", \"Technology partner for ambitious business\", \"We make the impossible, possible for you\", \"Making technology work for you\", \"Building your competitive advantage\", and \"We talk business, not just code\". Write in that mode: plain, assertive, business-savvy, and execution-oriented.\n\n## Core CSS Tokens\n\n```css\n:root {\n  --purple: #6800FF;\n  --cyan: #00CCFF;\n  --lime: #CDFF00;\n  --black: #101010;\n  --ink: #000000;\n  --paper: #FFFFFF;\n  --soft-white: #E3E7F5;\n  --blue-focus: #0050BD;\n  --yellow: #FFD500;\n  --line: #FFFFFF;\n\n  --font-brand: \"Azosans\", \"Azo Sans\", \"Helvetica Neue\", Arial, system-ui, sans-serif;\n  --slide-w: 1280px;\n  --slide-h: 720px;\n  --margin: 72px;\n  --gutter: 28px;\n}\n```\n\nIf local Azo Sans webfonts are available, load them with `@font-face`. If they are not materialized with the deck, use the stack above. Do not substitute serif headlines; SKYLEAGUE is all sans.\n\n## Typography\n\n- Hero title: Azo Sans, 48-64px, weight 400, line-height 1.06, white on dark/purple. Keep it concise and confident.\n- Action title: Azo Sans, 34-42px, weight 500, line-height 1.12. It must be a conclusion, not a topic label.\n- Section title: Azo Sans, 44-56px, weight 500, line-height 1.04, white.\n- Eyebrow: uppercase Azo Sans, 12-14px, weight 500, color cyan, line-height 1.2. Letter spacing may be subtle, around 0.04em, only for all-caps labels.\n- Body: Azo Sans, 17-20px, weight 400, line-height 1.45. Use soft-white on dark slides and black on white/lime/cyan cards.\n- Card titles: Azo Sans, 23-27px, weight 500, line-height 1.08.\n- Data labels: Azo Sans, 12-15px, weight 400 or 500.\n\n## Layout Grammar\n\n- Slides are fixed 1280x720, full-bleed color fields. Avoid decorative outer borders.\n- Most slides should be black or purple. White is an occasional content surface, not the default brand field.\n- Use sharp rectangular panels with 0 border radius. The site uses square purple cards, not soft SaaS cards.\n- Use a 1018px-ish centered content width translated to slides: x=96 to x=1184 works well, with generous vertical bands.\n- Use asymmetric compositions: a strong left text column and a large visual/geometry on the right; or a two-column split with a narrow rule between them.\n- One-pixel white rules are important. Use them as section dividers, column separators, footer lines, and chart baselines.\n- Do not use drop shadows, glassmorphism, soft gradients, rounded pills, pastel tints, or stock-photo collage styling.\n\n## Asset Usage\n\n- Logo: use `assets/logo.svg`. Place it top-left on covers/dividers at about 246x40 or 220x36 depending on slide density. Keep clear space equal to the height of the SK mark. Use only on dark/purple/image areas where the white wordmark is legible.\n- Hero orb: use `assets/hero.png`, the glossy SKYLEAGUE purple/cyan/white geometric sphere from the homepage. It should be absolutely positioned, usually 520-700px square, bleeding off the right or bottom edge. Never place it as an inline image block.\n- Circle: use `assets/circle.svg`, a purple semicircle. It can bleed from the right edge or sit oversized behind content on black slides.\n- Icons: use `assets/icon-1.svg` and `assets/icon-2.svg` only as small 32px functional markers inside cards or process steps. Do not sprinkle icons across data exhibits.\n\nBaseline placement:\n\n```css\n.slide { position: relative; overflow: hidden; width: var(--slide-w); height: var(--slide-h); font-family: var(--font-brand); }\n.brand-logo { position: absolute; left: 72px; top: 44px; width: 246px; height: auto; z-index: 4; }\n.hero-orb { position: absolute; right: -135px; top: 58px; width: 650px; height: 650px; object-fit: contain; z-index: 1; pointer-events: none; }\n.circle-mark { position: absolute; right: 0; bottom: 0; height: 468px; width: auto; z-index: 1; pointer-events: none; }\n.content { position: relative; z-index: 2; }\n```\n\n## Required Slide Types\n\n1. Cover: purple or black full bleed, exact logo top-left, cyan eyebrow, large white hero title, concise soft-white subtitle, lime or cyan CTA/date line, and the hero orb bleeding off the right. The first viewport must immediately read as SKYLEAGUE.\n2. Executive Summary: black background, cyan eyebrow, action title, three to five square insight cards. Cards may alternate purple, cyan, lime, and white; text contrast must be exact.\n3. Problem / Opportunity: large two-column slide with a white one-pixel vertical rule. Left side is the conclusion; right side is evidence or a compact framework.\n4. Solution Architecture: use purple rectangular modules connected by cyan rules on black. Show how strategy, design, engineering, data, AI, compliance, and operations connect.\n5. Proof / Client Success: black background with a disciplined client-logo or case-study grid. If client logos are not locally supplied, use neutral text labels, not invented logos.\n6. Roadmap: horizontal phases using square blocks; current or recommended phase in lime, supporting phases in purple/cyan/white.\n7. Metrics / Exhibit: use minimal charts on dark backgrounds. Highlight exactly one point in cyan or lime; keep axes and gridlines white at low opacity.\n8. Closing / Call to Action: purple full bleed, logo, one decisive line, lime CTA block, optional hero orb or semicircle.\n\n## Chart and Data Rules\n\n- Prefer high-contrast charts on black: white labels, low-opacity white gridlines, cyan/lime highlights, purple secondary series.\n- Use simple bars, stacked bars, roadmaps, system maps, 2x2 matrices, and maturity tables. Avoid ornate chart libraries.\n- Direct-label series. Avoid legends unless more than three series are necessary.\n- Every data slide includes a small source line in soft-white at 65% opacity.\n- Data visuals should feel engineered: aligned, squared, sparse, precise.\n\n## Copy Rules\n\n- Use action titles: \"AI-enabled onboarding can cut exception handling by 40%\" instead of \"AI onboarding\".\n- Keep sentences short and commercially direct.\n- Use SKYLEAGUE vocabulary: innovation ideas into action, advanced technology, tailored solutions, competitive advantage, business results, financial-services expertise, agile execution, deep integration, not just code.\n- Avoid generic startup fluff and abstract motivational language.\n\n## Quality Checklist\n\n- Logo and assets are copied locally and referenced as `assets/...`.\n- The deck uses Azo Sans or the specified fallback only; no serif fonts.\n- Palette is recognizably SKYLEAGUE: black/purple dominant with cyan and lime accents.\n- Cards and panels are square-edged, not rounded.\n- At least one slide uses the hero orb and at least one uses the semicircle geometry.\n- Titles form a complete storyline when read in sequence.\n- No remote images, scripts, chart libraries, or CDN dependencies except optional locally approved font files.\n- Text never overlaps the logo, orb, or circle asset.\n\nReturn a single complete HTML file plus local copied assets beside it.",
+    "assets": [
+      {
+        "id": "logo",
+        "name": "SKYLEAGUE Logo SVG",
+        "source": "./assets/logo.svg",
+        "mediaType": "image/svg+xml",
+        "description": "EXACT REQUIRED ASSET from skyleague.io. Copy byte-for-byte to assets/logo.svg before rendering. Never synthesize, recolor, or replace."
+      },
+      {
+        "id": "hero-orb",
+        "name": "SKYLEAGUE Hero Orb PNG",
+        "source": "./assets/hero.png",
+        "mediaType": "image/png",
+        "description": "Homepage purple/cyan/white geometric sphere asset. Use as a large absolutely positioned brand visual bleeding off the slide edge."
+      },
+      {
+        "id": "circle",
+        "name": "SKYLEAGUE Purple Semicircle SVG",
+        "source": "./assets/circle.svg",
+        "mediaType": "image/svg+xml",
+        "description": "Purple semicircle brand geometry from the live site. Use as an oversized edge-bleed graphic on black or white slides."
+      },
+      {
+        "id": "icon-1",
+        "name": "SKYLEAGUE Card Icon 1 SVG",
+        "source": "./assets/icon-1.svg",
+        "mediaType": "image/svg+xml",
+        "description": "Small functional card/process icon from the live site; use at roughly 32px."
+      },
+      {
+        "id": "icon-2",
+        "name": "SKYLEAGUE Card Icon 2 SVG",
+        "source": "./assets/icon-2.svg",
+        "mediaType": "image/svg+xml",
+        "description": "Small functional card/process icon from the live site; use at roughly 32px."
+      }
+    ]
+  },
+  "presentationKit": {
+    "canvas": {
+      "width": 1280,
+      "height": 720,
+      "unit": "px"
+    },
+    "persistentElements": [
+      {
+        "id": "cover-logo",
+        "name": "Cover Logo",
+        "description": "Optional governed SKYLEAGUE logo placement for covers and dark dividers: absolutely positioned top-left at x=72 y=44 width=246 height=40; use the exact SVG.",
+        "kind": "logo",
+        "usagePolicy": "optional",
+        "placement": {
+          "x": 72,
+          "y": 44,
+          "width": 246,
+          "height": 40
+        }
+      },
+      {
+        "id": "hero-orb-right",
+        "name": "Hero Orb Right Edge",
+        "description": "Optional large homepage hero orb placement for covers and closing slides: use ./assets/hero.png absolutely positioned at x=765 y=58 width=650 height=650, clipped by slide overflow.",
+        "kind": "shape",
+        "usagePolicy": "optional",
+        "shape": "ellipse",
+        "placement": {
+          "x": 765,
+          "y": 58,
+          "width": 650,
+          "height": 650
+        },
+        "shapeStyle": {
+          "fillColorTokenId": "purple"
+        }
+      },
+      {
+        "id": "circle-right",
+        "name": "Purple Semicircle Right Edge",
+        "description": "Optional SKYLEAGUE semicircle geometry: use ./assets/circle.svg absolutely positioned against the right edge, usually x=1046 y=126 width=234 height=468.",
+        "kind": "shape",
+        "usagePolicy": "optional",
+        "shape": "rectangle",
+        "placement": {
+          "x": 1046,
+          "y": 126,
+          "width": 234,
+          "height": 468
+        },
+        "shapeStyle": {
+          "fillColorTokenId": "purple"
+        }
+      },
+      {
+        "id": "content-page-number",
+        "name": "Content Page Number",
+        "description": "Optional page number for standard content slides only; omit on covers and pure statement dividers.",
+        "kind": "slideNumber",
+        "usagePolicy": "optional",
+        "placement": {
+          "x": 1168,
+          "y": 650,
+          "width": 40,
+          "height": 18
+        },
+        "textStyle": {
+          "fontSize": 12,
+          "fontWeight": 400,
+          "colorTokenId": "soft-white"
+        }
+      },
+      {
+        "id": "footer-rule",
+        "name": "Footer Rule",
+        "description": "Optional one-pixel white footer rule on dark content slides.",
+        "kind": "shape",
+        "usagePolicy": "optional",
+        "shape": "rectangle",
+        "placement": {
+          "x": 72,
+          "y": 632,
+          "width": 1136,
+          "height": 1
+        },
+        "shapeStyle": {
+          "fillColorTokenId": "line"
+        }
+      },
+      {
+        "id": "source-line",
+        "name": "Source Line",
+        "description": "Optional source line for exhibit slides, placed below the main content on the left.",
+        "kind": "text",
+        "usagePolicy": "optional",
+        "text": "Source: SKYLEAGUE analysis",
+        "placement": {
+          "x": 72,
+          "y": 650,
+          "width": 620,
+          "height": 18
+        },
+        "textStyle": {
+          "fontSize": 12,
+          "fontWeight": 400,
+          "colorTokenId": "soft-white"
+        }
+      },
+      {
+        "id": "cyan-eyebrow",
+        "name": "Cyan Eyebrow",
+        "description": "Optional all-caps cyan section label above action titles.",
+        "kind": "text",
+        "usagePolicy": "optional",
+        "text": "TURNING INNOVATION IDEAS INTO ACTION",
+        "placement": {
+          "x": 72,
+          "y": 104,
+          "width": 560,
+          "height": 18
+        },
+        "textStyle": {
+          "fontSize": 13,
+          "fontWeight": 500,
+          "colorTokenId": "cyan"
+        }
+      }
+    ]
+  }
+}
