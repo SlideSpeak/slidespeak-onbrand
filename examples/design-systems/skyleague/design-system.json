@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "id": "skyleague",
+  "name": "SKYLEAGUE Design System",
+  "description": "A high-energy SKYLEAGUE presentation Design System for technology-partner decks: black/purple/cyan/lime, Azo Sans typography, crisp geometric blocks, ambitious fintech language, and Webflow-native brand assets.",
+  "brandKit": {
+    "colors": [
+      {
+        "id": "purple",
+        "name": "SKYLEAGUE Purple",
+        "value": "#6800FF",
+        "description": "Primary brand field color from the live site and logo mark. Use for covers, dividers, footer bands, card panels, and high-energy emphasis blocks."
+      },
+      {
+        "id": "cyan",
+        "name": "Innovation Cyan",
+        "value": "#00CCFF",
+        "description": "Primary electric accent used in the logo, eyebrow text, links, chart highlights, separators, and geometric accents."
+      },
+      {
+        "id": "lime",
+        "name": "Action Lime",
+        "value": "#CDFF00",
+        "description": "High-impact call-to-action accent from the site. Use sparingly for decisive recommendations, positive movement, and selected buttons."
+      },
+      {
+        "id": "black",
+        "name": "SKYLEAGUE Black",
+        "value": "#101010",
+        "description": "Default dark background for content sections and serious technology/business slides."
+      },
+      {
+        "id": "ink",
+        "name": "Near Black",
+        "value": "#000000",
+        "description": "Highest-contrast text and button color on lime, cyan, or white surfaces."
+      },
+      {
+        "id": "paper",
+        "name": "White",
+        "value": "#FFFFFF",
+        "description": "Logo wordmark color, reversed text, and occasional clean content surface."
+      },
+      {
+        "id": "soft-white",
+        "name": "Soft White",
+        "value": "#E3E7F5",
+        "description": "Softer white for secondary text on dark backgrounds, inspired by site hover and body copy tones."
+      },
+      {
+        "id": "blue-focus",
+        "name": "Focus Blue",
+        "value": "#0050BD",
+        "description": "Accessible focus/outline color and restrained secondary blue for technical labels."
+      },
+      {
+        "id": "yellow",
+        "name": "Deep Yellow",
+        "value": "#FFD500",
+        "description": "Optional tertiary signal from site CSS; use rarely for warnings or secondary categorical series."
+      },
+      {
+        "id": "line",
+        "name": "White Rule",
+        "value": "#FFFFFF",
+        "description": "One-pixel white dividers and footer rules on purple or black fields."
+      }
+    ],
+    "logo": {
+      "name": "SKYLEAGUE Logo",
+      "source": "./assets/logo.svg",
+      "description": "Exact white SKYLEAGUE wordmark plus geometric SK mark from skyleague.io. Use on black, purple, or dark image backgrounds only; do not recolor, typeset, trace, or recreate."
+    },
+    "decorativeAssets": [
+      {
+        "id": "hero-orb",
+        "name": "SKYLEAGUE Hero Orb PNG",
+        "source": "./assets/hero.png",
+        "description": "Homepage purple/cyan/white geometric sphere asset. Use as a large absolutely positioned brand visual bleeding off the slide edge."
+      },
+      {
+        "id": "circle",
+        "name": "SKYLEAGUE Purple Semicircle SVG",
+        "source": "./assets/circle.svg",
+        "description": "Purple semicircle brand geometry from the live site. Use as an oversized edge-bleed graphic on black or white slides."
+      },
+      {
+        "id": "icon-1",
+        "name": "SKYLEAGUE Card Icon 1 SVG",
+        "source": "./assets/icon-1.svg",
+        "description": "Small functional card/process icon from the live site; use at roughly 32px."
+      },
+      {
+        "id": "icon-2",
+        "name": "SKYLEAGUE Card Icon 2 SVG",
+        "source": "./assets/icon-2.svg",
+        "description": "Small functional card/process icon from the live site; use at roughly 32px."
+      }
+    ]
+  },
+  "presentationKit": {
+    "canvas": {
+      "width": 1280,
+      "height": 720,
+      "unit": "px"
+    },
+    "designPrompt": "./design-prompt.mdx"
+  }
+}

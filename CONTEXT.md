@@ -34,8 +34,12 @@ that generated artifacts can reference. Current materializable visuals are the *
 **Decorative Assets**. The materialized copy is distinct from the source authoring path in the
 Design System package. _Avoid_: MCP Resource, source asset path
 
-**Presentation Kit**: The slide-focused part of a **Design System**. It currently defines the
-**Slide Canvas** for generated presentations. _Avoid_: Slide Kit, Template Kit, Deck Kit
+**Presentation Kit**: The slide-focused part of a **Design System**. It defines the **Slide Canvas**
+and may include a **Design Prompt** for generated presentations. _Avoid_: Slide Kit, Template Kit,
+Deck Kit
+
+**Design Prompt**: Narrative presentation guidance that captures brand-specific slide design rules,
+layout grammar, copy style, and quality checks for AI agents. _Avoid_: Master prompt, system prompt
 
 **Slide Canvas**: The canonical coordinate space used by a **Presentation Kit** to describe slide
 size and aspect ratio. _Avoid_: Page size, viewport, artboard

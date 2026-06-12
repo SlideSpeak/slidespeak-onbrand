@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="320" height="96" viewBox="0 0 320 96" role="img" aria-labelledby="title desc">
-  <title id="title">Globex Primary Logo</title>
-  <desc id="desc">Primary Globex logo for light slide backgrounds.</desc>
-  <rect width="320" height="96" rx="48" fill="#5B2C83"/>
-  <circle cx="56" cy="48" r="26" fill="#008C95"/>
-  <circle cx="68" cy="36" r="10" fill="#FF6F61"/>
-  <path d="M38 52c14 18 44 18 58 0" fill="none" stroke="#FAFAF7" stroke-width="7" stroke-linecap="round"/>
-  <text x="108" y="59" fill="#FAFAF7" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="800" letter-spacing=".5">Globex</text>
-</svg>
