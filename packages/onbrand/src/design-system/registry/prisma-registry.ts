@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { PrismaClient } from "@prisma/client";
+import type { AuthContext } from "../../auth/context";
 import type { DesignSystemSummary } from "../design-system";
 import {
   type MaterializedBrandKitAsset,
@@ -32,8 +33,11 @@ type StoredAsset = Readonly<{
 export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
   constructor(private readonly prisma: PrismaClient) {}
 
-  listDesignSystems = async (): Promise<readonly DesignSystemSummary[]> => {
-    const rows = await this.prisma.designSystem.findMany({ orderBy: { id: "asc" } });
+  listDesignSystems = async (auth: AuthContext): Promise<readonly DesignSystemSummary[]> => {
+    const rows = await this.prisma.designSystem.findMany({
+      where: { ownerUserId: auth.ownerUserId },
+      orderBy: { id: "asc" },
+    });
     return rows.map((row) =>
       row.description === null
         ? { id: row.slug, name: row.name }
@@ -41,18 +45,21 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
     );
   };
 
-  getDesignSystem = async (designSystemId: string): Promise<McpDesignSystem> => {
-    const stored = await loadStoredDesignSystem(this.prisma, designSystemId);
+  getDesignSystem = async (auth: AuthContext, designSystemId: string): Promise<McpDesignSystem> => {
+    const stored = await loadStoredDesignSystem(this.prisma, auth, designSystemId);
     return toMcpDesignSystem(stored);
   };
 
-  materializeBrandKitAssets = async ({
-    designSystemId,
-    outputDirectory,
-    assetHandles,
-    overwrite = true,
-  }: MaterializeBrandKitAssetsRequest): Promise<MaterializedBrandKitAssets> => {
-    const stored = await loadStoredDesignSystem(this.prisma, designSystemId);
+  materializeBrandKitAssets = async (
+    auth: AuthContext,
+    {
+      designSystemId,
+      outputDirectory,
+      assetHandles,
+      overwrite = true,
+    }: MaterializeBrandKitAssetsRequest,
+  ): Promise<MaterializedBrandKitAssets> => {
+    const stored = await loadStoredDesignSystem(this.prisma, auth, designSystemId);
     const selectedAssets = selectAssets(designSystemId, stored.brandKit!.assets, assetHandles);
     const resolvedOutputDirectory = path.resolve(outputDirectory);
     await mkdir(resolvedOutputDirectory, { recursive: true });
@@ -68,9 +75,13 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
   };
 }
 
-const loadStoredDesignSystem = async (prisma: PrismaClient, designSystemId: string) => {
+const loadStoredDesignSystem = async (
+  prisma: PrismaClient,
+  auth: AuthContext,
+  designSystemId: string,
+) => {
   const row = await prisma.designSystem.findUnique({
-    where: { slug: designSystemId },
+    where: { ownerUserId_slug: { ownerUserId: auth.ownerUserId, slug: designSystemId } },
     include: {
       brandKit: {
         include: {

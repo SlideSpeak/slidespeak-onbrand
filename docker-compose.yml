@@ -1,4 +1,21 @@
 services:
+  onbrand-mcp:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://onbrand:onbrand@postgres:5432/onbrand?schema=public
+      BASE_URL: ${ONBRAND_BASE_URL:-http://localhost:8080}
+      PORT: 8080
+      SLIDESPEAK_OAUTH_ISSUER: ${SLIDESPEAK_OAUTH_ISSUER:-http://localhost:3000}
+      SLIDESPEAK_JWKS_URL: ${SLIDESPEAK_JWKS_URL:-http://host.docker.internal:3000/oauth/jwks.json}
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -7,7 +24,7 @@ services:
       POSTGRES_USER: onbrand
       POSTGRES_PASSWORD: onbrand
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - onbrand-postgres-data:/var/lib/postgresql/data
     healthcheck:

@@ -126,7 +126,10 @@ const connectedClient = async (
   registry: DesignSystemRegistry,
   workspaceRoot?: string,
 ): Promise<Client> => {
-  const server = createOnbrandMcpServer(registry);
+  const server = createOnbrandMcpServer(registry, {
+    ownerUserId: "test-user",
+    scopes: ["onbrand:read", "onbrand:write"],
+  });
   const client = new Client(
     { name: "test", version: "1.0.0" },
     workspaceRoot === undefined ? undefined : { capabilities: { roots: {} } },
@@ -143,11 +146,11 @@ const connectedClient = async (
 
 const fakeRegistry = (): DesignSystemRegistry => ({
   listDesignSystems: async () => [{ id: "acme", name: "Acme Design System" }],
-  getDesignSystem: async (id) => {
+  getDesignSystem: async (_auth, id) => {
     if (id !== "acme") throw new Error("Unknown Design System");
     return ACME_DESIGN_SYSTEM;
   },
-  materializeBrandKitAssets: async ({ designSystemId, outputDirectory }) => ({
+  materializeBrandKitAssets: async (_auth, { designSystemId, outputDirectory }) => ({
     designSystemId,
     outputDirectory,
     assets: [

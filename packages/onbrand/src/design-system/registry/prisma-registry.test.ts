@@ -12,13 +12,17 @@ const describeDatabaseIntegration =
 describeDatabaseIntegration("PrismaDesignSystemRegistry", () => {
   const prisma = createPrismaClient();
   const registry = new PrismaDesignSystemRegistry(prisma);
+  const auth = {
+    ownerUserId: process.env.ONBRAND_OWNER_USER_ID ?? "local-dev-user",
+    scopes: ["onbrand:read", "onbrand:write"],
+  };
 
   afterAll(async () => {
     await prisma.$disconnect();
   });
 
   it("lists Design Systems from Postgres", async () => {
-    const designSystems = await registry.listDesignSystems();
+    const designSystems = await registry.listDesignSystems(auth);
     const skyleague = designSystems.find((designSystem) => designSystem.id === "skyleague");
 
     expect(skyleague?.name).toBe("SKYLEAGUE Design System");
@@ -26,7 +30,7 @@ describeDatabaseIntegration("PrismaDesignSystemRegistry", () => {
   });
 
   it("returns the full MCP Design System assembled from normalized tables", async () => {
-    const result = await registry.getDesignSystem("skyleague");
+    const result = await registry.getDesignSystem(auth, "skyleague");
 
     expect(result.designSystem.id).toBe("skyleague");
     expect(result.brandKit.colors).toHaveLength(10);
@@ -48,7 +52,7 @@ describeDatabaseIntegration("PrismaDesignSystemRegistry", () => {
   it("materializes selected Brand Kit assets from stored bytes", async () => {
     const outputDirectory = await mkdtemp(path.join(os.tmpdir(), "onbrand-assets-"));
     try {
-      const result = await registry.materializeBrandKitAssets({
+      const result = await registry.materializeBrandKitAssets(auth, {
         designSystemId: "skyleague",
         outputDirectory,
         assetHandles: ["LOGO"],
@@ -66,6 +70,8 @@ describeDatabaseIntegration("PrismaDesignSystemRegistry", () => {
   });
 
   it("rejects unknown Design Systems", async () => {
-    await expect(registry.getDesignSystem("missing")).rejects.toThrow(UnknownDesignSystemError);
+    await expect(registry.getDesignSystem(auth, "missing")).rejects.toThrow(
+      UnknownDesignSystemError,
+    );
   });
 });

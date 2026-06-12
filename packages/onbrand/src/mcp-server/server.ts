@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { type AuthContext, requireScope } from "../auth/context";
 import {
   type DesignSystemRegistry,
   type MaterializedBrandKitAsset,
@@ -30,7 +31,10 @@ type MaterializedBrandKitAssetToolResult = MaterializedBrandKitAsset &
 type MaterializedBrandKitAssetsToolResult = Omit<MaterializedBrandKitAssets, "assets"> &
   Readonly<{ assets: readonly MaterializedBrandKitAssetToolResult[] }>;
 
-export const createOnbrandMcpServer = (registry: DesignSystemRegistry): McpServer => {
+export const createOnbrandMcpServer = (
+  registry: DesignSystemRegistry,
+  authContext: AuthContext,
+): McpServer => {
   const server = new McpServer(SERVER_INFO);
 
   server.registerTool(
@@ -40,7 +44,10 @@ export const createOnbrandMcpServer = (registry: DesignSystemRegistry): McpServe
         "List available Design Systems. Use this first to choose the Design System before generating slides, presentations, decks, or other branded materials.",
       inputSchema: {},
     },
-    async () => toToolResult({ designSystems: await registry.listDesignSystems() }),
+    async () => {
+      requireScope(authContext, "onbrand:read");
+      return toToolResult({ designSystems: await registry.listDesignSystems(authContext) });
+    },
   );
 
   server.registerTool(
@@ -54,7 +61,8 @@ export const createOnbrandMcpServer = (registry: DesignSystemRegistry): McpServe
     },
     async ({ designSystemId }) => {
       try {
-        return toToolResult(await registry.getDesignSystem(designSystemId));
+        requireScope(authContext, "onbrand:read");
+        return toToolResult(await registry.getDesignSystem(authContext, designSystemId));
       } catch (error) {
         if (error instanceof UnknownDesignSystemError) {
           return toToolErrorResult(error);
@@ -101,12 +109,15 @@ export const createOnbrandMcpServer = (registry: DesignSystemRegistry): McpServe
     },
     async ({ designSystemId, outputDirectory, workspaceDirectory, assetHandles, overwrite }) => {
       try {
+        // Materializing copies assets into the caller's own workspace, not server state, so it
+        // is a read operation today. Switch to "onbrand:write" if a server-side write is added.
+        requireScope(authContext, "onbrand:read");
         const target = await resolveMaterializationTarget(
           server,
           outputDirectory,
           workspaceDirectory,
         );
-        const result = await registry.materializeBrandKitAssets({
+        const result = await registry.materializeBrandKitAssets(authContext, {
           designSystemId,
           outputDirectory: target.outputDirectory,
           assetHandles,

@@ -8,7 +8,8 @@ datasource db {
 
 model DesignSystem {
   id            String   @id @default(cuid())
-  slug          String   @unique
+  ownerUserId   String
+  slug          String
   schemaVersion Int
   name          String
   description   String?
@@ -17,6 +18,9 @@ model DesignSystem {
 
   brandKit        BrandKit?
   presentationKit PresentationKit?
+
+  @@unique([ownerUserId, slug])
+  @@index([ownerUserId])
 }
 
 model BrandKit {

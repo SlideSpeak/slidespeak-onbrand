@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "mcp": "tsx packages/onbrand/src/mcp-server/stdio.ts",
+    "mcp:http": "tsx packages/onbrand/src/mcp-server/http.ts",
     "build": "prisma generate && cd packages/onbrand && vite build --config ../../vite.config.ts",
     "typecheck": "prisma generate && tsc --noEmit",
     "lint": "prisma generate && eslint .",
@@ -19,6 +20,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/node": "latest",
     "@types/pg": "^8.20.0",
     "eslint": "^10.4.1",
@@ -34,6 +37,9 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "jose": "^6.2.3",
     "pg": "^8.21.0"
   }
 }

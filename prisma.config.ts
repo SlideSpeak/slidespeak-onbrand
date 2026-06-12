@@ -5,6 +5,6 @@ export default defineConfig({
   datasource: {
     url:
       process.env.DATABASE_URL ??
-      "postgresql://onbrand:onbrand@localhost:5432/onbrand?schema=public",
+      "postgresql://onbrand:onbrand@localhost:5433/onbrand?schema=public",
   },
 });
