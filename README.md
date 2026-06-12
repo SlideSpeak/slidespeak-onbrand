@@ -62,10 +62,14 @@ SLIDESPEAK_JWKS_URL=http://host.docker.internal:3000/oauth/jwks.json
 
 ### Connect a client
 
-Point an MCP client at `${BASE_URL}/mcp`; it discovers the authorization server automatically and
-runs the browser OAuth flow. For Codex CLI, add to `~/.codex/config.toml`:
+Point an MCP client at `${BASE_URL}/mcp`; it discovers the authorization server from the
+`/mcp` metadata. For Codex CLI:
 
-```toml
-[mcp_servers.onbrand]
-url = "http://localhost:8080/mcp"
+```sh
+codex mcp add onbrand --url http://localhost:8080/mcp
+codex mcp login onbrand   # opens the browser consent flow and stores the token
 ```
+
+`codex mcp login onbrand` is also how you re-authorize after a token is revoked. Access tokens
+last 15 minutes and are refreshed silently; you only re-run `login` if the 30-day refresh token
+lapses or the grant is revoked.
