@@ -6,10 +6,13 @@ import { createPrismaClient } from "../../database/prisma-client";
 import { PrismaDesignSystemRegistry } from "./prisma-registry";
 import { UnknownDesignSystemError } from "./registry";
 
-const prisma = createPrismaClient();
-const registry = new PrismaDesignSystemRegistry(prisma);
+const describeDatabaseIntegration =
+  process.env.ONBRAND_DATABASE_TESTS === "1" ? describe : describe.skip;
 
-describe("PrismaDesignSystemRegistry", () => {
+describeDatabaseIntegration("PrismaDesignSystemRegistry", () => {
+  const prisma = createPrismaClient();
+  const registry = new PrismaDesignSystemRegistry(prisma);
+
   afterAll(async () => {
     await prisma.$disconnect();
   });

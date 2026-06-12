@@ -8,12 +8,12 @@
   ],
   "scripts": {
     "mcp": "tsx packages/onbrand/src/mcp-server/stdio.ts",
-    "build": "cd packages/onbrand && vite build --config ../../vite.config.ts",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint .",
+    "build": "prisma generate && cd packages/onbrand && vite build --config ../../vite.config.ts",
+    "typecheck": "prisma generate && tsc --noEmit",
+    "lint": "prisma generate && eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run",
+    "test": "prisma generate && vitest run",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev"
   },
