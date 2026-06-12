@@ -29,7 +29,10 @@ its usage guidance, but it must not be the only carrier of information. It is di
 **Logo**, future Icon, and future Image concepts; the boundary is decorative purpose, not file
 format. _Avoid_: Brand image, icon, illustration
 
-**Brand Kit Asset File**: The exact bytes and file metadata for a declared visual from a **Brand Kit** that an MCP client can decode and write into its own workspace. Current fetchable visuals are the **Logo** and **Decorative Assets**. The file payload is produced from the persisted Brand Kit Asset bytes in the Design System Registry. _Avoid_: server-local path, source asset path
+**Brand Kit Asset File**: The exact bytes and file metadata for a declared visual from a **Brand
+Kit** that an MCP client can decode and write into its own workspace. Current fetchable visuals are
+the **Logo** and **Decorative Assets**. The file payload is produced from the persisted Brand Kit
+Asset bytes in the Design System Registry. _Avoid_: server-local path, source asset path
 
 **Presentation Kit**: The slide-focused part of a **Design System**. It defines the **Slide Canvas**
 and may include a **Design Prompt** for generated presentations. _Avoid_: Slide Kit, Template Kit,

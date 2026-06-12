@@ -7,7 +7,8 @@ matching your brand.
 
 - `list_design_systems` — lists available Design Systems.
 - `get_design_system` — returns the Brand Kit and Presentation Kit for a Design System id.
-- `get_brand_kit_asset_files` — returns approved Brand Kit visual files as base64 payloads for the client to write into its own workspace.
+- `get_brand_kit_asset_files` — returns approved Brand Kit visual files as base64 payloads for the
+  client to write into its own workspace.
 
 ## Remote MCP over HTTP + OAuth
 

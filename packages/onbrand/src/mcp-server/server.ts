@@ -2,7 +2,10 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { type AuthContext, requireScope } from "../auth/context";
 import { UnknownBrandKitAssetError } from "../design-system/brand-kit/asset";
-import { type DesignSystemRegistry, UnknownDesignSystemError } from "../design-system/registry/registry";
+import {
+  type DesignSystemRegistry,
+  UnknownDesignSystemError,
+} from "../design-system/registry/registry";
 
 export const SERVER_INFO = {
   name: "onbrand",
@@ -83,7 +86,10 @@ export const createOnbrandMcpServer = (
           await registry.getBrandKitAssetFiles(authContext, { designSystemId, assetHandles }),
         );
       } catch (error) {
-        if (error instanceof UnknownDesignSystemError || error instanceof UnknownBrandKitAssetError) {
+        if (
+          error instanceof UnknownDesignSystemError ||
+          error instanceof UnknownBrandKitAssetError
+        ) {
           return toToolErrorResult(error);
         }
         throw error;
