@@ -1,13 +1,11 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { loadDesignSystemRegistry } from "../design-system/registry/registry";
-import { exampleDesignSystemsRoot } from "../package-root/paths";
+import { createPrismaClient } from "../database/prisma-client";
+import { PrismaDesignSystemRegistry } from "../design-system/registry/prisma-registry";
 import { createOnbrandMcpServer } from "./server";
 
 const main = async (): Promise<void> => {
-  const registry = await loadDesignSystemRegistry({
-    rootDir: exampleDesignSystemsRoot(import.meta.url),
-  });
-  const server = createOnbrandMcpServer(registry);
+  const prisma = createPrismaClient();
+  const server = createOnbrandMcpServer(new PrismaDesignSystemRegistry(prisma));
   await server.connect(new StdioServerTransport());
 };
 

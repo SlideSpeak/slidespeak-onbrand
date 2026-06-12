@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model DesignSystem {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  schemaVersion Int
+  name          String
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  brandKit        BrandKit?
+  presentationKit PresentationKit?
+}
+
+model BrandKit {
+  id             String @id @default(cuid())
+  designSystemId String @unique
+
+  designSystem DesignSystem    @relation(fields: [designSystemId], references: [id], onDelete: Cascade)
+  colors       ColorToken[]
+  assets       BrandKitAsset[]
+}
+
+model ColorToken {
+  id          String @id @default(cuid())
+  brandKitId  String
+  tokenId     String
+  name        String
+  value       String
+  description String
+  sortOrder   Int
+
+  brandKit BrandKit @relation(fields: [brandKitId], references: [id], onDelete: Cascade)
+
+  @@unique([brandKitId, tokenId])
+  @@index([brandKitId, sortOrder])
+}
+
+model BrandKitAsset {
+  id          String            @id @default(cuid())
+  brandKitId  String
+  assetId     String
+  kind        BrandKitAssetKind
+  name        String
+  filename    String
+  mimeType    String
+  description String
+  bytes       Bytes
+  sortOrder   Int
+
+  brandKit BrandKit @relation(fields: [brandKitId], references: [id], onDelete: Cascade)
+
+  @@unique([brandKitId, assetId])
+  @@index([brandKitId, kind])
+  @@index([brandKitId, sortOrder])
+}
+
+enum BrandKitAssetKind {
+  LOGO
+  DECORATIVE_ASSET
+}
+
+model PresentationKit {
+  id             String  @id @default(cuid())
+  designSystemId String  @unique
+  canvasWidth    Int
+  canvasHeight   Int
+  canvasUnit     String
+  designPrompt   String?
+
+  designSystem DesignSystem @relation(fields: [designSystemId], references: [id], onDelete: Cascade)
+}

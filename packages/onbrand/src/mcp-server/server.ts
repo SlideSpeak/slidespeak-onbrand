@@ -40,7 +40,7 @@ export const createOnbrandMcpServer = (registry: DesignSystemRegistry): McpServe
         "List available Design Systems. Use this first to choose the Design System before generating slides, presentations, decks, or other branded materials.",
       inputSchema: {},
     },
-    async () => toToolResult({ designSystems: registry.listDesignSystems() }),
+    async () => toToolResult({ designSystems: await registry.listDesignSystems() }),
   );
 
   server.registerTool(
@@ -54,7 +54,7 @@ export const createOnbrandMcpServer = (registry: DesignSystemRegistry): McpServe
     },
     async ({ designSystemId }) => {
       try {
-        return toToolResult(registry.getDesignSystem(designSystemId));
+        return toToolResult(await registry.getDesignSystem(designSystemId));
       } catch (error) {
         if (error instanceof UnknownDesignSystemError) {
           return toToolErrorResult(error);

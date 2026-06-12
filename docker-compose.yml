@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: onbrand
+      POSTGRES_USER: onbrand
+      POSTGRES_PASSWORD: onbrand
+    ports:
+      - "5432:5432"
+    volumes:
+      - onbrand-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U onbrand -d onbrand"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  onbrand-postgres-data:
