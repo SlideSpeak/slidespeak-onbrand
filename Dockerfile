@@ -5,6 +5,7 @@ WORKDIR /app
 COPY package.json bun.lock ./
 COPY packages/number/package.json packages/number/package.json
 COPY packages/string/package.json packages/string/package.json
+COPY packages/s3/package.json packages/s3/package.json
 COPY packages/onbrand/package.json packages/onbrand/package.json
 
 RUN bun install --frozen-lockfile

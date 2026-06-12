@@ -55,19 +55,28 @@ describe("Onbrand MCP tools", () => {
     expect(result.content).toEqual([{ type: "text", text: JSON.stringify(ACME_DESIGN_SYSTEM) }]);
   });
 
-  test("returns Brand Kit asset files as HTTPS-safe base64 payloads", async () => {
+  test("returns S3 download commands instead of asset bytes", async () => {
     const client = await connectedClient(fakeRegistry());
 
     const result = await client.callTool({
-      name: "get_brand_kit_asset_files",
+      name: "materialize_brand_kit_assets",
       arguments: {
         designSystemId: "acme",
+        outputDirectory: "assets",
         assetHandles: ["LOGO"],
       },
     });
 
     const expected = {
       designSystemId: "acme",
+      outputDirectory: "assets",
+      expiresInSeconds: 900,
+      instructions:
+        "Run the commands in the user's workspace to download exact Brand Kit files from short-lived S3 URLs. Do not paste, decode, or rewrite asset bytes manually from the MCP response.",
+      commands: [
+        "mkdir -p 'assets'",
+        "curl -fsSL 'https://s3.example/logo.svg?signature=test' -o 'assets/logo.svg'",
+      ],
       assets: [
         {
           kind: "LOGO",
@@ -75,14 +84,18 @@ describe("Onbrand MCP tools", () => {
           name: "Primary Logo",
           filename: "logo.svg",
           mimeType: "image/svg+xml",
-          contentBase64: Buffer.from("<svg />").toString("base64"),
+          downloadUrl: "https://s3.example/logo.svg?signature=test",
+          targetPath: "assets/logo.svg",
+          relativePath: "assets/logo.svg",
         },
       ],
     };
     expect(result.structuredContent).toEqual(expected);
-    expect(result.content).toEqual([{ type: "text", text: JSON.stringify(expected) }]);
-    expect(JSON.stringify(result)).not.toContain("/app/");
-    expect(JSON.stringify(result)).not.toContain("onbrand-mcp-workspace");
+    expect(result.content).toEqual([
+      { type: "text", text: JSON.stringify(result.structuredContent) },
+    ]);
+    expect(JSON.stringify(result)).not.toContain("contentBase64");
+    expect(JSON.stringify(result)).not.toContain(Buffer.from("<svg />").toString("base64"));
   });
 });
 
@@ -103,8 +116,16 @@ const fakeRegistry = (): DesignSystemRegistry => ({
     if (id !== "acme") throw new Error("Unknown Design System");
     return ACME_DESIGN_SYSTEM;
   },
-  getBrandKitAssetFiles: async (_auth, { designSystemId }) => ({
+  materializeBrandKitAssets: async (_auth, { designSystemId, outputDirectory }) => ({
     designSystemId,
+    outputDirectory,
+    expiresInSeconds: 900,
+    instructions:
+      "Run the commands in the user's workspace to download exact Brand Kit files from short-lived S3 URLs. Do not paste, decode, or rewrite asset bytes manually from the MCP response.",
+    commands: [
+      "mkdir -p 'assets'",
+      "curl -fsSL 'https://s3.example/logo.svg?signature=test' -o 'assets/logo.svg'",
+    ],
     assets: [
       {
         kind: "LOGO",
@@ -112,7 +133,9 @@ const fakeRegistry = (): DesignSystemRegistry => ({
         name: "Primary Logo",
         filename: "logo.svg",
         mimeType: "image/svg+xml",
-        contentBase64: Buffer.from("<svg />").toString("base64"),
+        downloadUrl: "https://s3.example/logo.svg?signature=test",
+        targetPath: "assets/logo.svg",
+        relativePath: "assets/logo.svg",
       },
     ],
   }),

@@ -1,3 +1,4 @@
+import { S3 } from "@onbrand/s3";
 import cors from "cors";
 import express from "express";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
@@ -7,6 +8,7 @@ import {
 } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import { requireBearerAuth } from "@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js";
 import { createPrismaClient } from "../database/prisma-client";
+import { StorageBuckets } from "../storage/buckets";
 import { PrismaDesignSystemRegistry } from "../design-system/registry/prisma-registry";
 import {
   ownerUserIdFromAuthInfo,
@@ -17,6 +19,16 @@ import { createOnbrandMcpServer } from "./server";
 const requiredEnv = (name: string): string => {
   const value = process.env[name];
   if (!value) throw new Error(`Missing required environment variable: ${name}`);
+  return value;
+};
+
+const positiveIntegerEnv = (name: string, defaultValue: number): number => {
+  const rawValue = process.env[name];
+  if (rawValue === undefined) return defaultValue;
+  const value = Number(rawValue);
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`${name} must be a positive integer`);
+  }
   return value;
 };
 
@@ -33,9 +45,18 @@ const main = async (): Promise<void> => {
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
+  const assetDownloadExpiresInSeconds = positiveIntegerEnv(
+    "ASSET_DOWNLOAD_EXPIRES_IN_SECONDS",
+    900,
+  );
 
   const prisma = createPrismaClient();
-  const registry = new PrismaDesignSystemRegistry(prisma);
+  const registry = new PrismaDesignSystemRegistry(
+    prisma,
+    S3,
+    StorageBuckets.brandKitAssets,
+    assetDownloadExpiresInSeconds,
+  );
   const verifier = new SlideSpeakTokenVerifier({ issuer, audience: mcpUrl.toString(), jwksUrl });
   const app = express();
 

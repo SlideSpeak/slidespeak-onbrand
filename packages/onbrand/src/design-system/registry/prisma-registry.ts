@@ -1,17 +1,20 @@
+import path from "node:path";
+import type { S3 } from "@onbrand/s3";
 import type { PrismaClient } from "@prisma/client";
 import type { AuthContext } from "../../auth/context";
 import type { DesignSystemSummary } from "../design-system";
 import {
-  type BrandKitAssetFile,
-  type BrandKitAssetFiles,
+  type BrandKitAssetDownload,
+  type BrandKitAssetMaterializationPlan,
   type McpBrandKit,
   type McpDecorativeAsset,
   type SupportedAssetMimeType,
   UnknownBrandKitAssetError,
+  UnmaterializedBrandKitAssetError,
 } from "../brand-kit/asset";
 import type {
   DesignSystemRegistry,
-  GetBrandKitAssetFilesRequest,
+  MaterializeBrandKitAssetsRequest,
   McpDesignSystem,
   McpPresentationKit,
 } from "./registry";
@@ -24,12 +27,17 @@ type StoredAsset = Readonly<{
   filename: string;
   mimeType: string;
   description: string;
-  bytes: Uint8Array<ArrayBuffer>;
+  s3Key: string | null;
   sortOrder: number;
 }>;
 
 export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(
+    private readonly prisma: PrismaClient,
+    private readonly s3: Pick<typeof S3, "getPresigned">,
+    private readonly brandKitAssetBucket: string,
+    private readonly assetDownloadExpiresInSeconds: number,
+  ) {}
 
   listDesignSystems = async (auth: AuthContext): Promise<readonly DesignSystemSummary[]> => {
     const rows = await this.prisma.designSystem.findMany({
@@ -48,13 +56,41 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
     return toMcpDesignSystem(stored);
   };
 
-  getBrandKitAssetFiles = async (
+  materializeBrandKitAssets = async (
     auth: AuthContext,
-    { designSystemId, assetHandles }: GetBrandKitAssetFilesRequest,
-  ): Promise<BrandKitAssetFiles> => {
+    { designSystemId, outputDirectory, assetHandles }: MaterializeBrandKitAssetsRequest,
+  ): Promise<BrandKitAssetMaterializationPlan> => {
     const stored = await loadStoredDesignSystem(this.prisma, auth, designSystemId);
     const selectedAssets = selectAssets(designSystemId, stored.brandKit!.assets, assetHandles);
-    return { designSystemId, assets: selectedAssets.map(toBrandKitAssetFile) };
+    const normalizedOutputDirectory = normalizeOutputDirectory(outputDirectory);
+    const downloads = await Promise.all(
+      selectedAssets.map((asset) =>
+        toBrandKitAssetDownload(
+          this.s3,
+          this.brandKitAssetBucket,
+          this.assetDownloadExpiresInSeconds,
+          designSystemId,
+          normalizedOutputDirectory,
+          asset,
+        ),
+      ),
+    );
+
+    return {
+      designSystemId,
+      outputDirectory: normalizedOutputDirectory,
+      expiresInSeconds: this.assetDownloadExpiresInSeconds,
+      instructions:
+        "Run the commands in the user's workspace to download exact Brand Kit files from short-lived S3 URLs. Do not paste, decode, or rewrite asset bytes manually from the MCP response.",
+      commands: [
+        `mkdir -p ${shellQuote(normalizedOutputDirectory)}`,
+        ...downloads.map(
+          (asset) =>
+            `curl -fsSL ${shellQuote(asset.downloadUrl)} -o ${shellQuote(asset.targetPath)}`,
+        ),
+      ],
+      assets: downloads,
+    };
   };
 }
 
@@ -166,23 +202,49 @@ const selectAssets = (
 const assetHandle = (asset: StoredAsset): string =>
   asset.kind === "LOGO" ? "LOGO" : decorativeAssetHandle(asset.assetId);
 
-const toBrandKitAssetFile = (asset: StoredAsset): BrandKitAssetFile => {
+const toBrandKitAssetDownload = async (
+  s3: Pick<typeof S3, "getPresigned">,
+  bucket: string,
+  expiresInSeconds: number,
+  designSystemId: string,
+  outputDirectory: string,
+  asset: StoredAsset,
+): Promise<BrandKitAssetDownload> => {
+  if (!asset.s3Key) throw new UnmaterializedBrandKitAssetError(designSystemId, assetHandle(asset));
+  const targetPath = joinOutputPath(outputDirectory, asset.filename);
   const common = {
+    assetHandle: assetHandle(asset),
     name: asset.name,
     filename: asset.filename,
     mimeType: asSupportedMimeType(asset.mimeType),
-    contentBase64: Buffer.from(asset.bytes).toString("base64"),
+    downloadUrl: await s3.getPresigned({
+      bucket,
+      key: asset.s3Key,
+      filename: asset.filename,
+      contentType: asset.mimeType,
+      expiresInSeconds,
+    }),
+    targetPath,
+    ...(path.posix.isAbsolute(outputDirectory) ? {} : { relativePath: targetPath }),
   } as const;
 
   return asset.kind === "LOGO"
-    ? { ...common, kind: "LOGO", assetHandle: "LOGO" }
-    : {
-        ...common,
-        kind: "DECORATIVE_ASSET",
-        id: asset.assetId,
-        assetHandle: decorativeAssetHandle(asset.assetId),
-      };
+    ? { ...common, kind: "LOGO" }
+    : { ...common, kind: "DECORATIVE_ASSET", id: asset.assetId };
 };
+
+const normalizeOutputDirectory = (outputDirectory: string): string => {
+  const normalized = outputDirectory
+    .trim()
+    .replace(/^\.\/+/, "")
+    .replace(/\/+$/, "");
+  return normalized.length === 0 ? "." : normalized;
+};
+
+const joinOutputPath = (outputDirectory: string, filename: string): string =>
+  outputDirectory === "." ? filename : path.posix.join(outputDirectory, filename);
+
+const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")}'`;
 
 const decorativeAssetHandle = (decorativeAssetId: string): string =>
   `DECORATIVE_ASSET_${decorativeAssetId.replaceAll("-", "_").toUpperCase()}`;

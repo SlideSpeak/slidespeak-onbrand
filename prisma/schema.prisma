@@ -56,7 +56,10 @@ model BrandKitAsset {
   filename    String
   mimeType    String
   description String
-  bytes       Bytes
+  bytes       Bytes?
+  s3Key       String?
+  byteSize    Int?
+  sha256      String?
   sortOrder   Int
 
   brandKit BrandKit @relation(fields: [brandKitId], references: [id], onDelete: Cascade)
@@ -64,6 +67,7 @@ model BrandKitAsset {
   @@unique([brandKitId, assetId])
   @@index([brandKitId, kind])
   @@index([brandKitId, sortOrder])
+  @@index([s3Key])
 }
 
 enum BrandKitAssetKind {

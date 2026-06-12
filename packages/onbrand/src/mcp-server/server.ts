@@ -1,7 +1,10 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { type AuthContext, requireScope } from "../auth/context";
-import { UnknownBrandKitAssetError } from "../design-system/brand-kit/asset";
+import {
+  UnknownBrandKitAssetError,
+  UnmaterializedBrandKitAssetError,
+} from "../design-system/brand-kit/asset";
 import {
   type DesignSystemRegistry,
   UnknownDesignSystemError,
@@ -45,7 +48,7 @@ export const createOnbrandMcpServer = (
     "get_design_system",
     {
       description:
-        "Get the Design System, including Brand Kit and Presentation Kit. Brand Kit visual assets include assetHandle, filename, and mimeType metadata. To use Logo or Decorative Asset files, call get_brand_kit_asset_files and write the returned base64 file contents into your workspace.",
+        "Get the Design System, including Brand Kit and Presentation Kit. Brand Kit visual assets include assetHandle, filename, and mimeType metadata. To use Logo or Decorative Asset files, call materialize_brand_kit_assets, then run the returned shell commands to download exact files into your workspace.",
       inputSchema: {
         designSystemId: z.string().describe("Design System id."),
       },
@@ -64,31 +67,43 @@ export const createOnbrandMcpServer = (
   );
 
   server.registerTool(
-    "get_brand_kit_asset_files",
+    "materialize_brand_kit_assets",
     {
       description:
-        "Return exact file contents for declared Brand Kit visuals in a Design System. Use assetHandle values from get_design_system; omit assetHandles to fetch the Logo and all Decorative Assets in Brand Kit order. The caller must decode each contentBase64 value and write it to the returned filename in its own workspace before referencing it from generated artifacts.",
+        "Prepare exact local copies of declared Brand Kit visual files for a Design System. Returns short-lived S3 download URLs plus shell commands; run those commands in the user's workspace to download assets to outputDirectory before referencing them from generated artifacts. Never copy asset bytes through the chat transcript.",
       inputSchema: {
         designSystemId: z.string().describe("Design System id."),
+        outputDirectory: z
+          .string()
+          .min(1)
+          .default("assets")
+          .describe(
+            "Directory where the client should download asset files. Use a relative path such as 'assets' so generated HTML can reference returned relativePath values.",
+          ),
         assetHandles: z
           .array(z.string().min(1))
           .min(1)
           .optional()
           .describe(
-            "Optional assetHandle values from get_design_system, such as 'LOGO' or 'DECORATIVE_ASSET_WAVE_DIVIDER'. Omit to fetch the Logo and all Decorative Assets.",
+            "Optional assetHandle values from get_design_system, such as 'LOGO' or 'DECORATIVE_ASSET_WAVE_DIVIDER'. Omit to materialize the Logo and all Decorative Assets.",
           ),
       },
     },
-    async ({ designSystemId, assetHandles }) => {
+    async ({ designSystemId, outputDirectory, assetHandles }) => {
       try {
         requireScope(authContext, "onbrand:read");
         return toToolResult(
-          await registry.getBrandKitAssetFiles(authContext, { designSystemId, assetHandles }),
+          await registry.materializeBrandKitAssets(authContext, {
+            designSystemId,
+            outputDirectory,
+            assetHandles,
+          }),
         );
       } catch (error) {
         if (
           error instanceof UnknownDesignSystemError ||
-          error instanceof UnknownBrandKitAssetError
+          error instanceof UnknownBrandKitAssetError ||
+          error instanceof UnmaterializedBrandKitAssetError
         ) {
           return toToolErrorResult(error);
         }

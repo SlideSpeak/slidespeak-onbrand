@@ -15,7 +15,8 @@
     "format:check": "prettier --check .",
     "test": "prisma generate && vitest run",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev"
+    "db:migrate": "prisma migrate dev",
+    "assets:upload-s3": "bun packages/onbrand/src/design-system/registry/upload-brand-kit-assets-to-s3.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -34,6 +35,8 @@
     "vitest": "latest"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1067.0",
+    "@aws-sdk/s3-request-presigner": "^3.1067.0",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
     "cors": "^2.8.6",

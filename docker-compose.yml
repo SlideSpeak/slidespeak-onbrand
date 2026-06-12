@@ -5,13 +5,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://onbrand:onbrand@postgres:5432/onbrand?schema=public
-      BASE_URL: ${ONBRAND_BASE_URL:-http://localhost:8080}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:8080}
-      PORT: 8080
-      SLIDESPEAK_OAUTH_ISSUER: ${SLIDESPEAK_OAUTH_ISSUER:-http://localhost:3000}
-      SLIDESPEAK_JWKS_URL: ${SLIDESPEAK_JWKS_URL:-http://host.docker.internal:3000/oauth/jwks.json}
+    env_file:
+      - .env
     ports:
       - "8080:8080"
     extra_hosts:

@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./rfc5987": "./src/rfc5987.ts",
     "./slug": "./src/slug.ts"
   },
   "dependencies": {

@@ -1,10 +1,15 @@
-# Brand Kit Assets as Remote File Payloads
+# Brand Kit Assets as S3 Downloads
 
-Brand Kit visuals such as Logos and Decorative Assets are exposed to remote MCP clients as file
-metadata plus base64-encoded file contents. Clients discover declared visuals through
-`get_design_system` and call `get_brand_kit_asset_files` to fetch exact bytes, then decode and write
-the files into their own workspace before referencing them from generated artifacts.
+Brand Kit visuals such as Logos and Decorative Assets are stored in S3 object storage. Postgres
+stores the governed Design System metadata and each Brand Kit Asset's object key, byte size, and
+checksum. Clients discover declared visuals through `get_design_system` and call
+`materialize_brand_kit_assets` to receive target paths plus short-lived presigned S3 download URLs.
+The client runs the returned shell commands in its own workspace to download exact bytes before
+referencing the files from generated artifacts.
 
-This replaces local server-side materialization. Onbrand is served over HTTPS, so the MCP server and
-client do not share a filesystem; returning paths created inside the server container would be
-misleading and unusable for remote callers.
+Onbrand is served over HTTPS, so the MCP server and client do not share a filesystem; returning
+paths created inside the server container would be misleading and unusable for remote callers.
+Returning base64 file contents directly through MCP is also a poor fit: large images pollute the
+transcript and force the model to mediate binary data. S3 presigned downloads keep MCP responses
+small, avoid server filesystem coupling, preserve per-user authorization at lookup time, and let
+object storage handle binary delivery efficiently.
