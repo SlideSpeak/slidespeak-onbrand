@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="320" height="96" viewBox="0 0 320 96" role="img" aria-labelledby="title desc">
-  <title id="title">Acme Primary Logo</title>
-  <desc id="desc">Primary Acme logo for light slide backgrounds.</desc>
-  <rect width="320" height="96" rx="18" fill="#1B3A8F"/>
-  <circle cx="54" cy="48" r="26" fill="#F5A623"/>
-  <path d="M42 58 54 30l12 28h-8l-4-10-4 10z" fill="#10245C"/>
-  <text x="96" y="59" fill="#FFFFFF" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="800" letter-spacing="1">ACME</text>
-</svg>

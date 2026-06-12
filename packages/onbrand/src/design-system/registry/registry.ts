@@ -27,10 +27,13 @@ export class UnknownDesignSystemError extends Error {
   }
 }
 
+export type McpPresentationKit = Omit<DesignSystem["presentationKit"], "designPrompt"> &
+  Readonly<{ designPrompt?: string }>;
+
 export type McpDesignSystem = Readonly<{
   designSystem: DesignSystemSummary;
   brandKit: McpBrandKit;
-  presentationKit: DesignSystem["presentationKit"];
+  presentationKit: McpPresentationKit;
 }>;
 
 export type MaterializeBrandKitAssetsRequest = Readonly<{
@@ -155,9 +158,24 @@ const resolveMcpDesignSystem = async (
     mcp: {
       designSystem: toSummary(designSystem),
       brandKit: mcpBrandKit,
-      presentationKit: designSystem.presentationKit,
+      presentationKit: await resolveMcpPresentationKit(designSystem, folderPath),
     },
     assetIndex,
+  };
+};
+
+const resolveMcpPresentationKit = async (
+  designSystem: DesignSystem,
+  folderPath: string,
+): Promise<McpPresentationKit> => {
+  const { designPrompt, ...presentationKit } = designSystem.presentationKit;
+  if (designPrompt === undefined) {
+    return presentationKit;
+  }
+
+  return {
+    ...presentationKit,
+    designPrompt: await readFile(path.resolve(folderPath, designPrompt), "utf8"),
   };
 };
 

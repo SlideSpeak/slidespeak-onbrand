@@ -27,6 +27,7 @@ const validDesignSystem = (overrides: Record<string, unknown> = {}) => ({
   },
   presentationKit: {
     canvas: { width: 1920, height: 1080, unit: "px" },
+    designPrompt: "./design-prompt.mdx",
   },
   ...overrides,
 });
@@ -35,6 +36,7 @@ const DEFAULT_FILES = {
   "assets/logo.svg": "<svg><title>Logo</title></svg>",
   "assets/wave-divider.svg": '<svg><path d="M0 0" /></svg>',
   "assets/texture.png": Buffer.from([0x89, 0x50, 0x4e, 0x47]),
+  "design-prompt.mdx": "Create decisive, on-brand slides.",
 };
 
 describe("Design System Registry", () => {
@@ -95,6 +97,7 @@ describe("Design System Registry", () => {
       },
       presentationKit: {
         canvas: { width: 1920, height: 1080, unit: "px" },
+        designPrompt: "Create decisive, on-brand slides.",
       },
     });
     expect(keysDeep(result)).not.toContain("source");
