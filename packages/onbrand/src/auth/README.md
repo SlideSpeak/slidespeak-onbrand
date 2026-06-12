@@ -19,7 +19,7 @@ http://localhost:8080/.well-known/oauth-protected-resource/mcp
 Local env defaults:
 
 ```env
-ONBRAND_BASE_URL=http://localhost:8080
+BASE_URL=http://localhost:8080
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8080
 ASSET_DOWNLOAD_EXPIRES_IN_SECONDS=900
 AWS_S3_BUCKET_BRAND_KIT_ASSETS=onbrand-brand-kit-assets
@@ -28,7 +28,7 @@ AWS_ACCESS_KEY_ID=your-real-access-key
 AWS_SECRET_ACCESS_KEY=your-real-secret-key
 SLIDESPEAK_OAUTH_ISSUER=http://localhost:3000
 SLIDESPEAK_JWKS_URL=http://host.docker.internal:3000/oauth/jwks.json
-DATABASE_URL=postgresql://onbrand:onbrand@localhost:5433/onbrand?schema=public
+DATABASE_URL=postgresql://onbrand:onbrand@postgres:5432/onbrand?schema=public
 ```
 
 Connect Codex:
