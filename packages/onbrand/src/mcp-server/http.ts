@@ -29,13 +29,22 @@ const main = async (): Promise<void> => {
   const authorizationEndpoint = `${issuer}/oauth/authorize`;
   const tokenEndpoint = `${issuer}/oauth/token`;
   const registrationEndpoint = `${issuer}/oauth/register`;
+  const allowedOrigins = requiredEnv("CORS_ALLOWED_ORIGINS")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
   const prisma = createPrismaClient();
   const registry = new PrismaDesignSystemRegistry(prisma);
   const verifier = new SlideSpeakTokenVerifier({ issuer, audience: mcpUrl.toString(), jwksUrl });
   const app = express();
 
-  app.use(cors({ exposedHeaders: ["Mcp-Session-Id", "WWW-Authenticate"] }));
+  app.use(
+    cors({
+      origin: allowedOrigins,
+      exposedHeaders: ["Mcp-Session-Id", "WWW-Authenticate"],
+    }),
+  );
   app.use(express.json({ limit: "4mb" }));
 
   app.get("/health", (_req, res) => res.json({ ok: true }));
@@ -88,6 +97,10 @@ const main = async (): Promise<void> => {
     res.on("close", () => void transport.close());
     await server.connect(transport);
     await transport.handleRequest(req, res);
+  });
+
+  app.delete("/mcp", auth, (_req, res) => {
+    res.status(200).end();
   });
 
   app.listen(port, () => {

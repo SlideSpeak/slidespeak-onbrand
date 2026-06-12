@@ -38,14 +38,14 @@ export type McpBrandKit = Readonly<{
   decorativeAssets: readonly McpDecorativeAsset[];
 }>;
 
-export type MaterializedBrandKitAsset =
+export type BrandKitAssetFile =
   | Readonly<{
       kind: "LOGO";
       assetHandle: string;
       name: string;
       filename: string;
       mimeType: SupportedAssetMimeType;
-      path: string;
+      contentBase64: string;
     }>
   | Readonly<{
       kind: "DECORATIVE_ASSET";
@@ -54,11 +54,10 @@ export type MaterializedBrandKitAsset =
       name: string;
       filename: string;
       mimeType: SupportedAssetMimeType;
-      path: string;
+      contentBase64: string;
     }>;
 
-export type MaterializedBrandKitAssets = Readonly<{
+export type BrandKitAssetFiles = Readonly<{
   designSystemId: string;
-  outputDirectory: string;
-  assets: readonly MaterializedBrandKitAsset[];
+  assets: readonly BrandKitAssetFile[];
 }>;

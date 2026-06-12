@@ -3,11 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "bin": {
-    "onbrand": "./dist/stdio.js"
-  },
   "scripts": {
-    "mcp": "tsx src/mcp-server/stdio.ts",
+    "mcp": "tsx src/mcp-server/http.ts",
     "build": "vite build --config ../../vite.config.ts",
     "typecheck": "tsc --noEmit -p ../../tsconfig.json",
     "test": "vitest run --config ../../vitest.config.ts"

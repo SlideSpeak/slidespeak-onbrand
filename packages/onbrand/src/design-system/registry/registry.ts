@@ -1,11 +1,11 @@
 import type { AuthContext } from "../../auth/context";
-import type { MaterializedBrandKitAssets, McpBrandKit } from "../brand-kit/asset";
+import type { BrandKitAssetFiles, McpBrandKit } from "../brand-kit/asset";
 import type { DesignSystem, DesignSystemSummary } from "../design-system";
 
 export { UnknownBrandKitAssetError } from "../brand-kit/asset";
 export type {
-  MaterializedBrandKitAsset,
-  MaterializedBrandKitAssets,
+  BrandKitAssetFile,
+  BrandKitAssetFiles,
   McpBrandKit,
   McpDecorativeAsset,
   McpVisualAsset,
@@ -28,18 +28,16 @@ export type McpDesignSystem = Readonly<{
   presentationKit: McpPresentationKit;
 }>;
 
-export type MaterializeBrandKitAssetsRequest = Readonly<{
+export type GetBrandKitAssetFilesRequest = Readonly<{
   designSystemId: string;
-  outputDirectory: string;
   assetHandles?: readonly string[];
-  overwrite?: boolean;
 }>;
 
 export interface DesignSystemRegistry {
   listDesignSystems(auth: AuthContext): Promise<readonly DesignSystemSummary[]>;
   getDesignSystem(auth: AuthContext, designSystemId: string): Promise<McpDesignSystem>;
-  materializeBrandKitAssets(
+  getBrandKitAssetFiles(
     auth: AuthContext,
-    request: MaterializeBrandKitAssetsRequest,
-  ): Promise<MaterializedBrandKitAssets>;
+    request: GetBrandKitAssetFilesRequest,
+  ): Promise<BrandKitAssetFiles>;
 }

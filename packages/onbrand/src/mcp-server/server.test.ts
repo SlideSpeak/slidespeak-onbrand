@@ -1,10 +1,5 @@
-import { mkdtemp } from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
-import { pathToFileURL } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { ListRootsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { describe, expect, test } from "vitest";
 import type { DesignSystemRegistry } from "../design-system/registry/registry";
 import { createOnbrandMcpServer, toToolResult } from "./server";
@@ -60,23 +55,19 @@ describe("Onbrand MCP tools", () => {
     expect(result.content).toEqual([{ type: "text", text: JSON.stringify(ACME_DESIGN_SYSTEM) }]);
   });
 
-  test("materializes Brand Kit assets through client roots without returning file contents", async () => {
-    const workspace = await mkdtemp(path.join(os.tmpdir(), "onbrand-mcp-workspace-"));
-    const client = await connectedClient(fakeRegistry(), workspace);
-    const resolvedOutputDirectory = path.resolve(workspace, "assets", "onbrand");
+  test("returns Brand Kit asset files as HTTPS-safe base64 payloads", async () => {
+    const client = await connectedClient(fakeRegistry());
 
     const result = await client.callTool({
-      name: "materialize_brand_kit_assets",
+      name: "get_brand_kit_asset_files",
       arguments: {
         designSystemId: "acme",
-        outputDirectory: "assets/onbrand",
         assetHandles: ["LOGO"],
       },
     });
 
     const expected = {
       designSystemId: "acme",
-      outputDirectory: resolvedOutputDirectory,
       assets: [
         {
           kind: "LOGO",
@@ -84,61 +75,23 @@ describe("Onbrand MCP tools", () => {
           name: "Primary Logo",
           filename: "logo.svg",
           mimeType: "image/svg+xml",
-          path: path.join(resolvedOutputDirectory, "logo.svg"),
-          relativePath: "assets/onbrand/logo.svg",
+          contentBase64: Buffer.from("<svg />").toString("base64"),
         },
       ],
     };
     expect(result.structuredContent).toEqual(expected);
     expect(result.content).toEqual([{ type: "text", text: JSON.stringify(expected) }]);
-    expect(JSON.stringify(result)).not.toContain("<svg");
-    expect(JSON.stringify(result)).not.toContain("base64");
-  });
-
-  test("materializes relative to explicit workspaceDirectory when client roots are unavailable", async () => {
-    const workspace = await mkdtemp(path.join(os.tmpdir(), "onbrand-codex-workspace-"));
-    const client = await connectedClient(fakeRegistry());
-    const resolvedOutputDirectory = path.resolve(workspace, "brand-assets");
-
-    const result = await client.callTool({
-      name: "materialize_brand_kit_assets",
-      arguments: {
-        designSystemId: "acme",
-        workspaceDirectory: workspace,
-        outputDirectory: "brand-assets",
-        assetHandles: ["LOGO"],
-      },
-    });
-
-    expect(result.structuredContent).toMatchObject({
-      outputDirectory: resolvedOutputDirectory,
-      assets: [
-        {
-          path: path.join(resolvedOutputDirectory, "logo.svg"),
-          relativePath: "brand-assets/logo.svg",
-        },
-      ],
-    });
+    expect(JSON.stringify(result)).not.toContain("/app/");
+    expect(JSON.stringify(result)).not.toContain("onbrand-mcp-workspace");
   });
 });
 
-const connectedClient = async (
-  registry: DesignSystemRegistry,
-  workspaceRoot?: string,
-): Promise<Client> => {
+const connectedClient = async (registry: DesignSystemRegistry): Promise<Client> => {
   const server = createOnbrandMcpServer(registry, {
     ownerUserId: "test-user",
     scopes: ["onbrand:read", "onbrand:write"],
   });
-  const client = new Client(
-    { name: "test", version: "1.0.0" },
-    workspaceRoot === undefined ? undefined : { capabilities: { roots: {} } },
-  );
-  if (workspaceRoot !== undefined) {
-    client.setRequestHandler(ListRootsRequestSchema, () => ({
-      roots: [{ uri: pathToFileURL(workspaceRoot).href, name: "workspace" }],
-    }));
-  }
+  const client = new Client({ name: "test", version: "1.0.0" });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
   return client;
@@ -150,9 +103,8 @@ const fakeRegistry = (): DesignSystemRegistry => ({
     if (id !== "acme") throw new Error("Unknown Design System");
     return ACME_DESIGN_SYSTEM;
   },
-  materializeBrandKitAssets: async (_auth, { designSystemId, outputDirectory }) => ({
+  getBrandKitAssetFiles: async (_auth, { designSystemId }) => ({
     designSystemId,
-    outputDirectory,
     assets: [
       {
         kind: "LOGO",
@@ -160,7 +112,7 @@ const fakeRegistry = (): DesignSystemRegistry => ({
         name: "Primary Logo",
         filename: "logo.svg",
         mimeType: "image/svg+xml",
-        path: path.join(outputDirectory, "logo.svg"),
+        contentBase64: Buffer.from("<svg />").toString("base64"),
       },
     ],
   }),

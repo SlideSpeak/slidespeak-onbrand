@@ -1,6 +1,3 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
 import { describe, expect, it, afterAll } from "vitest";
 import { createPrismaClient } from "../../database/prisma-client";
 import { PrismaDesignSystemRegistry } from "./prisma-registry";
@@ -49,24 +46,22 @@ describeDatabaseIntegration("PrismaDesignSystemRegistry", () => {
     expect(result.presentationKit.designPrompt).toContain("SKYLEAGUE");
   });
 
-  it("materializes selected Brand Kit assets from stored bytes", async () => {
-    const outputDirectory = await mkdtemp(path.join(os.tmpdir(), "onbrand-assets-"));
-    try {
-      const result = await registry.materializeBrandKitAssets(auth, {
-        designSystemId: "skyleague",
-        outputDirectory,
-        assetHandles: ["LOGO"],
-      });
+  it("returns selected Brand Kit asset files as base64 from stored bytes", async () => {
+    const result = await registry.getBrandKitAssetFiles(auth, {
+      designSystemId: "skyleague",
+      assetHandles: ["LOGO"],
+    });
 
-      expect(result.assets).toEqual([
-        expect.objectContaining({ kind: "LOGO", filename: "logo.svg", assetHandle: "LOGO" }),
-      ]);
-      await expect(readFile(path.join(outputDirectory, "logo.svg"), "utf8")).resolves.toContain(
-        "svg",
-      );
-    } finally {
-      await rm(outputDirectory, { recursive: true, force: true });
-    }
+    expect(result.assets).toEqual([
+      expect.objectContaining({
+        kind: "LOGO",
+        filename: "logo.svg",
+        assetHandle: "LOGO",
+        mimeType: "image/svg+xml",
+      }),
+    ]);
+    const [logo] = result.assets;
+    expect(Buffer.from(logo.contentBase64, "base64").toString("utf8")).toContain("svg");
   });
 
   it("rejects unknown Design Systems", async () => {

@@ -1,11 +1,9 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import type { PrismaClient } from "@prisma/client";
 import type { AuthContext } from "../../auth/context";
 import type { DesignSystemSummary } from "../design-system";
 import {
-  type MaterializedBrandKitAsset,
-  type MaterializedBrandKitAssets,
+  type BrandKitAssetFile,
+  type BrandKitAssetFiles,
   type McpBrandKit,
   type McpDecorativeAsset,
   type SupportedAssetMimeType,
@@ -13,7 +11,7 @@ import {
 } from "../brand-kit/asset";
 import type {
   DesignSystemRegistry,
-  MaterializeBrandKitAssetsRequest,
+  GetBrandKitAssetFilesRequest,
   McpDesignSystem,
   McpPresentationKit,
 } from "./registry";
@@ -50,28 +48,13 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
     return toMcpDesignSystem(stored);
   };
 
-  materializeBrandKitAssets = async (
+  getBrandKitAssetFiles = async (
     auth: AuthContext,
-    {
-      designSystemId,
-      outputDirectory,
-      assetHandles,
-      overwrite = true,
-    }: MaterializeBrandKitAssetsRequest,
-  ): Promise<MaterializedBrandKitAssets> => {
+    { designSystemId, assetHandles }: GetBrandKitAssetFilesRequest,
+  ): Promise<BrandKitAssetFiles> => {
     const stored = await loadStoredDesignSystem(this.prisma, auth, designSystemId);
     const selectedAssets = selectAssets(designSystemId, stored.brandKit!.assets, assetHandles);
-    const resolvedOutputDirectory = path.resolve(outputDirectory);
-    await mkdir(resolvedOutputDirectory, { recursive: true });
-
-    const assets: MaterializedBrandKitAsset[] = [];
-    for (const asset of selectedAssets) {
-      const targetPath = path.join(resolvedOutputDirectory, asset.filename);
-      await writeFile(targetPath, asset.bytes, { flag: overwrite ? "w" : "wx" });
-      assets.push(toMaterializedAsset(asset, targetPath));
-    }
-
-    return { designSystemId, outputDirectory: resolvedOutputDirectory, assets };
+    return { designSystemId, assets: selectedAssets.map(toBrandKitAssetFile) };
   };
 }
 
@@ -183,25 +166,23 @@ const selectAssets = (
 const assetHandle = (asset: StoredAsset): string =>
   asset.kind === "LOGO" ? "LOGO" : decorativeAssetHandle(asset.assetId);
 
-const toMaterializedAsset = (asset: StoredAsset, targetPath: string): MaterializedBrandKitAsset =>
-  asset.kind === "LOGO"
-    ? {
-        kind: "LOGO",
-        assetHandle: "LOGO",
-        name: asset.name,
-        filename: asset.filename,
-        mimeType: asSupportedMimeType(asset.mimeType),
-        path: targetPath,
-      }
+const toBrandKitAssetFile = (asset: StoredAsset): BrandKitAssetFile => {
+  const common = {
+    name: asset.name,
+    filename: asset.filename,
+    mimeType: asSupportedMimeType(asset.mimeType),
+    contentBase64: Buffer.from(asset.bytes).toString("base64"),
+  } as const;
+
+  return asset.kind === "LOGO"
+    ? { ...common, kind: "LOGO", assetHandle: "LOGO" }
     : {
+        ...common,
         kind: "DECORATIVE_ASSET",
         id: asset.assetId,
         assetHandle: decorativeAssetHandle(asset.assetId),
-        name: asset.name,
-        filename: asset.filename,
-        mimeType: asSupportedMimeType(asset.mimeType),
-        path: targetPath,
       };
+};
 
 const decorativeAssetHandle = (decorativeAssetId: string): string =>
   `DECORATIVE_ASSET_${decorativeAssetId.replaceAll("-", "_").toUpperCase()}`;
