@@ -23,3 +23,4 @@ claude mcp add --transport stdio onbrand -- bun run --cwd "$PWD" --silent mcp
 
 - `list_design_systems` — lists available Design Systems.
 - `get_design_system` — returns the Brand Kit and Presentation Kit for a Design System id.
+- `materialize_brand_kit_assets` — copies approved Brand Kit visual assets into a workspace.

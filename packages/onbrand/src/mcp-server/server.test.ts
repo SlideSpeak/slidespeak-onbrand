@@ -142,8 +142,8 @@ const connectedClient = async (
 };
 
 const fakeRegistry = (): DesignSystemRegistry => ({
-  listDesignSystems: () => [{ id: "acme", name: "Acme Design System" }],
-  getDesignSystem: (id) => {
+  listDesignSystems: async () => [{ id: "acme", name: "Acme Design System" }],
+  getDesignSystem: async (id) => {
     if (id !== "acme") throw new Error("Unknown Design System");
     return ACME_DESIGN_SYSTEM;
   },

@@ -29,10 +29,10 @@ its usage guidance, but it must not be the only carrier of information. It is di
 **Logo**, future Icon, and future Image concepts; the boundary is decorative purpose, not file
 format. _Avoid_: Brand image, icon, illustration
 
-**Materialized Brand Kit Asset**: A local copy of a declared file-backed visual from a **Brand Kit**
-that generated artifacts can reference. Current materializable visuals are the **Logo** and
-**Decorative Assets**. The materialized copy is distinct from the source authoring path in the
-Design System package. _Avoid_: MCP Resource, source asset path
+**Materialized Brand Kit Asset**: A local copy of a declared visual from a **Brand Kit** that
+generated artifacts can reference. Current materializable visuals are the **Logo** and **Decorative
+Assets**. The materialized copy is produced from the persisted Brand Kit Asset bytes in the Design
+System Registry. _Avoid_: MCP Resource, source asset path
 
 **Presentation Kit**: The slide-focused part of a **Design System**. It defines the **Slide Canvas**
 and may include a **Design Prompt** for generated presentations. _Avoid_: Slide Kit, Template Kit,
