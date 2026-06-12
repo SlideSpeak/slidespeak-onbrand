@@ -1,8 +1,24 @@
-import { readdir, readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
+import {
+  resolveBrandKitAssets,
+  type BrandKitAssetIndex,
+  type McpBrandKit,
+  type MaterializedBrandKitAssets,
+} from "../brand-kit/asset";
 import { ensureUniqueColorTokenIds } from "../brand-kit/color";
 import { designSystemSchema, type DesignSystem, type DesignSystemSummary } from "../design-system";
+
+export { UnknownBrandKitAssetError } from "../brand-kit/asset";
+export type {
+  MaterializedBrandKitAsset,
+  MaterializedBrandKitAssets,
+  McpBrandKit,
+  McpDecorativeAsset,
+  McpVisualAsset,
+  SupportedAssetMimeType,
+} from "../brand-kit/asset";
 
 export class UnknownDesignSystemError extends Error {
   constructor(readonly designSystemId: string) {
@@ -11,14 +27,32 @@ export class UnknownDesignSystemError extends Error {
   }
 }
 
+export type McpDesignSystem = Readonly<{
+  designSystem: DesignSystemSummary;
+  brandKit: McpBrandKit;
+  presentationKit: DesignSystem["presentationKit"];
+}>;
+
+export type MaterializeBrandKitAssetsRequest = Readonly<{
+  designSystemId: string;
+  outputDirectory: string;
+  assetHandles?: readonly string[];
+  overwrite?: boolean;
+}>;
+
 export interface DesignSystemRegistry {
   listDesignSystems(): readonly DesignSystemSummary[];
-  getDesignSystem(designSystemId: string): Readonly<{
-    designSystem: DesignSystemSummary;
-    brandKit: DesignSystem["brandKit"];
-    presentationKit: DesignSystem["presentationKit"];
-  }>;
+  getDesignSystem(designSystemId: string): McpDesignSystem;
+  materializeBrandKitAssets(
+    request: MaterializeBrandKitAssetsRequest,
+  ): Promise<MaterializedBrandKitAssets>;
 }
+
+type LoadedDesignSystem = Readonly<{
+  source: DesignSystem;
+  mcp: McpDesignSystem;
+  assetIndex: BrandKitAssetIndex;
+}>;
 
 export const loadDesignSystemRegistry = async ({
   rootDir,
@@ -32,18 +66,21 @@ export const loadDesignSystemRegistry = async ({
       .map(async (entry) => loadDesignSystem(path.join(rootDir, entry.name), entry.name)),
   );
 
-  const byId = new Map<string, DesignSystem>();
+  const byId = new Map<string, LoadedDesignSystem>();
   for (const designSystem of designSystems) {
-    if (byId.has(designSystem.id)) {
-      throw new Error(`Duplicate Design System id: ${designSystem.id}`);
+    if (byId.has(designSystem.source.id)) {
+      throw new Error(`Duplicate Design System id: ${designSystem.source.id}`);
     }
-    byId.set(designSystem.id, designSystem);
+    byId.set(designSystem.source.id, designSystem);
   }
 
   return new InMemoryDesignSystemRegistry(byId);
 };
 
-const loadDesignSystem = async (folderPath: string, folderName: string): Promise<DesignSystem> => {
+const loadDesignSystem = async (
+  folderPath: string,
+  folderName: string,
+): Promise<LoadedDesignSystem> => {
   const raw = await readFile(path.join(folderPath, "design-system.json"), "utf8");
   let parsed: unknown;
   try {
@@ -66,32 +103,63 @@ const loadDesignSystem = async (folderPath: string, folderName: string): Promise
   }
 
   validateDesignSystemReferences(result.data);
-  return deepFreeze(result.data);
+  const resolved = await resolveMcpDesignSystem(result.data, folderPath);
+  return deepFreeze({ source: result.data, ...resolved });
 };
 
 class InMemoryDesignSystemRegistry implements DesignSystemRegistry {
-  constructor(private readonly byId: ReadonlyMap<string, DesignSystem>) {}
+  constructor(private readonly byId: ReadonlyMap<string, LoadedDesignSystem>) {}
 
-  listDesignSystems = (): readonly DesignSystemSummary[] => [...this.byId.values()].map(toSummary);
+  listDesignSystems = (): readonly DesignSystemSummary[] =>
+    [...this.byId.values()].map(({ source }) => toSummary(source));
 
-  getDesignSystem = (
-    designSystemId: string,
-  ): Readonly<{
-    designSystem: DesignSystemSummary;
-    brandKit: DesignSystem["brandKit"];
-    presentationKit: DesignSystem["presentationKit"];
-  }> => {
+  getDesignSystem = (designSystemId: string): McpDesignSystem => {
+    const designSystem = this.loadedDesignSystem(designSystemId);
+    return deepFreeze(designSystem.mcp);
+  };
+
+  materializeBrandKitAssets = async ({
+    designSystemId,
+    outputDirectory,
+    assetHandles,
+    overwrite,
+  }: MaterializeBrandKitAssetsRequest): Promise<MaterializedBrandKitAssets> => {
+    const designSystem = this.loadedDesignSystem(designSystemId);
+    return designSystem.assetIndex.materialize({
+      outputDirectory,
+      assetHandles,
+      overwrite,
+    });
+  };
+
+  private loadedDesignSystem = (designSystemId: string): LoadedDesignSystem => {
     const designSystem = this.byId.get(designSystemId);
     if (!designSystem) {
       throw new UnknownDesignSystemError(designSystemId);
     }
-    return deepFreeze({
-      designSystem: toSummary(designSystem),
-      brandKit: designSystem.brandKit,
-      presentationKit: designSystem.presentationKit,
-    });
+    return designSystem;
   };
 }
+
+const resolveMcpDesignSystem = async (
+  designSystem: DesignSystem,
+  folderPath: string,
+): Promise<Readonly<{ mcp: McpDesignSystem; assetIndex: BrandKitAssetIndex }>> => {
+  const { mcpBrandKit, assetIndex } = await resolveBrandKitAssets({
+    designSystemId: designSystem.id,
+    folderPath,
+    brandKit: designSystem.brandKit,
+  });
+
+  return {
+    mcp: {
+      designSystem: toSummary(designSystem),
+      brandKit: mcpBrandKit,
+      presentationKit: designSystem.presentationKit,
+    },
+    assetIndex,
+  };
+};
 
 const validateDesignSystemReferences = (designSystem: DesignSystem): void => {
   ensureUniqueColorTokenIds(designSystem.brandKit.colors, { designSystemId: designSystem.id });

@@ -46,7 +46,21 @@
       "name": "Primary Logo",
       "source": "./assets/logo-primary.svg",
       "description": "Use as the standard logo on light slide backgrounds."
-    }
+    },
+    "decorativeAssets": [
+      {
+        "id": "wave-divider",
+        "name": "Wave Divider",
+        "source": "./assets/wave-divider.svg",
+        "description": "Use as a subtle section divider between content groups on light backgrounds."
+      },
+      {
+        "id": "corner-rings",
+        "name": "Corner Rings",
+        "source": "./assets/corner-rings.svg",
+        "description": "Use as a low-emphasis corner accent when a slide needs extra Acme visual presence."
+      }
+    ]
   },
   "presentationKit": {
     "canvas": {

@@ -1,5 +1,38 @@
+import { mkdtemp } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { ListRootsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { describe, expect, test } from "vitest";
-import { toToolResult } from "./server";
+import type { DesignSystemRegistry } from "../design-system/registry/registry";
+import { createOnbrandMcpServer, toToolResult } from "./server";
+
+const ACME_DESIGN_SYSTEM = {
+  designSystem: { id: "acme", name: "Acme Design System" },
+  brandKit: {
+    colors: [],
+    logo: {
+      name: "Primary Logo",
+      assetHandle: "LOGO",
+      filename: "logo.svg",
+      mimeType: "image/svg+xml" as const,
+      description: "Use on light backgrounds.",
+    },
+    decorativeAssets: [
+      {
+        id: "wave-divider",
+        name: "Wave Divider",
+        assetHandle: "DECORATIVE_ASSET_WAVE_DIVIDER",
+        filename: "wave-divider.svg",
+        mimeType: "image/svg+xml" as const,
+        description: "Use as a subtle section divider.",
+      },
+    ],
+  },
+  presentationKit: { canvas: { width: 1920, height: 1080, unit: "px" as const } },
+};
 
 describe("Onbrand MCP tools", () => {
   test("serializes structured content as matching JSON text", () => {
@@ -13,4 +46,119 @@ describe("Onbrand MCP tools", () => {
     });
   });
 
+  test("get_design_system returns selected Design System metadata without resource links", async () => {
+    const registry = fakeRegistry();
+    const client = await connectedClient(registry);
+
+    const result = await client.callTool({
+      name: "get_design_system",
+      arguments: { designSystemId: "acme" },
+    });
+
+    expect(client.getServerCapabilities()?.resources).toBeUndefined();
+    expect(result.structuredContent).toEqual(ACME_DESIGN_SYSTEM);
+    expect(result.content).toEqual([{ type: "text", text: JSON.stringify(ACME_DESIGN_SYSTEM) }]);
+  });
+
+  test("materializes Brand Kit assets through client roots without returning file contents", async () => {
+    const workspace = await mkdtemp(path.join(os.tmpdir(), "onbrand-mcp-workspace-"));
+    const client = await connectedClient(fakeRegistry(), workspace);
+    const resolvedOutputDirectory = path.resolve(workspace, "assets", "onbrand");
+
+    const result = await client.callTool({
+      name: "materialize_brand_kit_assets",
+      arguments: {
+        designSystemId: "acme",
+        outputDirectory: "assets/onbrand",
+        assetHandles: ["LOGO"],
+      },
+    });
+
+    const expected = {
+      designSystemId: "acme",
+      outputDirectory: resolvedOutputDirectory,
+      assets: [
+        {
+          kind: "LOGO",
+          assetHandle: "LOGO",
+          name: "Primary Logo",
+          filename: "logo.svg",
+          mimeType: "image/svg+xml",
+          path: path.join(resolvedOutputDirectory, "logo.svg"),
+          relativePath: "assets/onbrand/logo.svg",
+        },
+      ],
+    };
+    expect(result.structuredContent).toEqual(expected);
+    expect(result.content).toEqual([{ type: "text", text: JSON.stringify(expected) }]);
+    expect(JSON.stringify(result)).not.toContain("<svg");
+    expect(JSON.stringify(result)).not.toContain("base64");
+  });
+
+  test("materializes relative to explicit workspaceDirectory when client roots are unavailable", async () => {
+    const workspace = await mkdtemp(path.join(os.tmpdir(), "onbrand-codex-workspace-"));
+    const client = await connectedClient(fakeRegistry());
+    const resolvedOutputDirectory = path.resolve(workspace, "brand-assets");
+
+    const result = await client.callTool({
+      name: "materialize_brand_kit_assets",
+      arguments: {
+        designSystemId: "acme",
+        workspaceDirectory: workspace,
+        outputDirectory: "brand-assets",
+        assetHandles: ["LOGO"],
+      },
+    });
+
+    expect(result.structuredContent).toMatchObject({
+      outputDirectory: resolvedOutputDirectory,
+      assets: [
+        {
+          path: path.join(resolvedOutputDirectory, "logo.svg"),
+          relativePath: "brand-assets/logo.svg",
+        },
+      ],
+    });
+  });
+});
+
+const connectedClient = async (
+  registry: DesignSystemRegistry,
+  workspaceRoot?: string,
+): Promise<Client> => {
+  const server = createOnbrandMcpServer(registry);
+  const client = new Client(
+    { name: "test", version: "1.0.0" },
+    workspaceRoot === undefined ? undefined : { capabilities: { roots: {} } },
+  );
+  if (workspaceRoot !== undefined) {
+    client.setRequestHandler(ListRootsRequestSchema, () => ({
+      roots: [{ uri: pathToFileURL(workspaceRoot).href, name: "workspace" }],
+    }));
+  }
+  const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+  await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
+  return client;
+};
+
+const fakeRegistry = (): DesignSystemRegistry => ({
+  listDesignSystems: () => [{ id: "acme", name: "Acme Design System" }],
+  getDesignSystem: (id) => {
+    if (id !== "acme") throw new Error("Unknown Design System");
+    return ACME_DESIGN_SYSTEM;
+  },
+  materializeBrandKitAssets: async ({ designSystemId, outputDirectory }) => ({
+    designSystemId,
+    outputDirectory,
+    assets: [
+      {
+        kind: "LOGO",
+        assetHandle: "LOGO",
+        name: "Primary Logo",
+        filename: "logo.svg",
+        mimeType: "image/svg+xml",
+        path: path.join(outputDirectory, "logo.svg"),
+      },
+    ],
+  }),
 });
