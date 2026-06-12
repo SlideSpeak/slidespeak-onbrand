@@ -13,11 +13,26 @@ design rules. In this context, each Design System contains one **Brand Kit** and
 Kit**. _Avoid_: Design context, brand, brand definition
 
 **Brand Kit**: The identity-focused part of a **Design System**, such as colors, logos, typography,
-imagery, icons, and voice/tone. _Avoid_: Brand, brand assets when referring to the whole kit
+**Decorative Assets**, imagery, icons, and voice/tone. _Avoid_: Brand, brand assets when referring
+to the whole kit
 
 **Logo**: The governed brand logo in a **Brand Kit**. Presentation-specific logo uses reference the
 Brand Kit logo rather than redefining logo source details in the Presentation Kit. _Avoid_: Logo
 Asset, logo variant
+
+**Decorative Asset**: A reusable, non-semantic, brand-approved visual accent in a **Brand Kit**,
+such as a shape, pattern, texture, divider, flourish, or background accent. It is optional to use,
+reusable within generated materials and across non-slide materials, and treated as a finished
+artifact rather than an editable template; variants are represented as separate Decorative Assets
+rather than by transforming the asset. It may support foreground accent or background use based on
+its usage guidance, but it must not be the only carrier of information. It is distinct from
+**Logo**, future Icon, and future Image concepts; the boundary is decorative purpose, not file
+format. _Avoid_: Brand image, icon, illustration
+
+**Materialized Brand Kit Asset**: A local copy of a declared file-backed visual from a **Brand Kit**
+that generated artifacts can reference. Current materializable visuals are the **Logo** and
+**Decorative Assets**. The materialized copy is distinct from the source authoring path in the
+Design System package. _Avoid_: MCP Resource, source asset path
 
 **Presentation Kit**: The slide-focused part of a **Design System**. It currently defines the
 **Slide Canvas** for generated presentations. _Avoid_: Slide Kit, Template Kit, Deck Kit

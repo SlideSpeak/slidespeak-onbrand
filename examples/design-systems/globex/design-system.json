@@ -46,7 +46,21 @@
       "name": "Primary Logo",
       "source": "./assets/logo-primary.svg",
       "description": "Use as the standard logo on light slide backgrounds."
-    }
+    },
+    "decorativeAssets": [
+      {
+        "id": "grid-texture",
+        "name": "Grid Texture",
+        "source": "./assets/grid-texture.svg",
+        "description": "Use as a subtle background texture for technical or product architecture sections."
+      },
+      {
+        "id": "diagonal-cut",
+        "name": "Diagonal Cut",
+        "source": "./assets/diagonal-cut.svg",
+        "description": "Use as a strong section accent for high-energy transition or title moments."
+      }
+    ]
   },
   "presentationKit": {
     "canvas": {
