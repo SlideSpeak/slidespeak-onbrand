@@ -1,12 +1,11 @@
 {
-  "name": "@onbrand/onbrand",
+  "name": "onbrand",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": {
-    ".": "./src/index.ts"
-  },
   "scripts": {
+    "mcp": "tsx src/mcp-server/http.ts",
+    "build": "vite build --config ../../vite.config.ts",
     "typecheck": "tsc --noEmit -p ../../tsconfig.json",
     "test": "vitest run --config ../../vitest.config.ts"
   },
@@ -16,9 +15,6 @@
     "@onbrand/s3": "workspace:*",
     "@onbrand/number": "workspace:*",
     "@onbrand/string": "workspace:*",
-    "@prisma/adapter-pg": "7.8.0",
-    "@prisma/client": "7.8.0",
-    "hono": "4.12.25",
-    "jose": "6.2.3"
+    "zod": "4.4.3"
   }
 }
