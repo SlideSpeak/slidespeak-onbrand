@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "mcp": "tsx packages/onbrand/src/mcp-server/stdio.ts",
+    "mcp": "tsx packages/onbrand/src/mcp-server/http.ts",
     "build": "prisma generate && cd packages/onbrand && vite build --config ../../vite.config.ts",
     "typecheck": "prisma generate && tsc --noEmit",
     "lint": "prisma generate && eslint .",
@@ -15,10 +15,13 @@
     "format:check": "prettier --check .",
     "test": "prisma generate && vitest run",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev"
+    "db:migrate": "prisma migrate dev",
+    "assets:upload-s3": "bun packages/onbrand/src/design-system/registry/upload-brand-kit-assets-to-s3.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
     "@types/node": "latest",
     "@types/pg": "^8.20.0",
     "eslint": "^10.4.1",
@@ -32,8 +35,13 @@
     "vitest": "latest"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1067.0",
+    "@aws-sdk/s3-request-presigner": "^3.1067.0",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "jose": "^6.2.3",
     "pg": "^8.21.0"
   }
 }

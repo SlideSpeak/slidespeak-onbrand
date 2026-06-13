@@ -1,6 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
+import type { S3 } from "@onbrand/s3";
 import { describe, expect, it, afterAll } from "vitest";
 import { createPrismaClient } from "../../database/prisma-client";
 import { PrismaDesignSystemRegistry } from "./prisma-registry";
@@ -9,16 +7,24 @@ import { UnknownDesignSystemError } from "./registry";
 const describeDatabaseIntegration =
   process.env.ONBRAND_DATABASE_TESTS === "1" ? describe : describe.skip;
 
+const fakeS3: Pick<typeof S3, "getPresigned"> = {
+  getPresigned: async ({ key }) => `https://s3.example/${key}`,
+};
+
 describeDatabaseIntegration("PrismaDesignSystemRegistry", () => {
   const prisma = createPrismaClient();
-  const registry = new PrismaDesignSystemRegistry(prisma);
+  const registry = new PrismaDesignSystemRegistry(prisma, fakeS3, "brand-kit-assets-test", 900);
+  const auth = {
+    ownerUserId: process.env.ONBRAND_OWNER_USER_ID ?? "local-dev-user",
+    scopes: ["onbrand:read", "onbrand:write"],
+  };
 
   afterAll(async () => {
     await prisma.$disconnect();
   });
 
   it("lists Design Systems from Postgres", async () => {
-    const designSystems = await registry.listDesignSystems();
+    const designSystems = await registry.listDesignSystems(auth);
     const skyleague = designSystems.find((designSystem) => designSystem.id === "skyleague");
 
     expect(skyleague?.name).toBe("SKYLEAGUE Design System");
@@ -26,7 +32,7 @@ describeDatabaseIntegration("PrismaDesignSystemRegistry", () => {
   });
 
   it("returns the full MCP Design System assembled from normalized tables", async () => {
-    const result = await registry.getDesignSystem("skyleague");
+    const result = await registry.getDesignSystem(auth, "skyleague");
 
     expect(result.designSystem.id).toBe("skyleague");
     expect(result.brandKit.colors).toHaveLength(10);
@@ -45,27 +51,29 @@ describeDatabaseIntegration("PrismaDesignSystemRegistry", () => {
     expect(result.presentationKit.designPrompt).toContain("SKYLEAGUE");
   });
 
-  it("materializes selected Brand Kit assets from stored bytes", async () => {
-    const outputDirectory = await mkdtemp(path.join(os.tmpdir(), "onbrand-assets-"));
-    try {
-      const result = await registry.materializeBrandKitAssets({
-        designSystemId: "skyleague",
-        outputDirectory,
-        assetHandles: ["LOGO"],
-      });
+  it("returns selected Brand Kit asset S3 download commands", async () => {
+    const result = await registry.materializeBrandKitAssets(auth, {
+      designSystemId: "skyleague",
+      outputDirectory: "assets",
+      assetHandles: ["LOGO"],
+    });
 
-      expect(result.assets).toEqual([
-        expect.objectContaining({ kind: "LOGO", filename: "logo.svg", assetHandle: "LOGO" }),
-      ]);
-      await expect(readFile(path.join(outputDirectory, "logo.svg"), "utf8")).resolves.toContain(
-        "svg",
-      );
-    } finally {
-      await rm(outputDirectory, { recursive: true, force: true });
-    }
+    expect(result.assets).toEqual([
+      expect.objectContaining({
+        kind: "LOGO",
+        filename: "logo.svg",
+        assetHandle: "LOGO",
+        mimeType: "image/svg+xml",
+        targetPath: "assets/logo.svg",
+        relativePath: "assets/logo.svg",
+      }),
+    ]);
+    expect(JSON.stringify(result)).not.toContain("contentBase64");
   });
 
   it("rejects unknown Design Systems", async () => {
-    await expect(registry.getDesignSystem("missing")).rejects.toThrow(UnknownDesignSystemError);
+    await expect(registry.getDesignSystem(auth, "missing")).rejects.toThrow(
+      UnknownDesignSystemError,
+    );
   });
 });

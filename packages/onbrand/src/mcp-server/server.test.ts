@@ -1,10 +1,5 @@
-import { mkdtemp } from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
-import { pathToFileURL } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { ListRootsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { describe, expect, test } from "vitest";
 import type { DesignSystemRegistry } from "../design-system/registry/registry";
 import { createOnbrandMcpServer, toToolResult } from "./server";
@@ -60,23 +55,28 @@ describe("Onbrand MCP tools", () => {
     expect(result.content).toEqual([{ type: "text", text: JSON.stringify(ACME_DESIGN_SYSTEM) }]);
   });
 
-  test("materializes Brand Kit assets through client roots without returning file contents", async () => {
-    const workspace = await mkdtemp(path.join(os.tmpdir(), "onbrand-mcp-workspace-"));
-    const client = await connectedClient(fakeRegistry(), workspace);
-    const resolvedOutputDirectory = path.resolve(workspace, "assets", "onbrand");
+  test("returns S3 download commands instead of asset bytes", async () => {
+    const client = await connectedClient(fakeRegistry());
 
     const result = await client.callTool({
       name: "materialize_brand_kit_assets",
       arguments: {
         designSystemId: "acme",
-        outputDirectory: "assets/onbrand",
+        outputDirectory: "assets",
         assetHandles: ["LOGO"],
       },
     });
 
     const expected = {
       designSystemId: "acme",
-      outputDirectory: resolvedOutputDirectory,
+      outputDirectory: "assets",
+      expiresInSeconds: 900,
+      instructions:
+        "Run the commands in the user's workspace to download exact Brand Kit files from short-lived S3 URLs. Do not paste, decode, or rewrite asset bytes manually from the MCP response.",
+      commands: [
+        "mkdir -p 'assets'",
+        "curl -fsSL 'https://s3.example/logo.svg?signature=test' -o 'assets/logo.svg'",
+      ],
       assets: [
         {
           kind: "LOGO",
@@ -84,58 +84,27 @@ describe("Onbrand MCP tools", () => {
           name: "Primary Logo",
           filename: "logo.svg",
           mimeType: "image/svg+xml",
-          path: path.join(resolvedOutputDirectory, "logo.svg"),
-          relativePath: "assets/onbrand/logo.svg",
+          downloadUrl: "https://s3.example/logo.svg?signature=test",
+          targetPath: "assets/logo.svg",
+          relativePath: "assets/logo.svg",
         },
       ],
     };
     expect(result.structuredContent).toEqual(expected);
-    expect(result.content).toEqual([{ type: "text", text: JSON.stringify(expected) }]);
-    expect(JSON.stringify(result)).not.toContain("<svg");
-    expect(JSON.stringify(result)).not.toContain("base64");
-  });
-
-  test("materializes relative to explicit workspaceDirectory when client roots are unavailable", async () => {
-    const workspace = await mkdtemp(path.join(os.tmpdir(), "onbrand-codex-workspace-"));
-    const client = await connectedClient(fakeRegistry());
-    const resolvedOutputDirectory = path.resolve(workspace, "brand-assets");
-
-    const result = await client.callTool({
-      name: "materialize_brand_kit_assets",
-      arguments: {
-        designSystemId: "acme",
-        workspaceDirectory: workspace,
-        outputDirectory: "brand-assets",
-        assetHandles: ["LOGO"],
-      },
-    });
-
-    expect(result.structuredContent).toMatchObject({
-      outputDirectory: resolvedOutputDirectory,
-      assets: [
-        {
-          path: path.join(resolvedOutputDirectory, "logo.svg"),
-          relativePath: "brand-assets/logo.svg",
-        },
-      ],
-    });
+    expect(result.content).toEqual([
+      { type: "text", text: JSON.stringify(result.structuredContent) },
+    ]);
+    expect(JSON.stringify(result)).not.toContain("contentBase64");
+    expect(JSON.stringify(result)).not.toContain(Buffer.from("<svg />").toString("base64"));
   });
 });
 
-const connectedClient = async (
-  registry: DesignSystemRegistry,
-  workspaceRoot?: string,
-): Promise<Client> => {
-  const server = createOnbrandMcpServer(registry);
-  const client = new Client(
-    { name: "test", version: "1.0.0" },
-    workspaceRoot === undefined ? undefined : { capabilities: { roots: {} } },
-  );
-  if (workspaceRoot !== undefined) {
-    client.setRequestHandler(ListRootsRequestSchema, () => ({
-      roots: [{ uri: pathToFileURL(workspaceRoot).href, name: "workspace" }],
-    }));
-  }
+const connectedClient = async (registry: DesignSystemRegistry): Promise<Client> => {
+  const server = createOnbrandMcpServer(registry, {
+    ownerUserId: "test-user",
+    scopes: ["onbrand:read", "onbrand:write"],
+  });
+  const client = new Client({ name: "test", version: "1.0.0" });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
   await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
   return client;
@@ -143,13 +112,20 @@ const connectedClient = async (
 
 const fakeRegistry = (): DesignSystemRegistry => ({
   listDesignSystems: async () => [{ id: "acme", name: "Acme Design System" }],
-  getDesignSystem: async (id) => {
+  getDesignSystem: async (_auth, id) => {
     if (id !== "acme") throw new Error("Unknown Design System");
     return ACME_DESIGN_SYSTEM;
   },
-  materializeBrandKitAssets: async ({ designSystemId, outputDirectory }) => ({
+  materializeBrandKitAssets: async (_auth, { designSystemId, outputDirectory }) => ({
     designSystemId,
     outputDirectory,
+    expiresInSeconds: 900,
+    instructions:
+      "Run the commands in the user's workspace to download exact Brand Kit files from short-lived S3 URLs. Do not paste, decode, or rewrite asset bytes manually from the MCP response.",
+    commands: [
+      "mkdir -p 'assets'",
+      "curl -fsSL 'https://s3.example/logo.svg?signature=test' -o 'assets/logo.svg'",
+    ],
     assets: [
       {
         kind: "LOGO",
@@ -157,7 +133,9 @@ const fakeRegistry = (): DesignSystemRegistry => ({
         name: "Primary Logo",
         filename: "logo.svg",
         mimeType: "image/svg+xml",
-        path: path.join(outputDirectory, "logo.svg"),
+        downloadUrl: "https://s3.example/logo.svg?signature=test",
+        targetPath: "assets/logo.svg",
+        relativePath: "assets/logo.svg",
       },
     ],
   }),

@@ -1,4 +1,17 @@
 services:
+  onbrand-mcp:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "8080:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -7,7 +20,7 @@ services:
       POSTGRES_USER: onbrand
       POSTGRES_PASSWORD: onbrand
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - onbrand-postgres-data:/var/lib/postgresql/data
     healthcheck:
