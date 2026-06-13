@@ -17,23 +17,8 @@ import {
   ownerUserIdFromAuthInfo,
   SlideSpeakTokenVerifier,
 } from "../auth/slidespeak-token-verifier";
+import { Env } from "../env";
 import { createOnbrandMcpServer } from "./server";
-
-const requiredEnv = (name: string): string => {
-  const value = process.env[name];
-  if (!value) throw new Error(`Missing required environment variable: ${name}`);
-  return value;
-};
-
-const positiveIntegerEnv = (name: string, defaultValue: number): number => {
-  const rawValue = process.env[name];
-  if (rawValue === undefined) return defaultValue;
-  const value = Number(rawValue);
-  if (!Number.isInteger(value) || value <= 0) {
-    throw new Error(`${name} must be a positive integer`);
-  }
-  return value;
-};
 
 const HTTP_PORT = 8080;
 const REQUIRED_SCOPES = ["onbrand:read"];
@@ -113,18 +98,18 @@ const handleOAuthError = (
 };
 
 const main = async (): Promise<void> => {
+  console.error(Env.formatReport());
+  Env.validate();
+
   const port = HTTP_PORT;
-  const baseUrl = requiredEnv("BASE_URL").replace(/\/+$/, "");
+  const baseUrl = Env.BASE_URL.replace(/\/+$/, "");
   const mcpUrl = new URL("/mcp", baseUrl);
-  const issuer = requiredEnv("SLIDESPEAK_OAUTH_ISSUER").replace(/\/+$/, "");
-  const jwksUrl = process.env.SLIDESPEAK_JWKS_URL ?? `${issuer}/oauth/jwks.json`;
+  const issuer = Env.SLIDESPEAK_OAUTH_ISSUER.replace(/\/+$/, "");
+  const jwksUrl = Env.SLIDESPEAK_JWKS_URL ?? `${issuer}/oauth/jwks.json`;
   const authorizationEndpoint = `${issuer}/oauth/authorize`;
   const tokenEndpoint = `${issuer}/oauth/token`;
   const registrationEndpoint = `${issuer}/oauth/register`;
-  const assetDownloadExpiresInSeconds = positiveIntegerEnv(
-    "ASSET_DOWNLOAD_EXPIRES_IN_SECONDS",
-    900,
-  );
+  const assetDownloadExpiresInSeconds = Env.ASSET_DOWNLOAD_EXPIRES_IN_SECONDS;
 
   const oauthMetadata: OAuthMetadata = {
     issuer,

@@ -1,11 +1,15 @@
+import { createEnvRegistry, optionalString } from "@onbrand/env";
 import type { S3 } from "@onbrand/s3";
 import { describe, expect, it, afterAll } from "vitest";
 import { createPrismaClient } from "../../database/prisma-client";
 import { PrismaDesignSystemRegistry } from "./prisma-registry";
 import { UnknownDesignSystemError } from "./registry";
 
-const describeDatabaseIntegration =
-  process.env.ONBRAND_DATABASE_TESTS === "1" ? describe : describe.skip;
+const Env = createEnvRegistry({
+  ONBRAND_DATABASE_TESTS: optionalString("ONBRAND_DATABASE_TESTS"),
+});
+
+const describeDatabaseIntegration = Env.ONBRAND_DATABASE_TESTS === "1" ? describe : describe.skip;
 
 const fakeS3: Pick<typeof S3, "getPresigned"> = {
   getPresigned: async ({ key }) => `https://s3.example/${key}`,
@@ -15,7 +19,7 @@ describeDatabaseIntegration("PrismaDesignSystemRegistry", () => {
   const prisma = createPrismaClient();
   const registry = new PrismaDesignSystemRegistry(prisma, fakeS3, "brand-kit-assets-test", 900);
   const auth = {
-    ownerUserId: process.env.ONBRAND_OWNER_USER_ID ?? "local-dev-user",
+    ownerUserId: "test-owner-user",
     scopes: ["onbrand:read", "onbrand:write"],
   };
 

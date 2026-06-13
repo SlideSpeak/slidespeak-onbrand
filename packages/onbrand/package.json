@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.29.0",
+    "@onbrand/env": "workspace:*",
     "@onbrand/s3": "workspace:*",
     "@onbrand/number": "workspace:*",
     "@onbrand/string": "workspace:*",
