@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server";
 import { S3 } from "@onbrand/s3";
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { getOAuthProtectedResourceMetadataUrl } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import {
@@ -50,6 +51,8 @@ type OAuthMetadata = Readonly<{
   scopes_supported: string[];
 }>;
 
+type VerifiedBearerAuth = Awaited<ReturnType<SlideSpeakTokenVerifier["verifyAccessToken"]>>;
+
 const buildWwwAuthenticateHeader = (
   errorCode: string,
   message: string,
@@ -58,6 +61,56 @@ const buildWwwAuthenticateHeader = (
   `Bearer error="${errorCode}", error_description="${message}", scope="${REQUIRED_SCOPES.join(
     " ",
   )}", resource_metadata="${resourceMetadataUrl}"`;
+
+const verifyBearerAuth = async (
+  authorizationHeader: string | undefined,
+  verifier: SlideSpeakTokenVerifier,
+): Promise<VerifiedBearerAuth> => {
+  if (!authorizationHeader) throw new InvalidTokenError("Missing Authorization header");
+
+  const [type, token] = authorizationHeader.split(" ");
+  if (type.toLowerCase() !== "bearer" || !token) {
+    throw new InvalidTokenError("Invalid Authorization header format, expected 'Bearer TOKEN'");
+  }
+
+  const authInfo = await verifier.verifyAccessToken(token);
+  if (!REQUIRED_SCOPES.every((scope) => authInfo.scopes.includes(scope))) {
+    throw new InsufficientScopeError("Insufficient scope");
+  }
+  if (typeof authInfo.expiresAt !== "number" || Number.isNaN(authInfo.expiresAt)) {
+    throw new InvalidTokenError("Token has no expiration time");
+  }
+  if (authInfo.expiresAt < Date.now() / 1000) {
+    throw new InvalidTokenError("Token has expired");
+  }
+
+  return authInfo;
+};
+
+const handleOAuthError = (
+  context: Context,
+  error: unknown,
+  protectedResourceMetadataUrl: string,
+): Response => {
+  if (error instanceof InvalidTokenError) {
+    context.header(
+      "WWW-Authenticate",
+      buildWwwAuthenticateHeader(error.errorCode, error.message, protectedResourceMetadataUrl),
+    );
+    return context.json(error.toResponseObject(), 401);
+  }
+  if (error instanceof InsufficientScopeError) {
+    context.header(
+      "WWW-Authenticate",
+      buildWwwAuthenticateHeader(error.errorCode, error.message, protectedResourceMetadataUrl),
+    );
+    return context.json(error.toResponseObject(), 403);
+  }
+  if (error instanceof ServerError) return context.json(error.toResponseObject(), 500);
+  if (error instanceof OAuthError) return context.json(error.toResponseObject(), 400);
+  const serverError = new ServerError("Internal Server Error");
+  return context.json(serverError.toResponseObject(), 500);
+};
 
 const main = async (): Promise<void> => {
   const port = HTTP_PORT;
@@ -111,25 +164,7 @@ const main = async (): Promise<void> => {
 
   app.on(["GET", "POST"], "/mcp", async (context) => {
     try {
-      const authHeader = context.req.header("authorization");
-      if (!authHeader) throw new InvalidTokenError("Missing Authorization header");
-
-      const [type, token] = authHeader.split(" ");
-      if (type.toLowerCase() !== "bearer" || !token) {
-        throw new InvalidTokenError("Invalid Authorization header format, expected 'Bearer TOKEN'");
-      }
-
-      const authInfo = await verifier.verifyAccessToken(token);
-      if (!REQUIRED_SCOPES.every((scope) => authInfo.scopes.includes(scope))) {
-        throw new InsufficientScopeError("Insufficient scope");
-      }
-      if (typeof authInfo.expiresAt !== "number" || Number.isNaN(authInfo.expiresAt)) {
-        throw new InvalidTokenError("Token has no expiration time");
-      }
-      if (authInfo.expiresAt < Date.now() / 1000) {
-        throw new InvalidTokenError("Token has expired");
-      }
-
+      const authInfo = await verifyBearerAuth(context.req.header("authorization"), verifier);
       const ownerUserId = ownerUserIdFromAuthInfo(authInfo);
       const server = createOnbrandMcpServer(registry, {
         ownerUserId,
@@ -141,28 +176,18 @@ const main = async (): Promise<void> => {
       await server.connect(transport);
       return await transport.handleRequest(context.req.raw, { authInfo });
     } catch (error) {
-      if (error instanceof InvalidTokenError) {
-        context.header(
-          "WWW-Authenticate",
-          buildWwwAuthenticateHeader(error.errorCode, error.message, protectedResourceMetadataUrl),
-        );
-        return context.json(error.toResponseObject(), 401);
-      }
-      if (error instanceof InsufficientScopeError) {
-        context.header(
-          "WWW-Authenticate",
-          buildWwwAuthenticateHeader(error.errorCode, error.message, protectedResourceMetadataUrl),
-        );
-        return context.json(error.toResponseObject(), 403);
-      }
-      if (error instanceof ServerError) return context.json(error.toResponseObject(), 500);
-      if (error instanceof OAuthError) return context.json(error.toResponseObject(), 400);
-      const serverError = new ServerError("Internal Server Error");
-      return context.json(serverError.toResponseObject(), 500);
+      return handleOAuthError(context, error, protectedResourceMetadataUrl);
     }
   });
 
-  app.delete("/mcp", (context) => context.body(null, 200));
+  app.delete("/mcp", async (context) => {
+    try {
+      await verifyBearerAuth(context.req.header("authorization"), verifier);
+      return context.body(null, 200);
+    } catch (error) {
+      return handleOAuthError(context, error, protectedResourceMetadataUrl);
+    }
+  });
 
   serve({ fetch: app.fetch, port }, () => {
     console.error(`OnBrand remote MCP listening on ${baseUrl}/mcp`);
