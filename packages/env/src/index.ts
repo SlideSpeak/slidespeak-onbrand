@@ -7,6 +7,7 @@ export type EnvRequirement = "REQUIRED" | "OPTIONAL";
 export type EnvDefinition<T> = Readonly<{
   name: string;
   requirement: EnvRequirement;
+  defaultValue?: T;
   read: (env?: Environment) => T;
 }>;
 
@@ -35,6 +36,7 @@ type EnvRegistry<Shape extends EnvRegistryShape> = Readonly<
 export const requiredString = (name: string, defaultValue?: string): EnvDefinition<string> => ({
   name,
   requirement: "REQUIRED",
+  defaultValue,
   read: (env = process.env) => {
     const value = env[name];
     if (value !== undefined && value !== "") return value;
@@ -55,6 +57,7 @@ export const optionalString = (name: string): EnvDefinition<string | undefined> 
 export const requiredPositiveInteger = (name: string, defaultValue?: number): EnvDefinition<number> => ({
   name,
   requirement: "REQUIRED",
+  defaultValue,
   read: (env = process.env) => {
     const rawValue = env[name];
     if ((rawValue === undefined || rawValue === "") && defaultValue !== undefined) return defaultValue;
@@ -134,13 +137,15 @@ export const formatEnvReport = (
 const reportRow = (definition: EnvDefinition<unknown>, env: Environment): EnvReportRow => {
   const rawValue = env[definition.name];
   const isPresent = rawValue !== undefined && rawValue !== "";
-  if (!isPresent && definition.requirement === "REQUIRED") {
-    const value = definition.read(env);
+  if (!isPresent && definition.requirement === "REQUIRED" && definition.defaultValue === undefined) {
+    return { name: definition.name, requirement: definition.requirement, status: "MISSING", value: "MISSING" };
+  }
+  if (!isPresent && definition.defaultValue !== undefined) {
     return {
       name: definition.name,
       requirement: definition.requirement,
       status: "DEFAULT",
-      value: `DEFAULT(${maskIfSensitive(definition.name, String(value))})`,
+      value: `DEFAULT(${maskIfSensitive(definition.name, formatEnvValue(definition.defaultValue))})`,
     };
   }
   if (!isPresent && definition.requirement === "OPTIONAL") {
@@ -153,6 +158,14 @@ const reportRow = (definition: EnvDefinition<unknown>, env: Environment): EnvRep
     status: "PRESENT",
     value: maskIfSensitive(definition.name, String(value)),
   };
+};
+
+const formatEnvValue = (value: unknown): string => {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") return value.toString();
+  if (value === undefined) return "UNSET";
+  if (value === null) return "NULL";
+  return JSON.stringify(value);
 };
 
 const maskIfSensitive = (name: string, value: string): string => {

@@ -42,6 +42,14 @@ describe("Env", () => {
     else process.env.AWS_REGION = original;
   });
 
+  test("reports missing required variables without throwing", () => {
+    const report = testRegistry.formatReport({});
+
+    expect(report).toContain("MISSING=5");
+    expect(report).toMatch(/\| BASE_URL\s+\| REQUIRED \| MISSING \| MISSING\s+\|/);
+    expect(report).toMatch(/\| DATABASE_URL\s+\| REQUIRED \| DEFAULT \| DEFAULT\(\*{8}\)\s+\|/);
+  });
+
   test("validates positive integer variables", () => {
     expect(() =>
       testRegistry.validate({
