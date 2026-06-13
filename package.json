@@ -19,29 +19,27 @@
     "assets:upload-s3": "bun packages/onbrand/src/design-system/registry/upload-brand-kit-assets-to-s3.ts"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/node": "latest",
-    "@types/pg": "^8.20.0",
-    "eslint": "^10.4.1",
-    "eslint-config-prettier": "^10.1.8",
-    "prettier": "^3.8.4",
-    "prisma": "^7.8.0",
-    "tsx": "latest",
-    "typescript": "latest",
-    "typescript-eslint": "^8.61.0",
-    "vite": "latest",
-    "vitest": "latest"
+    "@eslint/js": "10.0.1",
+    "@types/node": "25.9.2",
+    "@types/pg": "8.20.0",
+    "eslint": "10.4.1",
+    "eslint-config-prettier": "10.1.8",
+    "prettier": "3.8.4",
+    "prisma": "7.8.0",
+    "tsx": "4.22.4",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.61.0",
+    "vite": "8.0.16",
+    "vitest": "4.1.8"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1067.0",
-    "@aws-sdk/s3-request-presigner": "^3.1067.0",
-    "@prisma/adapter-pg": "^7.8.0",
-    "@prisma/client": "^7.8.0",
-    "cors": "^2.8.6",
-    "express": "^5.2.1",
-    "jose": "^6.2.3",
-    "pg": "^8.21.0"
+    "@aws-sdk/client-s3": "3.1067.0",
+    "@aws-sdk/s3-request-presigner": "3.1067.0",
+    "@hono/node-server": "2.0.4",
+    "@prisma/adapter-pg": "7.8.0",
+    "@prisma/client": "7.8.0",
+    "hono": "4.12.25",
+    "jose": "6.2.3",
+    "pg": "8.21.0"
   }
 }
