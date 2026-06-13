@@ -1,5 +1,4 @@
 import { S3 } from "@onbrand/s3";
-import cors from "cors";
 import express from "express";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
@@ -32,8 +31,10 @@ const positiveIntegerEnv = (name: string, defaultValue: number): number => {
   return value;
 };
 
+const HTTP_PORT = 8080;
+
 const main = async (): Promise<void> => {
-  const port = Number(process.env.PORT ?? 8080);
+  const port = HTTP_PORT;
   const baseUrl = requiredEnv("BASE_URL").replace(/\/+$/, "");
   const mcpUrl = new URL("/mcp", baseUrl);
   const issuer = requiredEnv("SLIDESPEAK_OAUTH_ISSUER").replace(/\/+$/, "");
@@ -41,10 +42,6 @@ const main = async (): Promise<void> => {
   const authorizationEndpoint = `${issuer}/oauth/authorize`;
   const tokenEndpoint = `${issuer}/oauth/token`;
   const registrationEndpoint = `${issuer}/oauth/register`;
-  const allowedOrigins = requiredEnv("CORS_ALLOWED_ORIGINS")
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean);
   const assetDownloadExpiresInSeconds = positiveIntegerEnv(
     "ASSET_DOWNLOAD_EXPIRES_IN_SECONDS",
     900,
@@ -60,12 +57,6 @@ const main = async (): Promise<void> => {
   const verifier = new SlideSpeakTokenVerifier({ issuer, audience: mcpUrl.toString(), jwksUrl });
   const app = express();
 
-  app.use(
-    cors({
-      origin: allowedOrigins,
-      exposedHeaders: ["Mcp-Session-Id", "WWW-Authenticate"],
-    }),
-  );
   app.use(express.json({ limit: "4mb" }));
 
   app.get("/health", (_req, res) => res.json({ ok: true }));
