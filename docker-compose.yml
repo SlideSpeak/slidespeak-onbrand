@@ -11,6 +11,43 @@ services:
       - "8080:8080"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    develop:
+      watch:
+        # Source changes do not need an image rebuild; sync them and restart the MCP server.
+        - action: sync+restart
+          path: ./packages
+          target: /app/packages
+          initial_sync: true
+          ignore:
+            - "**/dist/**"
+            - "**/node_modules/**"
+            - "**/package.json"
+        - action: sync+restart
+          path: ./prisma/migrations
+          target: /app/prisma/migrations
+          initial_sync: true
+        - action: sync+restart
+          path: ./tsconfig.json
+          target: /app/tsconfig.json
+          initial_sync: true
+
+        # Dependency metadata, generated Prisma client inputs, and image definition changes need a rebuild.
+        - action: rebuild
+          path: ./package.json
+        - action: rebuild
+          path: ./bun.lock
+        - action: rebuild
+          path: ./packages
+          ignore:
+            - "**/src/**"
+            - "**/dist/**"
+            - "**/node_modules/**"
+        - action: rebuild
+          path: ./prisma/schema.prisma
+        - action: rebuild
+          path: ./prisma.config.ts
+        - action: rebuild
+          path: ./Dockerfile
 
   postgres:
     image: postgres:17-alpine
