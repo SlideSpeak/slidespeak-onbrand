@@ -54,14 +54,19 @@ export const optionalString = (name: string): EnvDefinition<string | undefined> 
   },
 });
 
-export const requiredPositiveInteger = (name: string, defaultValue?: number): EnvDefinition<number> => ({
+export const requiredPositiveInteger = (
+  name: string,
+  defaultValue?: number,
+): EnvDefinition<number> => ({
   name,
   requirement: "REQUIRED",
   defaultValue,
   read: (env = process.env) => {
     const rawValue = env[name];
-    if ((rawValue === undefined || rawValue === "") && defaultValue !== undefined) return defaultValue;
-    if (rawValue === undefined || rawValue === "") throw new Error(`Missing required environment variable: ${name}`);
+    if ((rawValue === undefined || rawValue === "") && defaultValue !== undefined)
+      return defaultValue;
+    if (rawValue === undefined || rawValue === "")
+      throw new Error(`Missing required environment variable: ${name}`);
     const value = Number(rawValue);
     const result = positiveIntegerSchema.safeParse(value);
     if (!result.success) throw new Error(`${name} must be a positive integer`);
@@ -69,7 +74,9 @@ export const requiredPositiveInteger = (name: string, defaultValue?: number): En
   },
 });
 
-export const createEnvRegistry = <const Shape extends EnvRegistryShape>(shape: Shape): EnvRegistry<Shape> => {
+export const createEnvRegistry = <const Shape extends EnvRegistryShape>(
+  shape: Shape,
+): EnvRegistry<Shape> => {
   const definitions = Object.values(shape);
   const registry = {
     validate: (env?: Environment) => validateEnvRegistry(definitions, env),
@@ -109,9 +116,18 @@ export const formatEnvReport = (
   env: Environment = process.env,
 ): string => {
   const rows = definitions.map((definition) => reportRow(definition, env));
-  const nameWidth = Math.max(displayWidth("Variable"), ...rows.map((row) => displayWidth(row.name)));
-  const reqWidth = Math.max(displayWidth("Kind"), ...rows.map((row) => displayWidth(row.requirement)));
-  const statusWidth = Math.max(displayWidth("Status"), ...rows.map((row) => displayWidth(row.status)));
+  const nameWidth = Math.max(
+    displayWidth("Variable"),
+    ...rows.map((row) => displayWidth(row.name)),
+  );
+  const reqWidth = Math.max(
+    displayWidth("Kind"),
+    ...rows.map((row) => displayWidth(row.requirement)),
+  );
+  const statusWidth = Math.max(
+    displayWidth("Status"),
+    ...rows.map((row) => displayWidth(row.status)),
+  );
   const valueWidth = Math.max(displayWidth("Value"), ...rows.map((row) => displayWidth(row.value)));
   const missingCount = rows.filter((row) => row.status === "MISSING").length;
   const presentCount = rows.filter((row) => row.status === "PRESENT").length;
@@ -123,10 +139,16 @@ export const formatEnvReport = (
     "Environment registry",
     `PRESENT=${presentCount} DEFAULTED=${defaultCount} OPTIONAL_UNSET=${optionalUnsetCount} MISSING=${missingCount}`,
     separator,
-    tableRow(["Variable", "Kind", "Status", "Value"], [nameWidth, reqWidth, statusWidth, valueWidth]),
+    tableRow(
+      ["Variable", "Kind", "Status", "Value"],
+      [nameWidth, reqWidth, statusWidth, valueWidth],
+    ),
     separator,
     ...rows.map((row) =>
-      tableRow([row.name, row.requirement, row.status, row.value], [nameWidth, reqWidth, statusWidth, valueWidth]),
+      tableRow(
+        [row.name, row.requirement, row.status, row.value],
+        [nameWidth, reqWidth, statusWidth, valueWidth],
+      ),
     ),
     separator,
     "",
@@ -137,8 +159,17 @@ export const formatEnvReport = (
 const reportRow = (definition: EnvDefinition<unknown>, env: Environment): EnvReportRow => {
   const rawValue = env[definition.name];
   const isPresent = rawValue !== undefined && rawValue !== "";
-  if (!isPresent && definition.requirement === "REQUIRED" && definition.defaultValue === undefined) {
-    return { name: definition.name, requirement: definition.requirement, status: "MISSING", value: "MISSING" };
+  if (
+    !isPresent &&
+    definition.requirement === "REQUIRED" &&
+    definition.defaultValue === undefined
+  ) {
+    return {
+      name: definition.name,
+      requirement: definition.requirement,
+      status: "MISSING",
+      value: "MISSING",
+    };
   }
   if (!isPresent && definition.defaultValue !== undefined) {
     return {
@@ -149,7 +180,12 @@ const reportRow = (definition: EnvDefinition<unknown>, env: Environment): EnvRep
     };
   }
   if (!isPresent && definition.requirement === "OPTIONAL") {
-    return { name: definition.name, requirement: definition.requirement, status: "UNSET", value: "UNSET" };
+    return {
+      name: definition.name,
+      requirement: definition.requirement,
+      status: "UNSET",
+      value: "UNSET",
+    };
   }
   const value = definition.read(env);
   return {
@@ -162,7 +198,8 @@ const reportRow = (definition: EnvDefinition<unknown>, env: Environment): EnvRep
 
 const formatEnvValue = (value: unknown): string => {
   if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") return value.toString();
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint")
+    return value.toString();
   if (value === undefined) return "UNSET";
   if (value === null) return "NULL";
   return JSON.stringify(value);
@@ -179,7 +216,8 @@ const tableSeparator = (widths: readonly number[]): string =>
 const tableRow = (values: readonly string[], widths: readonly number[]): string =>
   `| ${values.map((value, index) => pad(value, widths[index] ?? 0)).join(" | ")} |`;
 
-const pad = (value: string, width: number): string => value + " ".repeat(Math.max(0, width - displayWidth(value)));
+const pad = (value: string, width: number): string =>
+  value + " ".repeat(Math.max(0, width - displayWidth(value)));
 
 const displayWidth = (value: string): number =>
   Array.from(value).reduce((width, character) => width + characterWidth(character), 0);

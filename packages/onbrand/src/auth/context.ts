@@ -1,4 +1,3 @@
-
 export const ONBRAND_SCOPES = ["onbrand:read", "onbrand:write"] as const;
 export type OnbrandScope = (typeof ONBRAND_SCOPES)[number];
 
