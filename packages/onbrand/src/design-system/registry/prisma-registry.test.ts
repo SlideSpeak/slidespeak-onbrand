@@ -15,7 +15,7 @@ describeDatabaseIntegration("PrismaDesignSystemRegistry", () => {
   const prisma = createPrismaClient();
   const registry = new PrismaDesignSystemRegistry(prisma, fakeS3, "brand-kit-assets-test", 900);
   const auth = {
-    ownerUserId: process.env.ONBRAND_OWNER_USER_ID ?? "local-dev-user",
+    ownerUserId: "test-owner-user",
     scopes: ["onbrand:read", "onbrand:write"],
   };
 

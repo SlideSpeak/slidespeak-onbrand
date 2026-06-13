@@ -8,6 +8,7 @@
         "@aws-sdk/client-s3": "3.1067.0",
         "@aws-sdk/s3-request-presigner": "3.1067.0",
         "@hono/node-server": "2.0.4",
+        "@onbrand/env": "workspace:*",
         "@prisma/adapter-pg": "7.8.0",
         "@prisma/client": "7.8.0",
         "hono": "4.12.25",
@@ -29,6 +30,13 @@
         "vitest": "4.1.8",
       },
     },
+    "packages/env": {
+      "name": "@onbrand/env",
+      "version": "0.1.0",
+      "dependencies": {
+        "@onbrand/number": "workspace:*",
+      },
+    },
     "packages/number": {
       "name": "@onbrand/number",
       "version": "0.1.0",
@@ -41,6 +49,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@modelcontextprotocol/sdk": "1.29.0",
+        "@onbrand/env": "workspace:*",
         "@onbrand/number": "workspace:*",
         "@onbrand/s3": "workspace:*",
         "@onbrand/string": "workspace:*",
@@ -51,6 +60,7 @@
       "name": "@onbrand/s3",
       "version": "0.1.0",
       "dependencies": {
+        "@onbrand/env": "workspace:*",
         "@onbrand/string": "workspace:*",
       },
     },
@@ -220,6 +230,8 @@
     "@napi-rs/wasm-runtime": ["@napi-rs/wasm-runtime@1.1.5", "", { "dependencies": { "@tybys/wasm-util": "^0.10.2" }, "peerDependencies": { "@emnapi/core": "^1.7.1", "@emnapi/runtime": "^1.7.1" } }, "sha512-AWPoBRJ9tsnVhor4sjO7rkni+7p+2IAEFj6cx06UgP10jkQHqay/36uRV/bFkgrh18D9vb4cr8Q0Pthskgzy+Q=="],
 
     "@nodable/entities": ["@nodable/entities@2.2.0", "", {}, "sha512-9uGyhaQavEUMC8AIddIjau4NsnsXhou+j5sBAGojCM1oxmQpVKTWR/9JxABD6UAv12vpIms55fPZKFQEhG6uBg=="],
+
+    "@onbrand/env": ["@onbrand/env@workspace:packages/env"],
 
     "@onbrand/number": ["@onbrand/number@workspace:packages/number"],
 
