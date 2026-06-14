@@ -41,7 +41,7 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
     private readonly prisma: PrismaClient,
     private readonly s3: Pick<typeof S3, "getPresigned" | "putPresigned">,
     private readonly brandKitAssetBucket: string,
-    private readonly assetDownloadExpiresInSeconds: number,
+    private readonly assetPresignedUrlExpiresInSeconds: number,
   ) {}
 
   listDesignSystems = async (auth: AuthContext): Promise<readonly DesignSystemSummary[]> => {
@@ -73,7 +73,7 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
         toBrandKitAssetDownload(
           this.s3,
           this.brandKitAssetBucket,
-          this.assetDownloadExpiresInSeconds,
+          this.assetPresignedUrlExpiresInSeconds,
           designSystemId,
           normalizedOutputDirectory,
           asset,
@@ -84,7 +84,7 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
     return {
       designSystemId,
       outputDirectory: normalizedOutputDirectory,
-      expiresInSeconds: this.assetDownloadExpiresInSeconds,
+      expiresInSeconds: this.assetPresignedUrlExpiresInSeconds,
       instructions:
         "Run the commands in the user's workspace to download exact Brand Kit files from short-lived S3 URLs. Do not paste, decode, or rewrite asset bytes manually from the MCP response.",
       commands: [
@@ -116,13 +116,13 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
           key: s3Key,
           contentType: upload.mimeType,
           checksumSha256Base64,
-          expiresInSeconds: this.assetDownloadExpiresInSeconds,
+          expiresInSeconds: this.assetPresignedUrlExpiresInSeconds,
         });
         return {
           ...upload,
           s3Key,
           uploadUrl,
-          expiresInSeconds: this.assetDownloadExpiresInSeconds,
+          expiresInSeconds: this.assetPresignedUrlExpiresInSeconds,
           method: "PUT" as const,
           headers: {
             "Content-Type": upload.mimeType,
@@ -144,10 +144,6 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
     auth: AuthContext,
     request: WriteDesignSystemRequest,
   ): Promise<WriteDesignSystemResult> => {
-    const existing = await this.prisma.designSystem.findUnique({
-      where: { ownerUserId_slug: { ownerUserId: auth.ownerUserId, slug: request.designSystem.id } },
-      select: { id: true },
-    });
     const storedAssets = [
       toStoredWritableAsset(
         auth.ownerUserId,
@@ -169,7 +165,13 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
       ),
     ];
 
-    await this.prisma.$transaction(async (tx) => {
+    const action = await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.designSystem.findUnique({
+        where: {
+          ownerUserId_slug: { ownerUserId: auth.ownerUserId, slug: request.designSystem.id },
+        },
+        select: { id: true },
+      });
       const designSystem = await tx.designSystem.upsert({
         where: {
           ownerUserId_slug: { ownerUserId: auth.ownerUserId, slug: request.designSystem.id },
@@ -209,11 +211,12 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
           designPrompt: request.presentationKit.designPrompt,
         },
       });
+      return existing ? "updated" : "created";
     });
 
     return {
       designSystemId: request.designSystem.id,
-      action: existing ? "updated" : "created",
+      action,
       designSystem: await this.getDesignSystem(auth, request.designSystem.id),
     };
   };
