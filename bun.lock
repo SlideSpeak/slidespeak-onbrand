@@ -37,6 +37,10 @@
         "@onbrand/number": "workspace:*",
       },
     },
+    "packages/file": {
+      "name": "@onbrand/file",
+      "version": "0.1.0",
+    },
     "packages/number": {
       "name": "@onbrand/number",
       "version": "0.1.0",
@@ -50,9 +54,12 @@
       "dependencies": {
         "@modelcontextprotocol/sdk": "1.29.0",
         "@onbrand/env": "workspace:*",
+        "@onbrand/file": "workspace:*",
         "@onbrand/number": "workspace:*",
         "@onbrand/s3": "workspace:*",
         "@onbrand/string": "workspace:*",
+        "@prisma/adapter-pg": "7.8.0",
+        "@prisma/client": "7.8.0",
         "zod": "4.4.3",
       },
     },
@@ -232,6 +239,8 @@
     "@nodable/entities": ["@nodable/entities@2.2.0", "", {}, "sha512-9uGyhaQavEUMC8AIddIjau4NsnsXhou+j5sBAGojCM1oxmQpVKTWR/9JxABD6UAv12vpIms55fPZKFQEhG6uBg=="],
 
     "@onbrand/env": ["@onbrand/env@workspace:packages/env"],
+
+    "@onbrand/file": ["@onbrand/file@workspace:packages/file"],
 
     "@onbrand/number": ["@onbrand/number@workspace:packages/number"],
 

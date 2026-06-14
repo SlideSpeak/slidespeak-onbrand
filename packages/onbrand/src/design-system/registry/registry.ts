@@ -34,11 +34,74 @@ export type MaterializeBrandKitAssetsRequest = Readonly<{
   assetHandles?: readonly string[];
 }>;
 
+export type PrepareDesignSystemAssetUpload = Readonly<{
+  assetId: string;
+  filename: string;
+  mimeType: "image/svg+xml" | "image/png" | "image/jpeg" | "image/webp";
+  byteSize: number;
+  sha256: string;
+}>;
+
+export type PreparedDesignSystemAssetUpload = PrepareDesignSystemAssetUpload &
+  Readonly<{
+    s3Key: string;
+    uploadUrl: string;
+    expiresInSeconds: number;
+    method: "PUT";
+    headers: Readonly<{ "Content-Type": string }>;
+    command: string;
+  }>;
+
+export type PrepareDesignSystemAssetUploadsRequest = Readonly<{
+  designSystemId: string;
+  uploads: readonly PrepareDesignSystemAssetUpload[];
+}>;
+
+export type PrepareDesignSystemAssetUploadsResult = Readonly<{
+  designSystemId: string;
+  instructions: string;
+  uploads: readonly PreparedDesignSystemAssetUpload[];
+}>;
+
+export type WriteDesignSystemAsset = Readonly<{
+  name: string;
+  filename: string;
+  mimeType: "image/svg+xml" | "image/png" | "image/jpeg" | "image/webp";
+  description: string;
+  s3Key: string;
+  byteSize: number;
+  sha256: string;
+}>;
+
+export type WriteDesignSystemRequest = Readonly<{
+  designSystem: DesignSystemSummary;
+  brandKit: Omit<McpBrandKit, "logo" | "decorativeAssets"> &
+    Readonly<{
+      logo: WriteDesignSystemAsset;
+      decorativeAssets?: readonly (WriteDesignSystemAsset & Readonly<{ id: string }>)[];
+    }>;
+  presentationKit: McpPresentationKit;
+}>;
+
+export type WriteDesignSystemResult = Readonly<{
+  designSystemId: string;
+  action: "created" | "updated";
+  designSystem: McpDesignSystem;
+}>;
+
 export interface DesignSystemRegistry {
   listDesignSystems(auth: AuthContext): Promise<readonly DesignSystemSummary[]>;
   getDesignSystem(auth: AuthContext, designSystemId: string): Promise<McpDesignSystem>;
+  prepareDesignSystemAssetUploads(
+    auth: AuthContext,
+    request: PrepareDesignSystemAssetUploadsRequest,
+  ): Promise<PrepareDesignSystemAssetUploadsResult>;
   materializeBrandKitAssets(
     auth: AuthContext,
     request: MaterializeBrandKitAssetsRequest,
   ): Promise<BrandKitAssetMaterializationPlan>;
+  writeDesignSystem(
+    auth: AuthContext,
+    request: WriteDesignSystemRequest,
+  ): Promise<WriteDesignSystemResult>;
 }

@@ -11,8 +11,9 @@ const Env = createEnvRegistry({
 
 const describeDatabaseIntegration = Env.ONBRAND_DATABASE_TESTS === "1" ? describe : describe.skip;
 
-const fakeS3: Pick<typeof S3, "getPresigned"> = {
+const fakeS3: Pick<typeof S3, "getPresigned" | "putPresigned"> = {
   getPresigned: async ({ key }) => `https://s3.example/${key}`,
+  putPresigned: async ({ key }) => `https://s3.example/upload/${key}`,
 };
 
 describeDatabaseIntegration("PrismaDesignSystemRegistry", () => {

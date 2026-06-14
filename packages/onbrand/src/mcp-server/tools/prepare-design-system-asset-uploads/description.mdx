@@ -1,0 +1,4 @@
+Create short-lived presigned S3 PUT uploads for exact Design System asset files before calling
+write_design_system. Use this instead of sending file bytes through MCP. The client computes
+byteSize and sha256 for each local file, runs the returned PUT commands, then passes the returned
+s3Key/byteSize/sha256 metadata to write_design_system.
