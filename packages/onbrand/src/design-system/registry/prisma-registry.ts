@@ -1,4 +1,5 @@
 import path from "node:path";
+import { brandKitAssetFileObjectKey } from "../brand-kit/storage/object-key";
 import type { S3 } from "@onbrand/s3";
 import type { PrismaClient } from "@prisma/client";
 import type { AuthContext } from "../../auth/context";
@@ -17,8 +18,12 @@ import type {
   MaterializeBrandKitAssetsRequest,
   McpDesignSystem,
   McpPresentationKit,
+  PrepareDesignSystemAssetUploadsRequest,
+  PrepareDesignSystemAssetUploadsResult,
+  WriteDesignSystemRequest,
+  WriteDesignSystemResult,
 } from "./registry";
-import { UnknownDesignSystemError } from "./registry";
+import { InvalidDesignSystemAssetUploadError, UnknownDesignSystemError } from "./registry";
 
 type StoredAsset = Readonly<{
   assetId: string;
@@ -34,9 +39,9 @@ type StoredAsset = Readonly<{
 export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
   constructor(
     private readonly prisma: PrismaClient,
-    private readonly s3: Pick<typeof S3, "getPresigned">,
+    private readonly s3: Pick<typeof S3, "getPresigned" | "putPresigned">,
     private readonly brandKitAssetBucket: string,
-    private readonly assetDownloadExpiresInSeconds: number,
+    private readonly assetPresignedUrlExpiresInSeconds: number,
   ) {}
 
   listDesignSystems = async (auth: AuthContext): Promise<readonly DesignSystemSummary[]> => {
@@ -44,11 +49,7 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
       where: { ownerUserId: auth.ownerUserId },
       orderBy: { id: "asc" },
     });
-    return rows.map((row) =>
-      row.description === null
-        ? { id: row.slug, name: row.name }
-        : { id: row.slug, name: row.name, description: row.description },
-    );
+    return rows.map((row) => ({ id: row.slug, name: row.name, description: row.description }));
   };
 
   getDesignSystem = async (auth: AuthContext, designSystemId: string): Promise<McpDesignSystem> => {
@@ -68,7 +69,7 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
         toBrandKitAssetDownload(
           this.s3,
           this.brandKitAssetBucket,
-          this.assetDownloadExpiresInSeconds,
+          this.assetPresignedUrlExpiresInSeconds,
           designSystemId,
           normalizedOutputDirectory,
           asset,
@@ -79,7 +80,7 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
     return {
       designSystemId,
       outputDirectory: normalizedOutputDirectory,
-      expiresInSeconds: this.assetDownloadExpiresInSeconds,
+      expiresInSeconds: this.assetPresignedUrlExpiresInSeconds,
       instructions:
         "Run the commands in the user's workspace to download exact Brand Kit files from short-lived S3 URLs. Do not paste, decode, or rewrite asset bytes manually from the MCP response.",
       commands: [
@@ -92,7 +93,173 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
       assets: downloads,
     };
   };
+
+  prepareDesignSystemAssetUploads = async (
+    auth: AuthContext,
+    request: PrepareDesignSystemAssetUploadsRequest,
+  ): Promise<PrepareDesignSystemAssetUploadsResult> => {
+    const uploads = await Promise.all(
+      request.uploads.map(async (upload) => {
+        const s3Key = brandKitAssetFileObjectKey({
+          ownerUserId: auth.ownerUserId,
+          designSystemId: request.designSystemId,
+          assetId: upload.assetId,
+          filename: upload.filename,
+        });
+        const checksumSha256Base64 = hexToBase64Sha256(upload.sha256);
+        const uploadUrl = await this.s3.putPresigned({
+          bucket: this.brandKitAssetBucket,
+          key: s3Key,
+          contentType: upload.mimeType,
+          checksumSha256Base64,
+          expiresInSeconds: this.assetPresignedUrlExpiresInSeconds,
+        });
+        return {
+          ...upload,
+          s3Key,
+          uploadUrl,
+          expiresInSeconds: this.assetPresignedUrlExpiresInSeconds,
+          method: "PUT" as const,
+          headers: {
+            "Content-Type": upload.mimeType,
+          },
+          command: `curl -fsSL -X PUT -H ${shellQuote(`Content-Type: ${upload.mimeType}`)} --upload-file ${shellQuote(upload.filename)} ${shellQuote(uploadUrl)}`,
+        };
+      }),
+    );
+
+    return {
+      designSystemId: request.designSystemId,
+      instructions:
+        "Run each PUT command from the directory containing the exact asset file. Then call write_design_system with the returned s3Key, byteSize, and sha256 metadata. Do not send asset bytes through MCP.",
+      uploads,
+    };
+  };
+
+  writeDesignSystem = async (
+    auth: AuthContext,
+    request: WriteDesignSystemRequest,
+  ): Promise<WriteDesignSystemResult> => {
+    const storedAssets = [
+      toStoredWritableAsset(
+        auth.ownerUserId,
+        request.designSystem.id,
+        request.brandKit.logo,
+        request.brandKit.logo.assetId,
+        "LOGO",
+        0,
+      ),
+      ...(request.brandKit.decorativeAssets ?? []).map((asset, index) =>
+        toStoredWritableAsset(
+          auth.ownerUserId,
+          request.designSystem.id,
+          asset,
+          asset.id,
+          "DECORATIVE_ASSET",
+          index + 1,
+        ),
+      ),
+    ];
+
+    const action = await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.designSystem.findUnique({
+        where: {
+          ownerUserId_slug: { ownerUserId: auth.ownerUserId, slug: request.designSystem.id },
+        },
+        select: { id: true },
+      });
+      const designSystem = await tx.designSystem.upsert({
+        where: {
+          ownerUserId_slug: { ownerUserId: auth.ownerUserId, slug: request.designSystem.id },
+        },
+        create: {
+          ownerUserId: auth.ownerUserId,
+          slug: request.designSystem.id,
+          schemaVersion: 1,
+          name: request.designSystem.name,
+          description: request.designSystem.description,
+        },
+        update: { name: request.designSystem.name, description: request.designSystem.description },
+      });
+      await tx.brandKit.deleteMany({ where: { designSystemId: designSystem.id } });
+      await tx.presentationKit.deleteMany({ where: { designSystemId: designSystem.id } });
+      await tx.brandKit.create({
+        data: {
+          designSystemId: designSystem.id,
+          colors: {
+            create: request.brandKit.colors.map((color, index) => ({
+              tokenId: color.id,
+              name: color.name,
+              value: color.value,
+              description: color.description,
+              sortOrder: index,
+            })),
+          },
+          assets: { create: storedAssets },
+        },
+      });
+      await tx.presentationKit.create({
+        data: {
+          designSystemId: designSystem.id,
+          canvasWidth: request.presentationKit.canvas.width,
+          canvasHeight: request.presentationKit.canvas.height,
+          canvasUnit: request.presentationKit.canvas.unit,
+          designPrompt: request.presentationKit.designPrompt,
+        },
+      });
+      return existing ? "updated" : "created";
+    });
+
+    return {
+      designSystemId: request.designSystem.id,
+      action,
+      designSystem: await this.getDesignSystem(auth, request.designSystem.id),
+    };
+  };
 }
+
+const toStoredWritableAsset = (
+  ownerUserId: string,
+  designSystemId: string,
+  asset: {
+    name: string;
+    filename: string;
+    mimeType: string;
+    description: string;
+    s3Key: string;
+    byteSize: number;
+    sha256: string;
+  },
+  assetId: string,
+  kind: "LOGO" | "DECORATIVE_ASSET",
+  sortOrder: number,
+) => {
+  const expectedS3Key = brandKitAssetFileObjectKey({
+    ownerUserId,
+    designSystemId,
+    assetId,
+    filename: asset.filename,
+  });
+  if (asset.s3Key !== expectedS3Key) {
+    throw new InvalidDesignSystemAssetUploadError(
+      `Design System asset '${assetId}' must reference prepared upload key '${expectedS3Key}'`,
+    );
+  }
+  return {
+    assetId,
+    kind,
+    name: asset.name,
+    filename: asset.filename,
+    mimeType: asset.mimeType,
+    description: asset.description,
+    s3Key: asset.s3Key,
+    byteSize: asset.byteSize,
+    sha256: asset.sha256,
+    sortOrder,
+  };
+};
+
+const hexToBase64Sha256 = (hex: string): string => Buffer.from(hex, "hex").toString("base64");
 
 const loadStoredDesignSystem = async (
   prisma: PrismaClient,
@@ -120,10 +287,7 @@ const loadStoredDesignSystem = async (
 const toMcpDesignSystem = (
   stored: Awaited<ReturnType<typeof loadStoredDesignSystem>>,
 ): McpDesignSystem => ({
-  designSystem:
-    stored.description === null
-      ? { id: stored.slug, name: stored.name }
-      : { id: stored.slug, name: stored.name, description: stored.description },
+  designSystem: { id: stored.slug, name: stored.name, description: stored.description },
   brandKit: toMcpBrandKit(stored.brandKit!.assets, stored.brandKit!.colors),
   presentationKit: toMcpPresentationKit(stored.presentationKit!),
 });

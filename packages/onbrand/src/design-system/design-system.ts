@@ -10,7 +10,7 @@ export const designSystemSchema = z
     schemaVersion: z.literal(1),
     id: designSystemIdSchema,
     name: z.string().min(1),
-    description: z.string().min(1).optional(),
+    description: z.string().min(1),
     brandKit: brandKitSchema,
     presentationKit: presentationKitSchema,
   })
