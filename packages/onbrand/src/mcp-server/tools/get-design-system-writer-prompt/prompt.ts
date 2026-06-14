@@ -129,6 +129,9 @@ export const DESIGN_SYSTEM_WRITER_PROMPT = {
         mimeType: "image/svg+xml",
         description:
           "Exact white SKYLEAGUE wordmark plus geometric SK mark from skyleague.io. Use on black, purple, or dark image backgrounds only; do not recolor, typeset, trace, or recreate.",
+        s3Key: "<returned-from-prepare>/skyleague/primary-logo/logo.svg",
+        byteSize: 4821,
+        sha256: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       },
       decorativeAssets: [
         {
@@ -138,6 +141,9 @@ export const DESIGN_SYSTEM_WRITER_PROMPT = {
           mimeType: "image/png",
           description:
             "Homepage purple/cyan/white geometric sphere asset. Use as a large absolutely positioned brand visual bleeding off the slide edge.",
+          s3Key: "<returned-from-prepare>/skyleague/hero-orb/hero.png",
+          byteSize: 184239,
+          sha256: "1111111111111111111111111111111111111111111111111111111111111111",
         },
         {
           id: "circle",
@@ -146,6 +152,9 @@ export const DESIGN_SYSTEM_WRITER_PROMPT = {
           mimeType: "image/svg+xml",
           description:
             "Purple semicircle brand geometry from the live site. Use as an oversized edge-bleed graphic on black or white slides.",
+          s3Key: "<returned-from-prepare>/skyleague/circle/circle.svg",
+          byteSize: 2194,
+          sha256: "2222222222222222222222222222222222222222222222222222222222222222",
         },
         {
           id: "icon-1",
@@ -154,6 +163,9 @@ export const DESIGN_SYSTEM_WRITER_PROMPT = {
           mimeType: "image/svg+xml",
           description:
             "Small functional card/process icon from the live site; use at roughly 32px.",
+          s3Key: "<returned-from-prepare>/skyleague/icon-1/icon-1.svg",
+          byteSize: 1238,
+          sha256: "3333333333333333333333333333333333333333333333333333333333333333",
         },
         {
           id: "icon-2",
@@ -162,6 +174,9 @@ export const DESIGN_SYSTEM_WRITER_PROMPT = {
           mimeType: "image/svg+xml",
           description:
             "Small functional card/process icon from the live site; use at roughly 32px.",
+          s3Key: "<returned-from-prepare>/skyleague/icon-2/icon-2.svg",
+          byteSize: 1316,
+          sha256: "4444444444444444444444444444444444444444444444444444444444444444",
         },
       ],
     },
