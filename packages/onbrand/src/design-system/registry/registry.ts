@@ -19,6 +19,13 @@ export class UnknownDesignSystemError extends Error {
   }
 }
 
+export class InvalidDesignSystemAssetUploadError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidDesignSystemAssetUploadError";
+  }
+}
+
 export type McpPresentationKit = Omit<DesignSystem["presentationKit"], "designPrompt"> &
   Readonly<{ designPrompt?: string }>;
 
@@ -75,8 +82,14 @@ export type WriteDesignSystemAsset = Readonly<{
 
 export type WriteDesignSystemLogoAsset = WriteDesignSystemAsset & Readonly<{ assetId: string }>;
 
+export type WriteDesignSystemMetadata = Readonly<{
+  id: string;
+  name: string;
+  description: string;
+}>;
+
 export type WriteDesignSystemRequest = Readonly<{
-  designSystem: DesignSystemSummary;
+  designSystem: WriteDesignSystemMetadata;
   brandKit: Omit<McpBrandKit, "logo" | "decorativeAssets"> &
     Readonly<{
       logo: WriteDesignSystemLogoAsset;

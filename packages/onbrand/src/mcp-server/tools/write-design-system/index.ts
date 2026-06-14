@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { requireScope } from "../../../auth/context";
+import { InvalidDesignSystemAssetUploadError } from "../../../design-system/registry/registry";
 import { readMarkdownAsString } from "@onbrand/file";
-import { toToolResult } from "../shared/result";
+import { toToolErrorResult, toToolResult } from "../shared/result";
 import { writableAssetSchema } from "../shared/asset-schemas";
 import { type ToolRegistrationContext } from "../shared/types";
 
@@ -22,7 +23,12 @@ export const registerWriteDesignSystemTool = ({
             .regex(/^[a-z0-9][a-z0-9-]*$/)
             .describe("Stable slug, e.g. 'acme'."),
           name: z.string().min(1),
-          description: z.string().min(1).optional(),
+          description: z
+            .string()
+            .min(1)
+            .describe(
+              "Required description of what this Design System is for and how agents should use it.",
+            ),
         }),
         brandKit: z.object({
           colors: z.array(
@@ -57,8 +63,15 @@ export const registerWriteDesignSystemTool = ({
       },
     },
     async (request) => {
-      requireScope(authContext, "onbrand:write");
-      return toToolResult(await registry.writeDesignSystem(authContext, request));
+      try {
+        requireScope(authContext, "onbrand:write");
+        return toToolResult(await registry.writeDesignSystem(authContext, request));
+      } catch (error) {
+        if (error instanceof InvalidDesignSystemAssetUploadError) {
+          return toToolErrorResult(error);
+        }
+        throw error;
+      }
     },
   );
 };

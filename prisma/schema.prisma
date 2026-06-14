@@ -12,7 +12,7 @@ model DesignSystem {
   slug          String
   schemaVersion Int
   name          String
-  description   String?
+  description   String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

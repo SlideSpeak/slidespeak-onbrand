@@ -23,7 +23,7 @@ import type {
   WriteDesignSystemRequest,
   WriteDesignSystemResult,
 } from "./registry";
-import { UnknownDesignSystemError } from "./registry";
+import { InvalidDesignSystemAssetUploadError, UnknownDesignSystemError } from "./registry";
 
 type StoredAsset = Readonly<{
   assetId: string;
@@ -49,11 +49,7 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
       where: { ownerUserId: auth.ownerUserId },
       orderBy: { id: "asc" },
     });
-    return rows.map((row) =>
-      row.description === null
-        ? { id: row.slug, name: row.name }
-        : { id: row.slug, name: row.name, description: row.description },
-    );
+    return rows.map((row) => ({ id: row.slug, name: row.name, description: row.description }));
   };
 
   getDesignSystem = async (auth: AuthContext, designSystemId: string): Promise<McpDesignSystem> => {
@@ -245,7 +241,7 @@ const toStoredWritableAsset = (
     filename: asset.filename,
   });
   if (asset.s3Key !== expectedS3Key) {
-    throw new Error(
+    throw new InvalidDesignSystemAssetUploadError(
       `Design System asset '${assetId}' must reference prepared upload key '${expectedS3Key}'`,
     );
   }
@@ -291,10 +287,7 @@ const loadStoredDesignSystem = async (
 const toMcpDesignSystem = (
   stored: Awaited<ReturnType<typeof loadStoredDesignSystem>>,
 ): McpDesignSystem => ({
-  designSystem:
-    stored.description === null
-      ? { id: stored.slug, name: stored.name }
-      : { id: stored.slug, name: stored.name, description: stored.description },
+  designSystem: { id: stored.slug, name: stored.name, description: stored.description },
   brandKit: toMcpBrandKit(stored.brandKit!.assets, stored.brandKit!.colors),
   presentationKit: toMcpPresentationKit(stored.presentationKit!),
 });

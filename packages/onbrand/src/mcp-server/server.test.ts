@@ -5,7 +5,11 @@ import type { DesignSystemRegistry } from "../design-system/registry/registry";
 import { createOnbrandMcpServer, toToolResult } from "./server";
 
 const ACME_DESIGN_SYSTEM = {
-  designSystem: { id: "acme", name: "Acme Design System" },
+  designSystem: {
+    id: "acme",
+    name: "Acme Design System",
+    description: "Reusable Acme presentation system for sales and strategy decks.",
+  },
   brandKit: {
     colors: [],
     logo: {
@@ -32,7 +36,13 @@ const ACME_DESIGN_SYSTEM = {
 describe("Onbrand MCP tools", () => {
   test("serializes structured content as matching JSON text", () => {
     const result = {
-      designSystems: [{ id: "acme", name: "Acme Design System" }],
+      designSystems: [
+        {
+          id: "acme",
+          name: "Acme Design System",
+          description: "Reusable Acme presentation system for sales and strategy decks.",
+        },
+      ],
     };
 
     expect(toToolResult(result)).toEqual({
@@ -109,7 +119,11 @@ describe("Onbrand MCP tools", () => {
   test("write_design_system persists a model-constructed Design System", async () => {
     const client = await connectedClient(fakeRegistry());
     const request = {
-      designSystem: { id: "newco", name: "NewCo Design System" },
+      designSystem: {
+        id: "newco",
+        name: "NewCo Design System",
+        description: "NewCo Design System for crisp editorial business presentations.",
+      },
       brandKit: {
         colors: [{ id: "ink", name: "Ink", value: "#111111", description: "Primary text." }],
         logo: {
@@ -210,7 +224,13 @@ const connectedClient = async (registry: DesignSystemRegistry): Promise<Client> 
 };
 
 const fakeRegistry = (): DesignSystemRegistry => ({
-  listDesignSystems: async () => [{ id: "acme", name: "Acme Design System" }],
+  listDesignSystems: async () => [
+    {
+      id: "acme",
+      name: "Acme Design System",
+      description: "Reusable Acme presentation system for sales and strategy decks.",
+    },
+  ],
   getDesignSystem: async (_auth, id) => {
     if (id !== "acme") throw new Error("Unknown Design System");
     return ACME_DESIGN_SYSTEM;
