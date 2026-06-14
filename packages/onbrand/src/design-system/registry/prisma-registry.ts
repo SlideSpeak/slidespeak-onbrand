@@ -149,7 +149,7 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
         auth.ownerUserId,
         request.designSystem.id,
         request.brandKit.logo,
-        "logo",
+        request.brandKit.logo.assetId,
         "LOGO",
         0,
       ),

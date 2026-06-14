@@ -82,7 +82,7 @@ describe("Onbrand MCP tools", () => {
         designSystemId: "newco",
         uploads: [
           {
-            assetId: "logo",
+            assetId: "primary-logo",
             filename: "logo.svg",
             mimeType: "image/svg+xml",
             byteSize: 7,
@@ -99,7 +99,7 @@ describe("Onbrand MCP tools", () => {
       uploads: [
         expect.objectContaining({
           method: "PUT",
-          s3Key: "test-user/newco/logo/logo.svg",
+          s3Key: "test-user/newco/primary-logo/logo.svg",
           uploadUrl: "https://s3.example/upload/logo.svg?signature=test",
         }),
       ],
@@ -113,11 +113,12 @@ describe("Onbrand MCP tools", () => {
       brandKit: {
         colors: [{ id: "ink", name: "Ink", value: "#111111", description: "Primary text." }],
         logo: {
+          assetId: "primary-logo",
           name: "Primary Logo",
           filename: "logo.svg",
           mimeType: "image/svg+xml",
           description: "Use on light backgrounds.",
-          s3Key: "test-user/newco/logo/logo.svg",
+          s3Key: "test-user/newco/primary-logo/logo.svg",
           byteSize: 7,
           sha256: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
         },

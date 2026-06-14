@@ -36,9 +36,11 @@ export const registerWriteDesignSystemTool = ({
               description: z.string().min(1),
             }),
           ),
-          logo: writableAssetSchema.describe(
-            "The exact governed logo file extracted from source material.",
-          ),
+          logo: writableAssetSchema
+            .extend({ assetId: z.string().min(1) })
+            .describe(
+              "The exact governed logo file extracted from source material. assetId must match the assetId used in prepare_design_system_asset_uploads for this logo file; consumers will still receive it as the LOGO handle.",
+            ),
           decorativeAssets: z
             .array(writableAssetSchema.extend({ id: z.string().min(1) }))
             .default([])

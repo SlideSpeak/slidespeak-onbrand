@@ -33,8 +33,11 @@ claude mcp add --transport http onbrand http://localhost:8080/mcp
   should follow before constructing a new Design System.
 - `prepare_design_system_asset_uploads` — returns short-lived presigned S3 PUT URLs and shell
   commands so clients upload exact Design System asset files directly to S3 instead of sending bytes
-  through MCP.
+  through MCP. Clients pass the returned `assetId`/`s3Key`/checksum metadata to
+  `write_design_system`.
 - `write_design_system` — creates or replaces a complete Design System after the client has analyzed
   user-provided source material such as a URL, PDF, PPTX, image, or existing deck. The client
   supplies color tokens, uploaded logo/decorative asset references, canvas details, and a detailed
-  slide Design Prompt; Onbrand persists the result for future `get_design_system` calls.
+  slide Design Prompt; Onbrand persists the result for future `get_design_system` calls. Logo upload
+  IDs may be descriptive, but the persisted logo is always exposed through the canonical `LOGO`
+  handle.

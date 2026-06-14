@@ -73,11 +73,13 @@ export type WriteDesignSystemAsset = Readonly<{
   sha256: string;
 }>;
 
+export type WriteDesignSystemLogoAsset = WriteDesignSystemAsset & Readonly<{ assetId: string }>;
+
 export type WriteDesignSystemRequest = Readonly<{
   designSystem: DesignSystemSummary;
   brandKit: Omit<McpBrandKit, "logo" | "decorativeAssets"> &
     Readonly<{
-      logo: WriteDesignSystemAsset;
+      logo: WriteDesignSystemLogoAsset;
       decorativeAssets?: readonly (WriteDesignSystemAsset & Readonly<{ id: string }>)[];
     }>;
   presentationKit: McpPresentationKit;
