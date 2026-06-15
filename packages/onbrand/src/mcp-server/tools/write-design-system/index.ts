@@ -3,7 +3,7 @@ import { requireScope } from "../../../auth/context";
 import { InvalidDesignSystemAssetUploadError } from "../../../design-system/registry/registry";
 import { readMarkdownAsString } from "@onbrand/file";
 import { toToolErrorResult, toToolResult } from "../shared/result";
-import { writableAssetSchema } from "../shared/asset-schemas";
+import { assetSlugSchema, writableAssetSchema } from "../shared/asset-schemas";
 import { type ToolRegistrationContext } from "../shared/types";
 
 export const registerWriteDesignSystemTool = ({
@@ -43,14 +43,16 @@ export const registerWriteDesignSystemTool = ({
             }),
           ),
           logo: writableAssetSchema
-            .extend({ assetId: z.string().min(1) })
+            .extend({ assetId: assetSlugSchema })
             .describe(
-              "The exact governed logo file extracted from source material. assetId must match the assetId used in prepare_design_system_asset_uploads for this logo file; consumers will still receive it as the LOGO handle.",
+              "The exact governed logo file extracted from source material. assetId must match the lowercase asset slug used in prepare_design_system_asset_uploads for this logo file.",
             ),
           decorativeAssets: z
-            .array(writableAssetSchema.extend({ id: z.string().min(1) }))
+            .array(writableAssetSchema.extend({ id: assetSlugSchema }))
             .default([])
-            .describe("Optional exact decorative visual accents extracted from the source."),
+            .describe(
+              "Optional exact decorative visual accents extracted from the source. Each id must be the lowercase asset slug used in prepare_design_system_asset_uploads.",
+            ),
         }),
         presentationKit: z.object({
           canvas: z.object({

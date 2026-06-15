@@ -56,10 +56,9 @@ model BrandKitAsset {
   filename    String
   mimeType    String
   description String
-  bytes       Bytes?
-  s3Key       String?
-  byteSize    Int?
-  sha256      String?
+  s3Key       String
+  byteSize    Int
+  sha256      String
   sortOrder   Int
 
   brandKit BrandKit @relation(fields: [brandKitId], references: [id], onDelete: Cascade)

@@ -2,7 +2,6 @@ import type { AuthContext } from "../../auth/context";
 import type { BrandKitAssetMaterializationPlan, McpBrandKit } from "../brand-kit/asset";
 import type { DesignSystem, DesignSystemSummary } from "../design-system";
 
-export { UnknownBrandKitAssetError, UnmaterializedBrandKitAssetError } from "../brand-kit/asset";
 export type {
   BrandKitAssetDownload,
   BrandKitAssetMaterializationPlan,
@@ -38,7 +37,6 @@ export type McpDesignSystem = Readonly<{
 export type MaterializeBrandKitAssetsRequest = Readonly<{
   designSystemId: string;
   outputDirectory: string;
-  assetHandles?: readonly string[];
 }>;
 
 export type PrepareDesignSystemAssetUpload = Readonly<{

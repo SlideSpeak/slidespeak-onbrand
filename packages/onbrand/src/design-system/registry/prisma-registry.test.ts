@@ -56,23 +56,24 @@ describeDatabaseIntegration("PrismaDesignSystemRegistry", () => {
     expect(result.presentationKit.designPrompt).toContain("SKYLEAGUE");
   });
 
-  it("returns selected Brand Kit asset S3 download commands", async () => {
+  it("returns Brand Kit asset S3 download commands", async () => {
     const result = await registry.materializeBrandKitAssets(auth, {
       designSystemId: "skyleague",
       outputDirectory: "assets",
-      assetHandles: ["LOGO"],
     });
 
-    expect(result.assets).toEqual([
-      expect.objectContaining({
-        kind: "LOGO",
-        filename: "logo.svg",
-        assetHandle: "LOGO",
-        mimeType: "image/svg+xml",
-        targetPath: "assets/logo.svg",
-        relativePath: "assets/logo.svg",
-      }),
-    ]);
+    expect(result.assets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "LOGO",
+          filename: "logo.svg",
+          assetHandle: "LOGO",
+          mimeType: "image/svg+xml",
+          targetPath: "assets/logo.svg",
+          relativePath: "assets/logo.svg",
+        }),
+      ]),
+    );
     expect(JSON.stringify(result)).not.toContain("contentBase64");
   });
 

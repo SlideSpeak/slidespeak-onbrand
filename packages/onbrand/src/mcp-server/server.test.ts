@@ -176,7 +176,6 @@ describe("Onbrand MCP tools", () => {
       arguments: {
         designSystemId: "acme",
         outputDirectory: "assets",
-        assetHandles: ["LOGO"],
       },
     });
 

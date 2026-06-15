@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { Implementation } from "@modelcontextprotocol/sdk/types.js";
 import { type AuthContext } from "../auth/context";
 import { type DesignSystemRegistry } from "../design-system/registry/registry";
 import { registerGetDesignSystemTool } from "./tools/get-design-system";
@@ -13,7 +14,7 @@ export { toToolResult } from "./tools/shared/result";
 export const SERVER_INFO = {
   name: "onbrand",
   version: "0.1.0",
-} as const;
+} satisfies Implementation;
 
 export const createOnbrandMcpServer = (
   registry: DesignSystemRegistry,

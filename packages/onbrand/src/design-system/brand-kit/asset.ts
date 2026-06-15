@@ -1,25 +1,3 @@
-export class UnknownBrandKitAssetError extends Error {
-  constructor(
-    readonly designSystemId: string,
-    readonly assetHandle: string,
-  ) {
-    super(`Unknown Brand Kit asset '${assetHandle}' in Design System '${designSystemId}'`);
-    this.name = "UnknownBrandKitAssetError";
-  }
-}
-
-export class UnmaterializedBrandKitAssetError extends Error {
-  constructor(
-    readonly designSystemId: string,
-    readonly assetHandle: string,
-  ) {
-    super(
-      `Brand Kit asset '${assetHandle}' in Design System '${designSystemId}' has not been uploaded to S3`,
-    );
-    this.name = "UnmaterializedBrandKitAssetError";
-  }
-}
-
 export type SupportedAssetMimeType = "image/svg+xml" | "image/png" | "image/jpeg" | "image/webp";
 
 export type McpVisualAsset = Readonly<{

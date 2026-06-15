@@ -9,7 +9,7 @@ export type PresignedPutObjectInput = Readonly<{
   expiresInSeconds: number;
 }>;
 
-export const createPresignedPutUrl = (
+export const putPresigned = (
   client: S3Client,
   { bucket, key, contentType, checksumSha256Base64, expiresInSeconds }: PresignedPutObjectInput,
 ): Promise<string> =>

@@ -1,6 +1,4 @@
 Create short-lived presigned S3 PUT uploads for exact Design System asset files before calling
-write_design_system. Use this instead of sending file bytes through MCP. The client computes
-byteSize and sha256 for each local file, runs the returned PUT commands, then passes the returned
-assetId/s3Key/byteSize/sha256 metadata to write_design_system. Use descriptive assetIds such as
-primary-logo or hero-gradient; the persisted logo is still exposed to consumers through the
-canonical LOGO handle.
+write_design_system. Use lowercase slug assetIds such as primary-logo, hero-orb, or icon-1. Do not
+use consumer handles as assetIds. The client computes byteSize and sha256, runs the returned PUT
+commands, then passes the returned assetId/s3Key/byteSize/sha256 metadata to write_design_system.

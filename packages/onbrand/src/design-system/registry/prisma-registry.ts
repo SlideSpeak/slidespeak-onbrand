@@ -10,8 +10,6 @@ import {
   type McpBrandKit,
   type McpDecorativeAsset,
   type SupportedAssetMimeType,
-  UnknownBrandKitAssetError,
-  UnmaterializedBrandKitAssetError,
 } from "../brand-kit/asset";
 import type {
   DesignSystemRegistry,
@@ -32,7 +30,7 @@ type StoredAsset = Readonly<{
   filename: string;
   mimeType: string;
   description: string;
-  s3Key: string | null;
+  s3Key: string;
   sortOrder: number;
 }>;
 
@@ -59,13 +57,12 @@ export class PrismaDesignSystemRegistry implements DesignSystemRegistry {
 
   materializeBrandKitAssets = async (
     auth: AuthContext,
-    { designSystemId, outputDirectory, assetHandles }: MaterializeBrandKitAssetsRequest,
+    { designSystemId, outputDirectory }: MaterializeBrandKitAssetsRequest,
   ): Promise<BrandKitAssetMaterializationPlan> => {
     const stored = await loadStoredDesignSystem(this.prisma, auth, designSystemId);
-    const selectedAssets = selectAssets(designSystemId, stored.brandKit!.assets, assetHandles);
     const normalizedOutputDirectory = normalizeOutputDirectory(outputDirectory);
     const downloads = await Promise.all(
-      selectedAssets.map((asset) =>
+      stored.brandKit!.assets.map((asset) =>
         toBrandKitAssetDownload(
           this.s3,
           this.brandKitAssetBucket,
@@ -342,27 +339,6 @@ const toMcpDecorativeAsset = (asset: StoredAsset): McpDecorativeAsset => ({
   description: asset.description,
 });
 
-const selectAssets = (
-  designSystemId: string,
-  assets: readonly StoredAsset[],
-  assetHandles: readonly string[] | undefined,
-): readonly StoredAsset[] => {
-  if (!assetHandles) return assets;
-  const byHandle = new Map(assets.map((asset) => [assetHandle(asset), asset]));
-  const seen = new Set<string>();
-  return assetHandles.map((handle) => {
-    if (seen.has(handle)) {
-      throw new Error(
-        `Duplicate Brand Kit asset handle requested in Design System '${designSystemId}': ${handle}`,
-      );
-    }
-    seen.add(handle);
-    const asset = byHandle.get(handle);
-    if (!asset) throw new UnknownBrandKitAssetError(designSystemId, handle);
-    return asset;
-  });
-};
-
 const assetHandle = (asset: StoredAsset): string =>
   asset.kind === "LOGO" ? "LOGO" : decorativeAssetHandle(asset.assetId);
 
@@ -374,7 +350,6 @@ const toBrandKitAssetDownload = async (
   outputDirectory: string,
   asset: StoredAsset,
 ): Promise<BrandKitAssetDownload> => {
-  if (!asset.s3Key) throw new UnmaterializedBrandKitAssetError(designSystemId, assetHandle(asset));
   const targetPath = joinOutputPath(outputDirectory, asset.filename);
   const common = {
     assetHandle: assetHandle(asset),

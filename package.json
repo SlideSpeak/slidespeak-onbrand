@@ -15,8 +15,7 @@
     "format:check": "prettier --check .",
     "test": "prisma generate && vitest run",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "assets:upload-s3": "bun packages/onbrand/src/design-system/registry/upload-brand-kit-assets-to-s3.ts"
+    "db:migrate": "prisma migrate dev"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

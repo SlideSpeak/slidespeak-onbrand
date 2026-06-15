@@ -17,7 +17,7 @@ export const DESIGN_SYSTEM_WRITER_PROMPT = {
     "Extract exact logo/decorative asset files when available. Do not redraw, approximate, invent, trace, recolor, or replace logos. If an exact governed logo cannot be obtained, ask for it instead of fabricating one.",
     "Create role-aware Color Tokens with precise hex values and useful descriptions, not generic swatches. Use six-digit hex values; put opacity, gradient, and alpha usage in token descriptions and the Design Prompt.",
     "Write a detailed Design Prompt that is specific enough for a future agent to generate an on-brand HTML presentation without seeing the original source.",
-    "Call prepare_design_system_asset_uploads for exact asset files, upload them directly to S3 with the returned PUT commands, then call write_design_system with the returned assetId, s3Key, byteSize, and sha256 references. The logo assetId can be descriptive, such as 'primary-logo'; consumers will still receive it through the canonical LOGO handle. Do not send asset bytes through MCP.",
+    "Call prepare_design_system_asset_uploads for exact asset files, upload them directly to S3 with the returned PUT commands, then call write_design_system with the returned assetId, s3Key, byteSize, and sha256 references. Asset IDs must be lowercase slugs such as 'primary-logo', 'hero-orb', or 'icon-1'. Do not use consumer asset handles as upload IDs. Do not send asset bytes through MCP.",
   ],
   designPromptTemplate: readMarkdownAsString(import.meta.url, "design-prompt-template.mdx"),
   qualityBar: {

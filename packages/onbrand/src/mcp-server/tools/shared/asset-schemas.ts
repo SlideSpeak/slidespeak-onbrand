@@ -1,3 +1,4 @@
+import { slugSchema } from "@onbrand/string";
 import { z } from "zod";
 
 export const supportedAssetMimeTypeSchema = z.enum([
@@ -7,8 +8,12 @@ export const supportedAssetMimeTypeSchema = z.enum([
   "image/webp",
 ]);
 
+export const assetSlugSchema = slugSchema;
+
 export const uploadDeclarationSchema = z.object({
-  assetId: z.string().min(1),
+  assetId: assetSlugSchema.describe(
+    "Lowercase asset slug used in the S3 object key, e.g. primary-logo, hero-orb, or icon-1. Do not use consumer asset handles.",
+  ),
   filename: z.string().min(1),
   mimeType: supportedAssetMimeTypeSchema,
   byteSize: z.number().int().positive(),
