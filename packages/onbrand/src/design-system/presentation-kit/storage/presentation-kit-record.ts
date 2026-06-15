@@ -1,14 +1,12 @@
+import type { PresentationKit as DbPresentationKit } from "@prisma/client";
 import type { PresentationKitView } from "../../application-service";
 
-export type StoredPresentationKit = Readonly<{
-  canvasWidth: number;
-  canvasHeight: number;
-  canvasUnit: string;
-  designPrompt: string | null;
-}>;
+export type PresentationKitRecord = Readonly<
+  Pick<DbPresentationKit, "canvasWidth" | "canvasHeight" | "canvasUnit" | "designPrompt">
+>;
 
 export const toPresentationKitView = (
-  presentationKit: StoredPresentationKit,
+  presentationKit: PresentationKitRecord,
 ): PresentationKitView => ({
   canvas: {
     width: presentationKit.canvasWidth,
@@ -20,5 +18,5 @@ export const toPresentationKitView = (
 
 const toSlideCanvasUnit = (canvasUnit: string): "px" => {
   if (canvasUnit === "px") return canvasUnit;
-  throw new Error(`Unsupported stored Slide Canvas unit: ${canvasUnit}`);
+  throw new Error(`Unsupported Presentation Kit record Slide Canvas unit: ${canvasUnit}`);
 };

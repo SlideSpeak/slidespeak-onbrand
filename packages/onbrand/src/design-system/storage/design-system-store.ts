@@ -1,18 +1,21 @@
-import type { PrismaClient } from "@prisma/client";
+import type { DesignSystem as DbDesignSystem, PrismaClient } from "@prisma/client";
 import type { DesignSystemOwner } from "../owner";
 import { UnknownDesignSystemError, type DesignSystemView } from "../application-service";
-import { brandKitPrismaInclude, toBrandKitView } from "../brand-kit/db";
-import { toPresentationKitView } from "../presentation-kit/storage/prisma-presentation-kit";
+import { brandKitInclude, toBrandKitView } from "../brand-kit/record";
+import { toPresentationKitView } from "../presentation-kit/storage/presentation-kit-record";
+
+type DesignSystemSummaryRecord = Readonly<Pick<DbDesignSystem, "slug" | "name" | "description">>;
 
 export const listDesignSystemSummaries = async (prisma: PrismaClient, owner: DesignSystemOwner) => {
-  const rows = await prisma.designSystem.findMany({
+  const rows: readonly DesignSystemSummaryRecord[] = await prisma.designSystem.findMany({
     where: { ownerUserId: owner.ownerUserId },
     orderBy: { id: "asc" },
+    select: { slug: true, name: true, description: true },
   });
   return rows.map((row) => ({ id: row.slug, name: row.name, description: row.description }));
 };
 
-export const loadStoredDesignSystem = async (
+export const loadDesignSystemRecord = async (
   prisma: PrismaClient,
   owner: DesignSystemOwner,
   designSystemId: string,
@@ -20,7 +23,7 @@ export const loadStoredDesignSystem = async (
   const row = await prisma.designSystem.findUnique({
     where: { ownerUserId_slug: { ownerUserId: owner.ownerUserId, slug: designSystemId } },
     include: {
-      brandKit: { include: brandKitPrismaInclude },
+      brandKit: { include: brandKitInclude },
       presentationKit: true,
     },
   });
@@ -31,9 +34,9 @@ export const loadStoredDesignSystem = async (
 };
 
 export const toDesignSystemView = (
-  stored: Awaited<ReturnType<typeof loadStoredDesignSystem>>,
+  record: Awaited<ReturnType<typeof loadDesignSystemRecord>>,
 ): DesignSystemView => ({
-  designSystem: { id: stored.slug, name: stored.name, description: stored.description },
-  brandKit: toBrandKitView(stored.brandKit!.assets, stored.brandKit!.colors),
-  presentationKit: toPresentationKitView(stored.presentationKit!),
+  designSystem: { id: record.slug, name: record.name, description: record.description },
+  brandKit: toBrandKitView(record.brandKit!.assets, record.brandKit!.colors),
+  presentationKit: toPresentationKitView(record.presentationKit!),
 });

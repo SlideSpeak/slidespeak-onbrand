@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { normalizeOutputDirectory } from "./prisma-design-system-service";
+import { normalizeOutputDirectory } from "./workflow";
 
-describe("normalizeOutputDirectory", () => {
+describe("Brand Kit Asset File output directory normalization", () => {
   it("normalizes relative workspace paths", () => {
     expect(normalizeOutputDirectory(" ./assets/ ")).toBe("assets");
     expect(normalizeOutputDirectory("./assets/icons/")).toBe("assets/icons");
