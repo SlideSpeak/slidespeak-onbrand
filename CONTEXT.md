@@ -42,6 +42,10 @@ Deck Kit
 **Design Prompt**: Narrative presentation guidance that captures brand-specific slide design rules,
 layout grammar, copy style, and quality checks for AI agents. _Avoid_: Master prompt, system prompt
 
+**Onbrand Skill**: General agent guidance that explains what **Onbrand** can do and how an AI agent
+should use its tools. It is distinct from a **Design Prompt**, which is specific to one **Design
+System**. _Avoid_: Onbrand Orientation, onboarding prompt, discovery prompt, help prompt
+
 **Slide Canvas**: The canonical coordinate space used by a **Presentation Kit** to describe slide
 size and aspect ratio. _Avoid_: Page size, viewport, artboard
 

@@ -51,6 +51,19 @@ describe("Onbrand MCP tools", () => {
     });
   });
 
+  test("get_onbrand_skill returns structured skill with Markdown text", async () => {
+    const client = await connectedClient(fakeDesignSystems());
+
+    const result = await client.callTool({
+      name: "get_onbrand_skill",
+      arguments: {},
+    });
+
+    expect(JSON.stringify(result.structuredContent)).toContain("# SlideSpeak Onbrand Skill");
+    expect(JSON.stringify(result.content)).toContain("# SlideSpeak Onbrand Skill");
+    expect(JSON.stringify(result.content)).not.toEqual(JSON.stringify(result.structuredContent));
+  });
+
   test("get_design_system returns selected Design System metadata without resource links", async () => {
     const designSystems = fakeDesignSystems();
     const client = await connectedClient(designSystems);
@@ -65,22 +78,22 @@ describe("Onbrand MCP tools", () => {
     expect(result.content).toEqual([{ type: "text", text: JSON.stringify(ACME_DESIGN_SYSTEM) }]);
   });
 
-  test("get_design_system_writer_prompt exposes the authoring rubric", async () => {
+  test("get_design_system_writer_skill exposes the authoring skill", async () => {
     const client = await connectedClient(fakeDesignSystems());
 
     const result = await client.callTool({
-      name: "get_design_system_writer_prompt",
+      name: "get_design_system_writer_skill",
       arguments: {},
     });
 
-    expect(JSON.stringify(result.structuredContent)).toContain("Design System Writer Prompt");
+    expect(JSON.stringify(result.structuredContent)).toContain("Design System Writer Skill");
     expect(JSON.stringify(result.structuredContent)).toContain("SKYLEAGUE");
     expect(JSON.stringify(result.structuredContent)).toContain("NON-NEGOTIABLE ASSET HANDOFF");
     expect(JSON.stringify(result.structuredContent)).toContain("Hard gate");
     expect(JSON.stringify(result.structuredContent)).toContain("rendered sample validation");
-    expect(result.content).toEqual([
-      { type: "text", text: JSON.stringify(result.structuredContent) },
-    ]);
+    expect(JSON.stringify(result.structuredContent)).toContain("writerSkill");
+    expect(JSON.stringify(result.content)).toContain("Design System Writer Skill");
+    expect(JSON.stringify(result.content)).not.toEqual(JSON.stringify(result.structuredContent));
   });
 
   test("prepare_design_system_asset_uploads returns direct-to-S3 PUT commands", async () => {

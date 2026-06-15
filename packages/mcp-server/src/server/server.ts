@@ -3,7 +3,8 @@ import type { Implementation } from "@modelcontextprotocol/sdk/types.js";
 import { type AuthContext } from "@onbrand/core/auth/context";
 import { type DesignSystemApplicationService } from "@onbrand/core/design-system/application-service";
 import { registerGetDesignSystemTool } from "./tools/get-design-system";
-import { registerGetDesignSystemWriterPromptTool } from "./tools/get-design-system-writer-prompt";
+import { registerGetDesignSystemWriterSkillTool } from "./tools/get-design-system-writer-skill";
+import { registerGetOnbrandSkillTool } from "./tools/get-onbrand-skill";
 import { registerListDesignSystemsTool } from "./tools/list-design-systems";
 import { registerMaterializeBrandKitAssetsTool } from "./tools/materialize-brand-kit-assets";
 import { registerPrepareDesignSystemAssetUploadsTool } from "./tools/prepare-design-system-asset-uploads";
@@ -23,10 +24,11 @@ export const createOnbrandMcpServer = (
   const server = new McpServer(SERVER_INFO);
   const context = { server, designSystems, authContext };
 
+  registerGetOnbrandSkillTool(context);
   registerListDesignSystemsTool(context);
   registerGetDesignSystemTool(context);
   registerMaterializeBrandKitAssetsTool(context);
-  registerGetDesignSystemWriterPromptTool(context);
+  registerGetDesignSystemWriterSkillTool(context);
   registerPrepareDesignSystemAssetUploadsTool(context);
   registerWriteDesignSystemTool(context);
 
