@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "mcp": "tsx src/mcp-server/http.ts",
+    "mcp": "tsx src/server/http.ts",
     "build": "cd ../.. && vite build --config vite.config.ts",
     "typecheck": "tsc --noEmit -p ../../tsconfig.json",
     "test": "vitest run --config ../../vitest.config.ts"

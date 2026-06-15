@@ -19,4 +19,4 @@ RUN bunx prisma generate
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "bunx prisma migrate deploy && bun packages/mcp-server/src/mcp-server/http.ts"]
+CMD ["sh", "-c", "bunx prisma migrate deploy && bun packages/mcp-server/src/server/http.ts"]

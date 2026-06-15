@@ -6,8 +6,8 @@
   shape matches.
 - A domain concept imports another domain concept's id/value schema instead of depending on a shared
   primitive.
-- A generic primitive schema such as a slug, hex color, URL, or checksum is redeclared locally instead
-  of using an existing shared schema package.
+- A generic primitive schema such as a slug, hex color, URL, or checksum is redeclared locally
+  instead of using an existing shared schema package.
 - The alias makes one domain concept appear owned by another unrelated domain concept.
 
 ## Do not flag

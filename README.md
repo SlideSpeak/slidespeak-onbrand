@@ -25,8 +25,12 @@ claude mcp add --transport http onbrand http://localhost:8080/mcp
 ## Available tools
 
 - `list_design_systems` — List Design Systems available to the current user.
-- `get_design_system` — Get Design System metadata, Brand Kit tokens, asset handles, and Presentation Kit guidance.
-- `materialize_brand_kit_assets` — Get S3 download commands for Brand Kit assets such as logos and decorative files.
+- `get_design_system` — Get Design System metadata, Brand Kit tokens, asset handles, and
+  Presentation Kit guidance.
+- `materialize_brand_kit_assets` — Get S3 download commands for Brand Kit assets such as logos and
+  decorative files.
 - `get_design_system_writer_prompt` — Get the rubric for authoring a new Design System.
-- `prepare_design_system_asset_uploads` — Get S3 upload commands for new logo and decorative asset files.
-- `write_design_system` — Create or replace a Design System using uploaded asset references and design guidance.
+- `prepare_design_system_asset_uploads` — Get S3 upload commands for new logo and decorative asset
+  files.
+- `write_design_system` — Create or replace a Design System using uploaded asset references and
+  design guidance.

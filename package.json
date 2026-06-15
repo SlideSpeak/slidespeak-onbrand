@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "mcp": "tsx packages/mcp-server/src/mcp-server/http.ts",
+    "mcp": "tsx packages/mcp-server/src/server/http.ts",
     "build": "prisma generate && vite build --config vite.config.ts",
     "typecheck": "prisma generate && tsc --noEmit",
     "lint": "prisma generate && eslint .",
