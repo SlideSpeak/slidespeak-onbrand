@@ -1,18 +1,21 @@
 {
-  "name": "onbrand",
+  "name": "@onbrand/core",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./auth/context": "./src/auth/context.ts",
+    "./database/prisma-client": "./src/database/prisma-client.ts",
+    "./design-system/application-service": "./src/design-system/application-service.ts",
+    "./design-system/prisma-design-system-service": "./src/design-system/prisma-design-system-service.ts",
+    "./env": "./src/env.ts"
+  },
   "scripts": {
-    "mcp": "tsx src/mcp-server/http.ts",
-    "build": "vite build --config ../../vite.config.ts",
     "typecheck": "tsc --noEmit -p ../../tsconfig.json",
     "test": "vitest run --config ../../vitest.config.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.29.0",
     "@onbrand/env": "workspace:*",
-    "@onbrand/file": "workspace:*",
     "@onbrand/s3": "workspace:*",
     "@onbrand/number": "workspace:*",
     "@onbrand/string": "workspace:*",

@@ -1,9 +1,0 @@
-Create or replace a complete Design System from source material the user provides (URL, PDF, PPTX,
-image, existing deck, notes, or any combination). Every written Design System must include a useful
-human-readable description so future agents understand when and how to use it. Before calling:
-inspect the source, extract the organization's visual language, colors, logo/decorative asset files,
-slide canvas, and write a detailed slide Design Prompt. Upload exact asset files first with
-prepare_design_system_asset_uploads, then pass the returned assetId/s3Key/byteSize/sha256 references
-here. The logo assetId may be descriptive (for example, primary-logo); it is stored as the Design
-System Logo and later exposed to consumers through the canonical LOGO handle. Do not send file bytes
-through MCP and do not include invented or approximate logos.

@@ -10,7 +10,7 @@ export type PresignedGetObjectInput = Readonly<{
   expiresInSeconds: number;
 }>;
 
-export const createPresignedGetUrl = (
+export const getPresigned = (
   client: S3Client,
   { bucket, key, filename, contentType, expiresInSeconds }: PresignedGetObjectInput,
 ): Promise<string> =>

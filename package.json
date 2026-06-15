@@ -7,16 +7,15 @@
     "packages/*"
   ],
   "scripts": {
-    "mcp": "tsx packages/onbrand/src/mcp-server/http.ts",
-    "build": "prisma generate && cd packages/onbrand && vite build --config ../../vite.config.ts",
+    "mcp": "tsx packages/mcp-server/src/server/http.ts",
+    "build": "prisma generate && vite build --config vite.config.ts",
     "typecheck": "prisma generate && tsc --noEmit",
     "lint": "prisma generate && eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "prisma generate && vitest run",
     "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "assets:upload-s3": "bun packages/onbrand/src/design-system/registry/upload-brand-kit-assets-to-s3.ts"
+    "db:migrate": "prisma migrate dev"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
