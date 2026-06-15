@@ -129,6 +129,29 @@ describe("Onbrand MCP tools", () => {
     expect(JSON.stringify(result)).not.toContain("contentBase64");
   });
 
+  test("prepare_design_system_asset_uploads rejects consumer asset handles as upload ids", async () => {
+    const client = await connectedClient(fakeDesignSystems());
+
+    const result = await callTool(client, {
+      name: "prepare_design_system_asset_uploads",
+      arguments: {
+        designSystemId: "newco",
+        uploads: [
+          {
+            assetId: "LOGO",
+            filename: "logo.svg",
+            mimeType: "image/svg+xml",
+            byteSize: 7,
+            sha256: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          },
+        ],
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(firstTextContent(result)).toContain("assetId");
+  });
+
   test("write_design_system persists a model-constructed Design System without asset bytes", async () => {
     const client = await connectedClient(fakeDesignSystems());
     const request = {
@@ -161,10 +184,20 @@ describe("Onbrand MCP tools", () => {
     const result = await callTool(client, { name: "write_design_system", arguments: request });
     const structuredContent = record(result.structuredContent);
     const designSystem = record(structuredContent.designSystem);
+    const brandKit = record(designSystem.brandKit);
+    const logo = record(brandKit.logo);
 
     expect(structuredContent.designSystemId).toBe(request.designSystem.id);
-    expect(structuredContent.action).toBeTypeOf("string");
+    expect(structuredContent.action).toBe("created");
     expect(designSystem.designSystem).toEqual(request.designSystem);
+    expect(logo.assetHandle).toBe("LOGO");
+    expect(logo.filename).toBe(request.brandKit.logo.filename);
+    expect(logo.mimeType).toBe(request.brandKit.logo.mimeType);
+    expect(logo).not.toHaveProperty("assetId");
+    expect(logo).not.toHaveProperty("s3Key");
+    expect(logo).not.toHaveProperty("byteSize");
+    expect(logo).not.toHaveProperty("sha256");
+    expect(designSystem.presentationKit).toEqual(request.presentationKit);
     expect(JSON.stringify(result)).not.toContain("contentBase64");
   });
 

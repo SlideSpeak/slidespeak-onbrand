@@ -36,7 +36,7 @@ afterEach(() => {
 describe("Env", () => {
   test("validates required variables while allowing declared defaults", () => {
     expect(() => Env.validate(requiredTestEnv)).not.toThrow();
-    expect(() => Env.validate({})).toThrow();
+    expect(() => Env.validate({})).toThrow(/BASE_URL/);
   });
 
   test("reads values from the same registry declaration", () => {
@@ -59,6 +59,6 @@ describe("Env", () => {
         ...requiredTestEnv,
         ASSET_DOWNLOAD_EXPIRES_IN_SECONDS: "0",
       }),
-    ).toThrow();
+    ).toThrow(/ASSET_DOWNLOAD_EXPIRES_IN_SECONDS.*positive integer/);
   });
 });
