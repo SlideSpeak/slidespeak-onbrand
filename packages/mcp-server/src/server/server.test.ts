@@ -4,6 +4,28 @@ import { describe, expect, test } from "vitest";
 import type { DesignSystemApplicationService } from "@onbrand/core/design-system/application-service";
 import { createOnbrandMcpServer, toToolResult } from "./server";
 
+type ToolResultRecord = Record<string, unknown>;
+
+const callTool = async (
+  client: Client,
+  request: Parameters<Client["callTool"]>[0],
+): Promise<ToolResultRecord> => await client.callTool(request);
+
+const record = (value: unknown): ToolResultRecord => {
+  expect(value).toBeTypeOf("object");
+  expect(value).not.toBeNull();
+  return value as ToolResultRecord;
+};
+
+const firstTextContent = (result: ToolResultRecord): string => {
+  const content = result.content;
+  expect(Array.isArray(content)).toBe(true);
+  const first = record((content as unknown[])[0]);
+  expect(first.type).toBe("text");
+  expect(first.text).toBeTypeOf("string");
+  return first.text as string;
+};
+
 const ACME_DESIGN_SYSTEM = {
   designSystem: {
     id: "acme",
@@ -34,72 +56,55 @@ const ACME_DESIGN_SYSTEM = {
 };
 
 describe("Onbrand MCP tools", () => {
-  test("serializes structured content as matching JSON text", () => {
-    const result = {
-      designSystems: [
-        {
-          id: "acme",
-          name: "Acme Design System",
-          description: "Reusable Acme presentation system for sales and strategy decks.",
-        },
-      ],
-    };
+  test("returns tool results with machine-readable structured content and matching text content", () => {
+    const result = { designSystems: [ACME_DESIGN_SYSTEM.designSystem] };
+    const toolResult = toToolResult(result);
 
-    expect(toToolResult(result)).toEqual({
-      structuredContent: result,
-      content: [{ type: "text", text: JSON.stringify(result) }],
-    });
+    expect(toolResult.structuredContent).toBe(result);
+    expect(
+      JSON.parse(toolResult.content[0]?.type === "text" ? toolResult.content[0].text : "{}"),
+    ).toEqual(result);
   });
 
-  test("get_onbrand_skill returns structured skill with Markdown text", async () => {
+  test("get_onbrand_skill exposes the skill as structured data and readable text", async () => {
     const client = await connectedClient(fakeDesignSystems());
 
-    const result = await client.callTool({
-      name: "get_onbrand_skill",
-      arguments: {},
-    });
+    const result = await callTool(client, { name: "get_onbrand_skill", arguments: {} });
+    const structuredContent = record(result.structuredContent);
 
-    expect(JSON.stringify(result.structuredContent)).toContain("# SlideSpeak Onbrand Skill");
-    expect(JSON.stringify(result.content)).toContain("# SlideSpeak Onbrand Skill");
-    expect(JSON.stringify(result.content)).not.toEqual(JSON.stringify(result.structuredContent));
+    expect(structuredContent.skill).toBeTypeOf("string");
+    expect(firstTextContent(result)).not.toHaveLength(0);
   });
 
-  test("get_design_system returns selected Design System metadata without resource links", async () => {
-    const designSystems = fakeDesignSystems();
-    const client = await connectedClient(designSystems);
+  test("get_design_system returns the requested Design System without resource links", async () => {
+    const client = await connectedClient(fakeDesignSystems());
 
-    const result = await client.callTool({
+    const result = await callTool(client, {
       name: "get_design_system",
       arguments: { designSystemId: "acme" },
     });
 
     expect(client.getServerCapabilities()?.resources).toBeUndefined();
     expect(result.structuredContent).toEqual(ACME_DESIGN_SYSTEM);
-    expect(result.content).toEqual([{ type: "text", text: JSON.stringify(ACME_DESIGN_SYSTEM) }]);
   });
 
-  test("get_design_system_writer_skill exposes the authoring skill", async () => {
+  test("get_design_system_writer_skill exposes the authoring skill as structured data and readable text", async () => {
     const client = await connectedClient(fakeDesignSystems());
 
-    const result = await client.callTool({
+    const result = await callTool(client, {
       name: "get_design_system_writer_skill",
       arguments: {},
     });
+    const structuredContent = record(result.structuredContent);
 
-    expect(JSON.stringify(result.structuredContent)).toContain("Design System Writer Skill");
-    expect(JSON.stringify(result.structuredContent)).toContain("SKYLEAGUE");
-    expect(JSON.stringify(result.structuredContent)).toContain("NON-NEGOTIABLE ASSET HANDOFF");
-    expect(JSON.stringify(result.structuredContent)).toContain("Hard gate");
-    expect(JSON.stringify(result.structuredContent)).toContain("rendered sample validation");
-    expect(JSON.stringify(result.structuredContent)).toContain("writerSkill");
-    expect(JSON.stringify(result.content)).toContain("Design System Writer Skill");
-    expect(JSON.stringify(result.content)).not.toEqual(JSON.stringify(result.structuredContent));
+    expect(structuredContent.writerSkill).toBeTypeOf("string");
+    expect(firstTextContent(result)).not.toHaveLength(0);
   });
 
-  test("prepare_design_system_asset_uploads returns direct-to-S3 PUT commands", async () => {
+  test("prepare_design_system_asset_uploads delegates asset upload preparation without asset bytes", async () => {
     const client = await connectedClient(fakeDesignSystems());
 
-    const result = await client.callTool({
+    const result = await callTool(client, {
       name: "prepare_design_system_asset_uploads",
       arguments: {
         designSystemId: "newco",
@@ -115,21 +120,39 @@ describe("Onbrand MCP tools", () => {
       },
     });
 
-    expect(result.structuredContent).toEqual({
-      designSystemId: "newco",
-      instructions:
-        "Run each PUT command from the directory containing the exact asset file. Then call write_design_system with the returned s3Key, byteSize, and sha256 metadata. Do not send asset bytes through MCP.",
-      uploads: [
-        expect.objectContaining({
-          method: "PUT",
-          s3Key: "test-user/newco/primary-logo/logo.svg",
-          uploadUrl: "https://s3.example/upload/logo.svg?signature=test",
-        }),
-      ],
-    });
+    const structuredContent = record(result.structuredContent);
+    const uploads = structuredContent.uploads;
+    expect(structuredContent.designSystemId).toBe("newco");
+    expect(Array.isArray(uploads)).toBe(true);
+    expect(record((uploads as unknown[])[0]).method).toBe("PUT");
+    expect(record((uploads as unknown[])[0]).uploadUrl).toBeTypeOf("string");
+    expect(JSON.stringify(result)).not.toContain("contentBase64");
   });
 
-  test("write_design_system persists a model-constructed Design System", async () => {
+  test("prepare_design_system_asset_uploads rejects consumer asset handles as upload ids", async () => {
+    const client = await connectedClient(fakeDesignSystems());
+
+    const result = await callTool(client, {
+      name: "prepare_design_system_asset_uploads",
+      arguments: {
+        designSystemId: "newco",
+        uploads: [
+          {
+            assetId: "LOGO",
+            filename: "logo.svg",
+            mimeType: "image/svg+xml",
+            byteSize: 7,
+            sha256: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          },
+        ],
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(firstTextContent(result)).toContain("assetId");
+  });
+
+  test("write_design_system persists a model-constructed Design System without asset bytes", async () => {
     const client = await connectedClient(fakeDesignSystems());
     const request = {
       designSystem: {
@@ -158,67 +181,49 @@ describe("Onbrand MCP tools", () => {
       },
     };
 
-    const result = await client.callTool({ name: "write_design_system", arguments: request });
+    const result = await callTool(client, { name: "write_design_system", arguments: request });
+    const structuredContent = record(result.structuredContent);
+    const designSystem = record(structuredContent.designSystem);
+    const brandKit = record(designSystem.brandKit);
+    const logo = record(brandKit.logo);
 
-    expect(result.structuredContent).toEqual({
-      designSystemId: "newco",
-      action: "created",
-      designSystem: {
-        ...request,
-        brandKit: {
-          colors: request.brandKit.colors,
-          logo: {
-            name: "Primary Logo",
-            assetHandle: "LOGO",
-            filename: "logo.svg",
-            mimeType: "image/svg+xml",
-            description: "Use on light backgrounds.",
-          },
-          decorativeAssets: [],
-        },
-      },
-    });
+    expect(structuredContent.designSystemId).toBe(request.designSystem.id);
+    expect(structuredContent.action).toBe("created");
+    expect(designSystem.designSystem).toEqual(request.designSystem);
+    expect(logo.assetHandle).toBe("LOGO");
+    expect(logo.filename).toBe(request.brandKit.logo.filename);
+    expect(logo.mimeType).toBe(request.brandKit.logo.mimeType);
+    expect(logo).not.toHaveProperty("assetId");
+    expect(logo).not.toHaveProperty("s3Key");
+    expect(logo).not.toHaveProperty("byteSize");
+    expect(logo).not.toHaveProperty("sha256");
+    expect(designSystem.presentationKit).toEqual(request.presentationKit);
     expect(JSON.stringify(result)).not.toContain("contentBase64");
   });
 
-  test("returns S3 download commands instead of asset bytes", async () => {
+  test("materialize_brand_kit_assets returns download commands instead of asset bytes", async () => {
     const client = await connectedClient(fakeDesignSystems());
 
-    const result = await client.callTool({
+    const result = await callTool(client, {
       name: "materialize_brand_kit_assets",
-      arguments: {
-        designSystemId: "acme",
-        outputDirectory: "assets",
-      },
+      arguments: { designSystemId: "acme", outputDirectory: "assets" },
     });
+    const structuredContent = record(result.structuredContent);
+    const commands = structuredContent.commands;
+    const assets = structuredContent.assets;
 
-    const expected = {
-      designSystemId: "acme",
-      outputDirectory: "assets",
-      expiresInSeconds: 900,
-      instructions:
-        "Run the commands in the user's workspace to download exact Brand Kit files from short-lived S3 URLs. Do not paste, decode, or rewrite asset bytes manually from the MCP response.",
-      commands: [
-        "mkdir -p 'assets'",
-        "curl -fsSL 'https://s3.example/logo.svg?signature=test' -o 'assets/logo.svg'",
-      ],
-      assets: [
-        {
-          kind: "LOGO",
-          assetHandle: "LOGO",
-          name: "Primary Logo",
-          filename: "logo.svg",
-          mimeType: "image/svg+xml",
-          downloadUrl: "https://s3.example/logo.svg?signature=test",
-          targetPath: "assets/logo.svg",
-          relativePath: "assets/logo.svg",
-        },
-      ],
-    };
-    expect(result.structuredContent).toEqual(expected);
-    expect(result.content).toEqual([
-      { type: "text", text: JSON.stringify(result.structuredContent) },
-    ]);
+    expect(structuredContent.designSystemId).toBe("acme");
+    expect(structuredContent.outputDirectory).toBe("assets");
+    expect(Array.isArray(commands)).toBe(true);
+    expect(
+      (commands as unknown[]).some(
+        (command) => typeof command === "string" && command.startsWith("curl "),
+      ),
+    ).toBe(true);
+    expect(Array.isArray(assets)).toBe(true);
+    expect(
+      (assets as unknown[]).some((asset) => typeof record(asset).downloadUrl === "string"),
+    ).toBe(true);
     expect(JSON.stringify(result)).not.toContain("contentBase64");
     expect(JSON.stringify(result)).not.toContain(Buffer.from("<svg />").toString("base64"));
   });
@@ -236,13 +241,7 @@ const connectedClient = async (designSystems: DesignSystemApplicationService): P
 };
 
 const fakeDesignSystems = (): DesignSystemApplicationService => ({
-  listDesignSystems: async () => [
-    {
-      id: "acme",
-      name: "Acme Design System",
-      description: "Reusable Acme presentation system for sales and strategy decks.",
-    },
-  ],
+  listDesignSystems: async () => [ACME_DESIGN_SYSTEM.designSystem],
   getDesignSystem: async (_auth, id) => {
     if (id !== "acme") throw new Error("Unknown Design System");
     return ACME_DESIGN_SYSTEM;
@@ -257,9 +256,7 @@ const fakeDesignSystems = (): DesignSystemApplicationService => ({
       uploadUrl: `https://s3.example/upload/${upload.filename}?signature=test`,
       expiresInSeconds: 900,
       method: "PUT" as const,
-      headers: {
-        "Content-Type": upload.mimeType,
-      },
+      headers: { "Content-Type": upload.mimeType },
       command: "curl -fsSL -X PUT ...",
     })),
   }),

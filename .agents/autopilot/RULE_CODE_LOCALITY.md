@@ -6,10 +6,12 @@
   orchestration for multiple domain sub-concepts.
 - A refactor moves a concept into a folder but leaves residual flat/backwards-compatibility files
   such as `concept.ts`, `asset.ts`, or `storage/*` that remain part of the active import graph.
-- Concept-specific DB/persistence mapping lives in a parent catch-all module instead of beside the
+- Concept-specific persistence mapping lives in a parent catch-all module instead of beside the
   concept it maps.
-- Imports route through old compatibility paths when a concept-local `index.ts`, `db.ts`, or
-  similarly owned module exists.
+- New or renamed files use adapter-shaped names such as `db.ts`, `prisma-*.ts`, or `*-prisma-*.ts`
+  for domain concepts instead of domain-local names.
+- Imports route through old compatibility paths when a concept-local `index.ts`, `record.ts`,
+  `*-record.ts`, `workflow.ts`, or similarly owned module exists.
 
 ## Do not flag
 
@@ -26,6 +28,9 @@ concept should be easy to find beside that concept.
 
 ## Fix
 
-Move concept-owned code into the owning concept folder, usually as `index.ts` for schema/types/rules
-and `db.ts` for persistence mapping. Delete residual compatibility files and update imports to the
-concept-local path instead of preserving backwards-compatible paths inside the application code.
+Move concept-owned code into the owning concept folder, usually as `index.ts` for
+schema/types/rules, `record.ts` or `*-record.ts` for persistence record mapping, `workflow.ts` for
+multi-step domain behavior, and `*-store.ts` for storage access. Avoid `db.ts` and Prisma-named
+files unless the file is truly an adapter-only implementation. Delete residual compatibility files
+and update imports to the concept-local path instead of preserving backwards-compatible paths inside
+the application code.
