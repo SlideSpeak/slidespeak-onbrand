@@ -13,7 +13,12 @@ export const toPresentationKitView = (
   canvas: {
     width: presentationKit.canvasWidth,
     height: presentationKit.canvasHeight,
-    unit: "px",
+    unit: toSlideCanvasUnit(presentationKit.canvasUnit),
   },
   ...(presentationKit.designPrompt === null ? {} : { designPrompt: presentationKit.designPrompt }),
 });
+
+const toSlideCanvasUnit = (canvasUnit: string): "px" => {
+  if (canvasUnit === "px") return canvasUnit;
+  throw new Error(`Unsupported stored Slide Canvas unit: ${canvasUnit}`);
+};

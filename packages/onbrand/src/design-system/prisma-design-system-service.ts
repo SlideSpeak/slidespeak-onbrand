@@ -189,11 +189,19 @@ export class PrismaDesignSystemApplicationService implements DesignSystemApplica
 
 const hexToBase64Sha256 = (hex: string): string => Buffer.from(hex, "hex").toString("base64");
 
-const normalizeOutputDirectory = (outputDirectory: string): string => {
+export const normalizeOutputDirectory = (outputDirectory: string): string => {
   const normalized = outputDirectory
     .trim()
     .replace(/^\.\/+/, "")
     .replace(/\/+$/, "");
+
+  if (normalized.startsWith("/")) {
+    throw new Error("Brand Kit asset outputDirectory must be relative to the workspace");
+  }
+  if (normalized.split("/").includes("..")) {
+    throw new Error("Brand Kit asset outputDirectory must not contain '..' path segments");
+  }
+
   return normalized.length === 0 ? "." : normalized;
 };
 
