@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { slugSchema } from "@onbrand/string";
-import { brandKitSchema } from "./brand-kit/brand-kit";
+import { brandKitSchema } from "./brand-kit/index";
 import { presentationKitSchema } from "./presentation-kit/presentation-kit";
 
 export const designSystemIdSchema = slugSchema;

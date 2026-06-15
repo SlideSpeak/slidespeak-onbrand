@@ -7,8 +7,8 @@
     "packages/*"
   ],
   "scripts": {
-    "mcp": "tsx packages/onbrand/src/mcp-server/http.ts",
-    "build": "prisma generate && cd packages/onbrand && vite build --config ../../vite.config.ts",
+    "mcp": "tsx packages/mcp-server/src/mcp-server/http.ts",
+    "build": "prisma generate && vite build --config vite.config.ts",
     "typecheck": "prisma generate && tsc --noEmit",
     "lint": "prisma generate && eslint .",
     "format": "prettier --write .",

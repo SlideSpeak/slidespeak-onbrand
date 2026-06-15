@@ -9,6 +9,7 @@ COPY packages/number/package.json packages/number/package.json
 COPY packages/string/package.json packages/string/package.json
 COPY packages/s3/package.json packages/s3/package.json
 COPY packages/onbrand/package.json packages/onbrand/package.json
+COPY packages/mcp-server/package.json packages/mcp-server/package.json
 
 RUN bun install --frozen-lockfile
 
@@ -18,4 +19,4 @@ RUN bunx prisma generate
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "bunx prisma migrate deploy && bun packages/onbrand/src/mcp-server/http.ts"]
+CMD ["sh", "-c", "bunx prisma migrate deploy && bun packages/mcp-server/src/mcp-server/http.ts"]

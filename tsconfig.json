@@ -10,7 +10,16 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "@onbrand/core/*": ["./packages/onbrand/src/*"],
+      "@onbrand/env": ["./packages/env/src/index.ts"],
+      "@onbrand/file": ["./packages/file/src/index.ts"],
+      "@onbrand/number": ["./packages/number/src/index.ts"],
+      "@onbrand/s3": ["./packages/s3/src/index.ts"],
+      "@onbrand/string": ["./packages/string/src/index.ts"],
+      "@onbrand/string/*": ["./packages/string/src/*"]
+    }
   },
   "include": ["packages/**/*.ts"],
   "exclude": ["node_modules", "dist"]

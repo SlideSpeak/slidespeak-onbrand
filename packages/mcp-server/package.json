@@ -1,0 +1,23 @@
+{
+  "name": "@onbrand/mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "mcp": "tsx src/mcp-server/http.ts",
+    "build": "cd ../.. && vite build --config vite.config.ts",
+    "typecheck": "tsc --noEmit -p ../../tsconfig.json",
+    "test": "vitest run --config ../../vitest.config.ts"
+  },
+  "dependencies": {
+    "@onbrand/core": "workspace:*",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "@onbrand/file": "workspace:*",
+    "@onbrand/s3": "workspace:*",
+    "@onbrand/string": "workspace:*",
+    "@hono/node-server": "2.0.4",
+    "hono": "4.12.25",
+    "jose": "6.2.3",
+    "zod": "4.4.3"
+  }
+}

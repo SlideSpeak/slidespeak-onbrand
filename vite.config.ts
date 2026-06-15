@@ -4,8 +4,8 @@ export default defineConfig({
   root: ".",
   build: {
     target: "node22",
-    ssr: "src/mcp-server/http.ts",
-    outDir: "dist",
+    ssr: "packages/mcp-server/src/mcp-server/http.ts",
+    outDir: "packages/mcp-server/dist",
     rollupOptions: {
       output: {
         banner: "#!/usr/bin/env node",
