@@ -3,11 +3,11 @@ import { decorativeAssetHandle, type BrandKitDecorativeAsset } from "../decorati
 import { brandKitAssetFileObjectKey } from "../asset-file/object-key";
 import {
   asSupportedBrandKitAssetMimeType,
-  type StoredBrandKitAsset,
-  type WritableStoredBrandKitAsset,
-} from "../asset-file/db";
+  type BrandKitAssetRecord,
+  type WritableBrandKitAssetRecord,
+} from "../asset-file/record";
 
-export const toStoredDecorativeAssetRecord = ({
+export const toDecorativeAssetRecord = ({
   ownerUserId,
   designSystemId,
   asset,
@@ -15,10 +15,10 @@ export const toStoredDecorativeAssetRecord = ({
 }: {
   ownerUserId: string;
   designSystemId: string;
-  asset: WritableStoredBrandKitAsset & Readonly<{ id: string }>;
+  asset: WritableBrandKitAssetRecord & Readonly<{ id: string }>;
   sortOrder: number;
-}): StoredBrandKitAsset &
-  WritableStoredBrandKitAsset &
+}): BrandKitAssetRecord &
+  WritableBrandKitAssetRecord &
   Readonly<{ byteSize: number; sha256: string }> => {
   const expectedS3Key = brandKitAssetFileObjectKey({
     ownerUserId,
@@ -34,7 +34,7 @@ export const toStoredDecorativeAssetRecord = ({
   return { ...asset, assetId: asset.id, kind: "DECORATIVE_ASSET", sortOrder };
 };
 
-export const toDecorativeAssetView = (asset: StoredBrandKitAsset): BrandKitDecorativeAsset => ({
+export const toDecorativeAssetView = (asset: BrandKitAssetRecord): BrandKitDecorativeAsset => ({
   id: asset.assetId,
   name: asset.name,
   assetHandle: decorativeAssetHandle(asset.assetId),

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { toPresentationKitView } from "./prisma-presentation-kit";
+import { toPresentationKitView } from "./presentation-kit-record";
 
 describe("toPresentationKitView", () => {
-  it("maps the stored canvas unit", () => {
+  it("maps the Presentation Kit record canvas unit", () => {
     expect(
       toPresentationKitView({
         canvasWidth: 1280,
@@ -13,7 +13,7 @@ describe("toPresentationKitView", () => {
     ).toEqual({ width: 1280, height: 720, unit: "px" });
   });
 
-  it("rejects unsupported stored canvas units", () => {
+  it("rejects unsupported Presentation Kit record canvas units", () => {
     expect(() =>
       toPresentationKitView({
         canvasWidth: 1280,
@@ -21,6 +21,6 @@ describe("toPresentationKitView", () => {
         canvasUnit: "em",
         designPrompt: null,
       }),
-    ).toThrow("Unsupported stored Slide Canvas unit: em");
+    ).toThrow("Unsupported Presentation Kit record Slide Canvas unit: em");
   });
 });

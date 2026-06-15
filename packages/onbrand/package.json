@@ -7,7 +7,7 @@
     "./design-system/owner": "./src/design-system/owner.ts",
     "./database/prisma-client": "./src/database/prisma-client.ts",
     "./design-system/application-service": "./src/design-system/application-service.ts",
-    "./design-system/prisma-design-system-service": "./src/design-system/prisma-design-system-service.ts",
+    "./design-system/application": "./src/design-system/design-system-application.ts",
     "./env": "./src/env.ts"
   },
   "scripts": {

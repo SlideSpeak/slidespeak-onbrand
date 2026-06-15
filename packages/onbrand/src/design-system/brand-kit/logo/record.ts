@@ -3,20 +3,20 @@ import { LOGO_ASSET_HANDLE, type BrandKitVisualAsset } from "../logo/index";
 import { brandKitAssetFileObjectKey } from "../asset-file/object-key";
 import {
   asSupportedBrandKitAssetMimeType,
-  type StoredBrandKitAsset,
-  type WritableStoredBrandKitAsset,
-} from "../asset-file/db";
+  type BrandKitAssetRecord,
+  type WritableBrandKitAssetRecord,
+} from "../asset-file/record";
 
-export const toStoredLogoAssetRecord = ({
+export const toLogoAssetRecord = ({
   ownerUserId,
   designSystemId,
   asset,
 }: {
   ownerUserId: string;
   designSystemId: string;
-  asset: WritableStoredBrandKitAsset & Readonly<{ assetId: string }>;
-}): StoredBrandKitAsset &
-  WritableStoredBrandKitAsset &
+  asset: WritableBrandKitAssetRecord & Readonly<{ assetId: string }>;
+}): BrandKitAssetRecord &
+  WritableBrandKitAssetRecord &
   Readonly<{ byteSize: number; sha256: string }> => {
   const expectedS3Key = brandKitAssetFileObjectKey({
     ownerUserId,
@@ -32,7 +32,7 @@ export const toStoredLogoAssetRecord = ({
   return { ...asset, assetId: asset.assetId, kind: "LOGO", sortOrder: 0 };
 };
 
-export const toLogoView = (logo: StoredBrandKitAsset): BrandKitVisualAsset => ({
+export const toLogoView = (logo: BrandKitAssetRecord): BrandKitVisualAsset => ({
   name: logo.name,
   assetHandle: LOGO_ASSET_HANDLE,
   filename: logo.filename,

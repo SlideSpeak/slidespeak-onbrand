@@ -11,7 +11,7 @@ import {
   ServerError,
 } from "@modelcontextprotocol/sdk/server/auth/errors.js";
 import { createPrismaClient } from "@onbrand/core/database/prisma-client";
-import { PrismaDesignSystemApplicationService } from "@onbrand/core/design-system/prisma-design-system-service";
+import { PersistentDesignSystemApplication } from "@onbrand/core/design-system/application";
 import {
   ownerUserIdFromAuthInfo,
   SlideSpeakTokenVerifier,
@@ -131,7 +131,7 @@ const main = async (): Promise<void> => {
   };
 
   const prisma = createPrismaClient();
-  const designSystems = new PrismaDesignSystemApplicationService(
+  const designSystems = new PersistentDesignSystemApplication(
     prisma,
     S3,
     Env.AWS_S3_BUCKET_BRAND_KIT_ASSETS,

@@ -2,7 +2,7 @@ import { createEnvRegistry, optionalString } from "@onbrand/env";
 import type { S3 } from "@onbrand/s3";
 import { describe, expect, it, afterAll } from "vitest";
 import { createPrismaClient } from "../database/prisma-client";
-import { PrismaDesignSystemApplicationService } from "./prisma-design-system-service";
+import { PersistentDesignSystemApplication } from "./design-system-application";
 import { UnknownDesignSystemError } from "./application-service";
 
 const Env = createEnvRegistry({
@@ -16,9 +16,9 @@ const fakeS3: Pick<typeof S3, "getPresigned" | "putPresigned"> = {
   putPresigned: async ({ key }) => `https://s3.example/upload/${key}`,
 };
 
-describeDatabaseIntegration("PrismaDesignSystemApplicationService", () => {
+describeDatabaseIntegration("PersistentDesignSystemApplication", () => {
   const prisma = createPrismaClient();
-  const service = new PrismaDesignSystemApplicationService(
+  const service = new PersistentDesignSystemApplication(
     prisma,
     fakeS3,
     "brand-kit-assets-test",
