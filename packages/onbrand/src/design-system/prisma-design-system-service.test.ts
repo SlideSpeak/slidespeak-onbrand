@@ -24,9 +24,8 @@ describeDatabaseIntegration("PrismaDesignSystemApplicationService", () => {
     "brand-kit-assets-test",
     900,
   );
-  const auth = {
+  const owner = {
     ownerUserId: "test-owner-user",
-    scopes: ["onbrand:read", "onbrand:write"],
   };
 
   afterAll(async () => {
@@ -34,7 +33,7 @@ describeDatabaseIntegration("PrismaDesignSystemApplicationService", () => {
   });
 
   it("lists Design Systems from Postgres", async () => {
-    const designSystems = await service.listDesignSystems(auth);
+    const designSystems = await service.listDesignSystems(owner);
     const skyleague = designSystems.find((designSystem) => designSystem.id === "skyleague");
 
     expect(skyleague?.name).toBe("SKYLEAGUE Design System");
@@ -42,7 +41,7 @@ describeDatabaseIntegration("PrismaDesignSystemApplicationService", () => {
   });
 
   it("returns the full Design System view assembled from normalized tables", async () => {
-    const result = await service.getDesignSystem(auth, "skyleague");
+    const result = await service.getDesignSystem(owner, "skyleague");
 
     expect(result.designSystem.id).toBe("skyleague");
     expect(result.brandKit.colors).toHaveLength(10);
@@ -62,7 +61,7 @@ describeDatabaseIntegration("PrismaDesignSystemApplicationService", () => {
   });
 
   it("returns Brand Kit asset S3 download commands", async () => {
-    const result = await service.materializeBrandKitAssets(auth, {
+    const result = await service.materializeBrandKitAssets(owner, {
       designSystemId: "skyleague",
       outputDirectory: "assets",
     });
@@ -83,7 +82,7 @@ describeDatabaseIntegration("PrismaDesignSystemApplicationService", () => {
   });
 
   it("rejects unknown Design Systems", async () => {
-    await expect(service.getDesignSystem(auth, "missing")).rejects.toThrow(
+    await expect(service.getDesignSystem(owner, "missing")).rejects.toThrow(
       UnknownDesignSystemError,
     );
   });

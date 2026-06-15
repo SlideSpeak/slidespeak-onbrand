@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Implementation } from "@modelcontextprotocol/sdk/types.js";
-import { type AuthContext } from "@onbrand/core/auth/context";
+import { type McpAuthContext } from "../auth/context";
 import { type DesignSystemApplicationService } from "@onbrand/core/design-system/application-service";
 import { registerGetDesignSystemTool } from "./tools/get-design-system";
 import { registerGetDesignSystemWriterSkillTool } from "./tools/get-design-system-writer-skill";
@@ -19,7 +19,7 @@ export const SERVER_INFO = {
 
 export const createOnbrandMcpServer = (
   designSystems: DesignSystemApplicationService,
-  authContext: AuthContext,
+  authContext: McpAuthContext,
 ): McpServer => {
   const server = new McpServer(SERVER_INFO);
   const context = { server, designSystems, authContext };

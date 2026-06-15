@@ -1,7 +1,7 @@
 import { brandKitAssetFileObjectKey } from "./brand-kit/asset-file/object-key";
 import type { S3 } from "@onbrand/s3";
 import type { PrismaClient } from "@prisma/client";
-import type { AuthContext } from "../auth/context";
+import type { DesignSystemOwner } from "./owner";
 import type { DesignSystemSummary } from "./design-system";
 import type { BrandKitAssetMaterializationPlan } from "./brand-kit/asset-file/index";
 import { toBrandKitAssetDownload } from "./brand-kit/asset-file/db";
@@ -30,17 +30,20 @@ export class PrismaDesignSystemApplicationService implements DesignSystemApplica
     private readonly assetPresignedUrlExpiresInSeconds: number,
   ) {}
 
-  listDesignSystems = async (auth: AuthContext): Promise<readonly DesignSystemSummary[]> =>
-    listDesignSystemSummaries(this.prisma, auth);
+  listDesignSystems = async (owner: DesignSystemOwner): Promise<readonly DesignSystemSummary[]> =>
+    listDesignSystemSummaries(this.prisma, owner);
 
-  getDesignSystem = async (auth: AuthContext, designSystemId: string): Promise<DesignSystemView> =>
-    toDesignSystemView(await loadStoredDesignSystem(this.prisma, auth, designSystemId));
+  getDesignSystem = async (
+    owner: DesignSystemOwner,
+    designSystemId: string,
+  ): Promise<DesignSystemView> =>
+    toDesignSystemView(await loadStoredDesignSystem(this.prisma, owner, designSystemId));
 
   materializeBrandKitAssets = async (
-    auth: AuthContext,
+    owner: DesignSystemOwner,
     { designSystemId, outputDirectory }: MaterializeBrandKitAssetsRequest,
   ): Promise<BrandKitAssetMaterializationPlan> => {
-    const stored = await loadStoredDesignSystem(this.prisma, auth, designSystemId);
+    const stored = await loadStoredDesignSystem(this.prisma, owner, designSystemId);
     const normalizedOutputDirectory = normalizeOutputDirectory(outputDirectory);
     const downloads = await Promise.all(
       stored.brandKit!.assets.map((asset) =>
@@ -72,13 +75,13 @@ export class PrismaDesignSystemApplicationService implements DesignSystemApplica
   };
 
   prepareDesignSystemAssetUploads = async (
-    auth: AuthContext,
+    owner: DesignSystemOwner,
     request: PrepareDesignSystemAssetUploadsRequest,
   ): Promise<PrepareDesignSystemAssetUploadsResult> => {
     const uploads = await Promise.all(
       request.uploads.map(async (upload) => {
         const s3Key = brandKitAssetFileObjectKey({
-          ownerUserId: auth.ownerUserId,
+          ownerUserId: owner.ownerUserId,
           designSystemId: request.designSystemId,
           assetId: upload.assetId,
           filename: upload.filename,
@@ -111,18 +114,18 @@ export class PrismaDesignSystemApplicationService implements DesignSystemApplica
   };
 
   writeDesignSystem = async (
-    auth: AuthContext,
+    owner: DesignSystemOwner,
     request: WriteDesignSystemRequest,
   ): Promise<WriteDesignSystemResult> => {
     const storedAssets = [
       toStoredLogoAssetRecord({
-        ownerUserId: auth.ownerUserId,
+        ownerUserId: owner.ownerUserId,
         designSystemId: request.designSystem.id,
         asset: request.brandKit.logo,
       }),
       ...(request.brandKit.decorativeAssets ?? []).map((asset, index) =>
         toStoredDecorativeAssetRecord({
-          ownerUserId: auth.ownerUserId,
+          ownerUserId: owner.ownerUserId,
           designSystemId: request.designSystem.id,
           asset,
           sortOrder: index + 1,
@@ -133,16 +136,16 @@ export class PrismaDesignSystemApplicationService implements DesignSystemApplica
     const action = await this.prisma.$transaction(async (tx) => {
       const existing = await tx.designSystem.findUnique({
         where: {
-          ownerUserId_slug: { ownerUserId: auth.ownerUserId, slug: request.designSystem.id },
+          ownerUserId_slug: { ownerUserId: owner.ownerUserId, slug: request.designSystem.id },
         },
         select: { id: true },
       });
       const designSystem = await tx.designSystem.upsert({
         where: {
-          ownerUserId_slug: { ownerUserId: auth.ownerUserId, slug: request.designSystem.id },
+          ownerUserId_slug: { ownerUserId: owner.ownerUserId, slug: request.designSystem.id },
         },
         create: {
-          ownerUserId: auth.ownerUserId,
+          ownerUserId: owner.ownerUserId,
           slug: request.designSystem.id,
           schemaVersion: 1,
           name: request.designSystem.name,
@@ -182,7 +185,7 @@ export class PrismaDesignSystemApplicationService implements DesignSystemApplica
     return {
       designSystemId: request.designSystem.id,
       action,
-      designSystem: await this.getDesignSystem(auth, request.designSystem.id),
+      designSystem: await this.getDesignSystem(owner, request.designSystem.id),
     };
   };
 }

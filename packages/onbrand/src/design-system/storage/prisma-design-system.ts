@@ -1,12 +1,12 @@
 import type { PrismaClient } from "@prisma/client";
-import type { AuthContext } from "../../auth/context";
+import type { DesignSystemOwner } from "../owner";
 import { UnknownDesignSystemError, type DesignSystemView } from "../application-service";
 import { brandKitPrismaInclude, toBrandKitView } from "../brand-kit/db";
 import { toPresentationKitView } from "../presentation-kit/storage/prisma-presentation-kit";
 
-export const listDesignSystemSummaries = async (prisma: PrismaClient, auth: AuthContext) => {
+export const listDesignSystemSummaries = async (prisma: PrismaClient, owner: DesignSystemOwner) => {
   const rows = await prisma.designSystem.findMany({
-    where: { ownerUserId: auth.ownerUserId },
+    where: { ownerUserId: owner.ownerUserId },
     orderBy: { id: "asc" },
   });
   return rows.map((row) => ({ id: row.slug, name: row.name, description: row.description }));
@@ -14,11 +14,11 @@ export const listDesignSystemSummaries = async (prisma: PrismaClient, auth: Auth
 
 export const loadStoredDesignSystem = async (
   prisma: PrismaClient,
-  auth: AuthContext,
+  owner: DesignSystemOwner,
   designSystemId: string,
 ) => {
   const row = await prisma.designSystem.findUnique({
-    where: { ownerUserId_slug: { ownerUserId: auth.ownerUserId, slug: designSystemId } },
+    where: { ownerUserId_slug: { ownerUserId: owner.ownerUserId, slug: designSystemId } },
     include: {
       brandKit: { include: brandKitPrismaInclude },
       presentationKit: true,
