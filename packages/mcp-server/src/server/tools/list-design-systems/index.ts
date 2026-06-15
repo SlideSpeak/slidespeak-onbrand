@@ -12,7 +12,7 @@ export const registerListDesignSystemsTool = (context: ToolRegistrationContext):
       inputSchema: {},
     },
     handler: async () => ({
-      designSystems: await context.designSystems.listDesignSystems(context.authContext),
+      designSystems: await context.designSystems.listDesignSystems(context.designSystemOwner),
     }),
   });
 };

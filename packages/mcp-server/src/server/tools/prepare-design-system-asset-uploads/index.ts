@@ -22,6 +22,6 @@ export const registerPrepareDesignSystemAssetUploadsTool = (
       },
     },
     handler: (request) =>
-      context.designSystems.prepareDesignSystemAssetUploads(context.authContext, request),
+      context.designSystems.prepareDesignSystemAssetUploads(context.designSystemOwner, request),
   });
 };

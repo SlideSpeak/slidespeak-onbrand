@@ -1,3 +1,5 @@
+import type { DesignSystemOwner } from "@onbrand/core/design-system/owner";
+
 export type OnbrandScope = "onbrand:read" | "onbrand:write";
 
 export type McpAuthContext = Readonly<{
@@ -17,3 +19,7 @@ export class MissingScopeError extends Error {
 export const requireScope = (auth: McpAuthContext, scope: OnbrandScope): void => {
   if (!auth.scopes.includes(scope)) throw new MissingScopeError(scope);
 };
+
+export const designSystemOwnerFromMcpAuth = (auth: McpAuthContext): DesignSystemOwner => ({
+  ownerUserId: auth.ownerUserId,
+});

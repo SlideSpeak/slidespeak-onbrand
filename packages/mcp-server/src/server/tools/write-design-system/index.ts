@@ -62,6 +62,7 @@ export const registerWriteDesignSystemTool = (context: ToolRegistrationContext):
         }),
       },
     },
-    handler: (request) => context.designSystems.writeDesignSystem(context.authContext, request),
+    handler: (request) =>
+      context.designSystems.writeDesignSystem(context.designSystemOwner, request),
   });
 };
