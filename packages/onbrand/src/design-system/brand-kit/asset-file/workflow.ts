@@ -1,10 +1,7 @@
 import path from "node:path";
 import type { S3 } from "@onbrand/s3";
 import { brandKitAssetFileObjectKey } from "./object-key";
-import type {
-  BrandKitAssetDownload,
-  BrandKitAssetMaterializationPlan,
-} from "./index";
+import type { BrandKitAssetDownload, BrandKitAssetMaterializationPlan } from "./index";
 import { decorativeAssetHandle } from "../decorative-assets/index";
 import { LOGO_ASSET_HANDLE } from "../logo/index";
 import { asSupportedBrandKitAssetMimeType, type BrandKitAssetRecord } from "./record";
@@ -51,9 +48,7 @@ export class BrandKitAssetFileWorkflow {
   }): Promise<BrandKitAssetMaterializationPlan> => {
     const normalizedOutputDirectory = normalizeOutputDirectory(outputDirectory);
     const downloads = await Promise.all(
-      assets.map((asset) =>
-        this.toDownload({ outputDirectory: normalizedOutputDirectory, asset }),
-      ),
+      assets.map((asset) => this.toDownload({ outputDirectory: normalizedOutputDirectory, asset })),
     );
 
     return {

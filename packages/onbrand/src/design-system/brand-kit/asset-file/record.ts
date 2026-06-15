@@ -6,14 +6,7 @@ export const brandKitAssetsOrderBy = { sortOrder: "asc" } as const;
 export type BrandKitAssetRecord = Readonly<
   Pick<
     DbBrandKitAsset,
-    | "assetId"
-    | "kind"
-    | "name"
-    | "filename"
-    | "mimeType"
-    | "description"
-    | "s3Key"
-    | "sortOrder"
+    "assetId" | "kind" | "name" | "filename" | "mimeType" | "description" | "s3Key" | "sortOrder"
   >
 >;
 
