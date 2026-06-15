@@ -1,4 +1,4 @@
-import type { AuthContext } from "../auth/context";
+import type { DesignSystemOwner } from "./owner";
 import type { BrandKitAssetMaterializationPlan, BrandKitView } from "./brand-kit/asset-file/index";
 import type { DesignSystem, DesignSystemSummary } from "./design-system";
 
@@ -103,18 +103,18 @@ export type WriteDesignSystemResult = Readonly<{
 }>;
 
 export interface DesignSystemApplicationService {
-  listDesignSystems(auth: AuthContext): Promise<readonly DesignSystemSummary[]>;
-  getDesignSystem(auth: AuthContext, designSystemId: string): Promise<DesignSystemView>;
+  listDesignSystems(owner: DesignSystemOwner): Promise<readonly DesignSystemSummary[]>;
+  getDesignSystem(owner: DesignSystemOwner, designSystemId: string): Promise<DesignSystemView>;
   prepareDesignSystemAssetUploads(
-    auth: AuthContext,
+    owner: DesignSystemOwner,
     request: PrepareDesignSystemAssetUploadsRequest,
   ): Promise<PrepareDesignSystemAssetUploadsResult>;
   materializeBrandKitAssets(
-    auth: AuthContext,
+    owner: DesignSystemOwner,
     request: MaterializeBrandKitAssetsRequest,
   ): Promise<BrandKitAssetMaterializationPlan>;
   writeDesignSystem(
-    auth: AuthContext,
+    owner: DesignSystemOwner,
     request: WriteDesignSystemRequest,
   ): Promise<WriteDesignSystemResult>;
 }

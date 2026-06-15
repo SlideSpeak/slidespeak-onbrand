@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./auth/context": "./src/auth/context.ts",
+    "./design-system/owner": "./src/design-system/owner.ts",
     "./database/prisma-client": "./src/database/prisma-client.ts",
     "./design-system/application-service": "./src/design-system/application-service.ts",
     "./design-system/prisma-design-system-service": "./src/design-system/prisma-design-system-service.ts",

@@ -17,6 +17,6 @@ export const registerGetDesignSystemTool = (context: ToolRegistrationContext): v
       },
     },
     handler: ({ designSystemId }) =>
-      context.designSystems.getDesignSystem(context.authContext, designSystemId),
+      context.designSystems.getDesignSystem(context.designSystemOwner, designSystemId),
   });
 };

@@ -24,7 +24,7 @@ export const registerMaterializeBrandKitAssetsTool = (context: ToolRegistrationC
       },
     },
     handler: ({ designSystemId, outputDirectory }) =>
-      context.designSystems.materializeBrandKitAssets(context.authContext, {
+      context.designSystems.materializeBrandKitAssets(context.designSystemOwner, {
         designSystemId,
         outputDirectory,
       }),

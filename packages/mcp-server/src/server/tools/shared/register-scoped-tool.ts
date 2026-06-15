@@ -4,7 +4,7 @@ import {
   type ShapeOutput,
   type ZodRawShapeCompat,
 } from "@modelcontextprotocol/sdk/server/zod-compat.js";
-import { requireScope, type OnbrandScope } from "@onbrand/core/auth/context";
+import { requireScope, type OnbrandScope } from "../../../auth/context";
 import { toTextToolResult, toToolErrorResult, toToolResult } from "./result";
 import { type ToolRegistrationContext } from "./types";
 
