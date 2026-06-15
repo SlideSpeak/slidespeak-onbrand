@@ -1,0 +1,108 @@
+# SlideSpeak Onbrand Skill
+
+SlideSpeak Onbrand helps AI agents create brand-consistent materials, especially presentations and
+slide-based outputs, by providing governed Design Systems.
+
+## What Onbrand can do
+
+- Show which Design Systems are available to the current user.
+- Provide a selected Design System's Brand Kit, including colors, logo metadata, typography
+  guidance, Decorative Assets, imagery guidance, icons, and voice/tone where available.
+- Provide a selected Design System's Presentation Kit, including slide canvas details and
+  presentation design guidance where available.
+- Provide download commands for exact Brand Kit asset files when the user needs to use logos or
+  decorative visuals in a workspace.
+- Help answer questions about an organization's available brand and presentation guidance.
+- Help create or update a Design System from user-provided brand materials such as a URL, PDF, PPTX,
+  image, existing deck, notes, or any combination.
+
+## Common workflows
+
+### Create brand-consistent materials
+
+1. Use `list_design_systems` to find the right Design System.
+2. Use `get_design_system` to fetch its Brand Kit and Presentation Kit.
+3. Use `materialize_brand_kit_assets` if the output needs exact visual asset files.
+4. Create the requested material using the retrieved design guidance.
+5. Generate final visual content as HTML/CSS.
+
+### Answer questions about brand guidance
+
+1. Use `list_design_systems` if the relevant Design System is unknown.
+2. Use `get_design_system` for the relevant Design System.
+3. Summarize the relevant Brand Kit or Presentation Kit guidance for the user.
+
+### Create or update a Design System
+
+1. Use `get_design_system_writer_skill` before writing the Design System.
+2. Inspect the user's source material and extract the organization's visual language, colors,
+   logo/decorative asset files, slide canvas, and slide Design Prompt.
+3. Use `prepare_design_system_asset_uploads` for exact logo and decorative asset files.
+4. Upload the files with the returned commands.
+5. Use `write_design_system` with the uploaded asset references and design guidance.
+
+## Output format
+
+All generated visual content must be delivered as HTML/CSS. For decks and presentations, create
+slide-based HTML/CSS rather than PowerPoint, PDF, images, or other native presentation formats
+unless the user explicitly asks for an additional export artifact.
+
+## Tool details
+
+### `get_onbrand_skill`
+
+Returns this skill for what Onbrand can do and how to use its tools. Call it first when the user
+asks about Onbrand or anything Onbrand tools can help with, and call it at most once per
+conversation.
+
+### `list_design_systems`
+
+Lists Design Systems available to the current user. Use it to choose the relevant Design System
+before generating slides, presentations, decks, or other branded materials when the user has not
+already specified a Design System.
+
+### `get_design_system`
+
+Gets one Design System, including Design System metadata, Brand Kit tokens, Brand Kit visual asset
+metadata, and Presentation Kit guidance.
+
+Brand Kit visual assets include asset handles, filenames, and MIME types. To use Logo or Decorative
+Asset files in generated artifacts, call `materialize_brand_kit_assets`, then run the returned shell
+commands to download exact files into the user's workspace.
+
+### `materialize_brand_kit_assets`
+
+Prepares exact local copies of all declared Brand Kit visual files for a Design System. It returns
+short-lived S3 download URLs plus shell commands. Run those commands in the user's workspace to
+download assets to the requested `outputDirectory` before referencing them from generated artifacts.
+
+Do not copy asset bytes through the chat transcript. Use the files produced by the returned
+commands.
+
+### `get_design_system_writer_skill`
+
+Returns the authoring skill and exemplar structure a client should use before calling
+`write_design_system`. Use it when the user asks to create a Design System from a URL, PDF, PPTX,
+image, existing deck, notes, or other source material.
+
+### `prepare_design_system_asset_uploads`
+
+Creates short-lived presigned S3 PUT uploads for exact Design System asset files before calling
+`write_design_system`.
+
+Use lowercase slug `assetId` values such as `primary-logo`, `hero-orb`, or `icon-1`. Do not use
+consumer asset handles as upload IDs. The client computes each file's `byteSize` and `sha256`, runs
+the returned PUT commands from the directory containing the exact asset files, then passes the
+returned `assetId`, `s3Key`, `byteSize`, and `sha256` metadata to `write_design_system`.
+
+### `write_design_system`
+
+Creates or replaces a complete Design System from source material the user provides, such as a URL,
+PDF, PPTX, image, existing deck, notes, or any combination.
+
+Every written Design System must include a useful human-readable description so future agents
+understand when and how to use it. Before calling, inspect the source, extract the organization's
+visual language, colors, logo/decorative asset files, slide canvas, and write a detailed slide
+Design Prompt. Upload exact asset files first with `prepare_design_system_asset_uploads`, then pass
+the returned `assetId`, `s3Key`, `byteSize`, and `sha256` references. Do not send file bytes through
+MCP.
