@@ -103,5 +103,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Build Docker Compose services
+      - name: Build dev Docker Compose services
         run: docker compose build
+      - name: Create production Compose CI env file
+        run: touch deploy/.env
+      - name: Validate production Docker Compose file
+        run: docker compose -f deploy/docker-compose.yml config --quiet
+        env:
+          POSTGRES_PASSWORD: ci
+      - name: Build production Docker Compose services
+        run: docker compose -f deploy/docker-compose.yml build
+        env:
+          POSTGRES_PASSWORD: ci
