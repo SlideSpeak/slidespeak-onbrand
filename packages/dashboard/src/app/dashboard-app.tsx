@@ -310,6 +310,7 @@ const ConnectionOptions = ({
 
 const CopyableValue = ({
   value,
+  variant = "light",
   className = "",
 }: Readonly<{ value: string; variant?: "light" | "dark"; className?: string }>) => {
   const copy = async () => {
@@ -326,11 +327,16 @@ const CopyableValue = ({
     }
   };
 
+  const variantClasses =
+    variant === "dark"
+      ? "border-white bg-onbrand-charcoal text-white hover:bg-white hover:text-onbrand-charcoal"
+      : "border-onbrand-charcoal bg-onbrand-charcoal text-white hover:bg-black hover:text-white";
+
   return (
     <button
       type="button"
       onClick={() => void copy()}
-      className={`group inline-grid min-h-12 max-w-full cursor-pointer grid-cols-[minmax(0,max-content)_auto] items-center gap-3 rounded-md border-[0.5px] border-white bg-onbrand-charcoal px-4 py-3 text-left text-white transition hover:bg-white hover:text-onbrand-charcoal ${className}`}
+      className={`group inline-grid min-h-12 max-w-full cursor-pointer grid-cols-[minmax(0,max-content)_auto] items-center gap-3 rounded-md border-[0.5px] px-4 py-3 text-left transition ${variantClasses} ${className}`}
     >
       <code className="max-w-[min(42rem,calc(100vw-3rem))] overflow-hidden font-mono text-base leading-6 text-ellipsis whitespace-nowrap">
         {value}
