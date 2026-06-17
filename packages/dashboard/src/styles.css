@@ -33,3 +33,82 @@
     @apply text-inherit no-underline;
   }
 }
+
+@layer utilities {
+  @keyframes onbrand-gradient-drift {
+    0%,
+    100% {
+      transform: scale(1.08) translate3d(0, 0, 0) rotate(0deg);
+      filter: hue-rotate(0deg) saturate(1.04);
+    }
+
+    25% {
+      transform: scale(1.14) translate3d(-2.5%, 1.5%, 0) rotate(0.35deg);
+      filter: hue-rotate(-6deg) saturate(1.14);
+    }
+
+    50% {
+      transform: scale(1.11) translate3d(2%, -2%, 0) rotate(-0.28deg);
+      filter: hue-rotate(5deg) saturate(1.08);
+    }
+
+    75% {
+      transform: scale(1.15) translate3d(1.5%, 2.2%, 0) rotate(0.2deg);
+      filter: hue-rotate(-3deg) saturate(1.18);
+    }
+  }
+
+  @keyframes onbrand-light-breathe {
+    0%,
+    100% {
+      opacity: 0.62;
+      transform: scale(1) translate3d(0, 0, 0);
+    }
+
+    50% {
+      opacity: 0.9;
+      transform: scale(1.06) translate3d(-1.5%, -1%, 0);
+    }
+  }
+
+  @keyframes onbrand-texture-drift {
+    0%,
+    100% {
+      background-position:
+        0 0,
+        0 0,
+        0 0;
+    }
+
+    50% {
+      background-position:
+        160px -90px,
+        -130px 110px,
+        90px 140px;
+    }
+  }
+
+  .animate-onbrand-gradient-drift {
+    animation: onbrand-gradient-drift 24s ease-in-out infinite;
+    transform-origin: 50% 50%;
+    will-change: transform, filter;
+  }
+
+  .animate-onbrand-light-breathe {
+    animation: onbrand-light-breathe 18s ease-in-out infinite;
+    will-change: opacity, transform;
+  }
+
+  .animate-onbrand-texture-drift {
+    animation: onbrand-texture-drift 32s linear infinite;
+    will-change: background-position;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-onbrand-gradient-drift,
+    .animate-onbrand-light-breathe,
+    .animate-onbrand-texture-drift {
+      animation: none;
+    }
+  }
+}

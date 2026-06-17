@@ -37,7 +37,7 @@ export const OnboardingPage = () => (
   <main className="relative min-h-screen overflow-hidden bg-[#020617] px-4 py-10 text-onbrand-charcoal sm:px-6 lg:px-8">
     <div
       aria-hidden
-      className="absolute inset-0"
+      className="animate-onbrand-gradient-drift absolute -inset-10"
       style={{
         background: `
           radial-gradient(90% 85% at 28% 68%, rgba(1, 8, 33, 0.96) 0%, rgba(2, 13, 49, 0.78) 34%, rgba(3, 21, 76, 0.3) 58%, transparent 76%),
@@ -52,7 +52,7 @@ export const OnboardingPage = () => (
     />
     <div
       aria-hidden
-      className="absolute inset-0"
+      className="animate-onbrand-light-breathe absolute inset-0"
       style={{
         background: `
           radial-gradient(140% 110% at 52% 44%, transparent 40%, rgba(1, 4, 16, 0.34) 72%, rgba(0, 2, 12, 0.82) 100%),
@@ -68,7 +68,7 @@ export const OnboardingPage = () => (
     />
     <div
       aria-hidden
-      className="absolute inset-0 opacity-20 mix-blend-overlay"
+      className="animate-onbrand-texture-drift absolute inset-0 opacity-20 mix-blend-overlay"
       style={{
         backgroundImage: `
           linear-gradient(100deg, transparent 0 23%, rgba(255,255,255,0.18) 23.08%, transparent 23.18% 100%),
