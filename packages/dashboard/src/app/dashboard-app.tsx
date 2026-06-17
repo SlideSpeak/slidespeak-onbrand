@@ -133,7 +133,7 @@ export const DashboardApp = () => {
             ) : designSystems.status === "ERROR" ? (
               <ErrorMessage message={designSystems.message} />
             ) : designSystems.status === "READY" ? (
-              <OnboardingInstructions />
+              <NoDesignSystemsPrompt />
             ) : (
               <p className="text-onbrand-charcoal/45">Loading your Design Systems…</p>
             )}
@@ -144,6 +144,15 @@ export const DashboardApp = () => {
     </div>
   );
 };
+
+const NoDesignSystemsPrompt = () => (
+  <section className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center justify-center">
+    <div className="-translate-y-10 text-center">
+      <h2 className="text-base font-normal text-onbrand-charcoal">Prompt your agent</h2>
+      <CopyableValue value="How can I create a design system?" className="mx-auto mt-2" />
+    </div>
+  </section>
+);
 
 const OnboardingInstructions = ({
   variant = "light",
@@ -301,6 +310,7 @@ const ConnectionOptions = ({
 
 const CopyableValue = ({
   value,
+  variant = "light",
   className = "",
 }: Readonly<{ value: string; variant?: "light" | "dark"; className?: string }>) => {
   const copy = async () => {
@@ -317,11 +327,16 @@ const CopyableValue = ({
     }
   };
 
+  const variantClasses =
+    variant === "dark"
+      ? "border-white bg-onbrand-charcoal text-white hover:bg-white hover:text-onbrand-charcoal"
+      : "border-onbrand-charcoal bg-onbrand-charcoal text-white hover:bg-black hover:text-white";
+
   return (
     <button
       type="button"
       onClick={() => void copy()}
-      className={`group inline-grid min-h-12 max-w-full cursor-pointer grid-cols-[minmax(0,max-content)_auto] items-center gap-3 rounded-md border-[0.5px] border-white bg-onbrand-charcoal px-4 py-3 text-left text-white transition hover:bg-white hover:text-onbrand-charcoal ${className}`}
+      className={`group inline-grid min-h-12 max-w-full cursor-pointer grid-cols-[minmax(0,max-content)_auto] items-center gap-3 rounded-md border-[0.5px] px-4 py-3 text-left transition ${variantClasses} ${className}`}
     >
       <code className="max-w-[min(42rem,calc(100vw-3rem))] overflow-hidden font-mono text-base leading-6 text-ellipsis whitespace-nowrap">
         {value}
