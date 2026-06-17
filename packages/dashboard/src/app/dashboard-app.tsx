@@ -63,6 +63,17 @@ export const OnboardingPage = () => (
     />
     <div
       aria-hidden
+      className="animate-onbrand-aurora-sweep absolute -inset-24 mix-blend-screen blur-3xl"
+      style={{
+        background: `
+          radial-gradient(42% 48% at 22% 52%, rgba(0, 24, 120, 0.92) 0%, transparent 72%),
+          radial-gradient(44% 42% at 76% 24%, rgba(40, 188, 255, 0.88) 0%, transparent 70%),
+          radial-gradient(38% 46% at 58% 78%, rgba(0, 84, 255, 0.7) 0%, transparent 74%)
+        `,
+      }}
+    />
+    <div
+      aria-hidden
       className="absolute inset-0 opacity-100 mix-blend-soft-light"
       style={{ backgroundImage: GRAIN_TEXTURE, backgroundSize: "88px 88px" }}
     />
@@ -180,7 +191,7 @@ const OnboardingInstructions = ({
           />
           <OnboardingStep
             number="03"
-            value="View Design Systems"
+            value="Start Creating"
             href="/design-systems"
             variant={variant}
           />
