@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@onbrand/env": "workspace:*",
+    "@onbrand/file": "workspace:*",
     "@onbrand/s3": "workspace:*",
     "@onbrand/number": "workspace:*",
     "@onbrand/string": "workspace:*",

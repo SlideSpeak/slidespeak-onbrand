@@ -1,8 +1,8 @@
 import type { DesignSystem as DbDesignSystem, PrismaClient } from "@prisma/client";
-import type { DesignSystemOwner } from "../owner";
-import { UnknownDesignSystemError, type DesignSystemView } from "../application-service";
-import { brandKitInclude, toBrandKitView } from "../brand-kit/record";
-import { toPresentationKitView } from "../presentation-kit/storage/presentation-kit-record";
+import { UnknownDesignSystemError, type DesignSystemView } from "./application-service";
+import { BRAND_KIT_INCLUDE, toBrandKitView } from "./brand-kit/record";
+import type { DesignSystemOwner } from "./owner";
+import { toPresentationKitView } from "./presentation-kit/record";
 
 type DesignSystemSummaryRecord = Readonly<Pick<DbDesignSystem, "slug" | "name" | "description">>;
 
@@ -23,7 +23,7 @@ export const loadDesignSystemRecord = async (
   const row = await prisma.designSystem.findUnique({
     where: { ownerUserId_slug: { ownerUserId: owner.ownerUserId, slug: designSystemId } },
     include: {
-      brandKit: { include: brandKitInclude },
+      brandKit: { include: BRAND_KIT_INCLUDE },
       presentationKit: true,
     },
   });

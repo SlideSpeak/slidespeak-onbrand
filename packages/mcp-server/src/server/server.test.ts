@@ -188,7 +188,7 @@ describe("Onbrand MCP tools", () => {
     const logo = record(brandKit.logo);
 
     expect(structuredContent.designSystemId).toBe(request.designSystem.id);
-    expect(structuredContent.action).toBe("created");
+    expect(structuredContent.action).toBe("CREATED");
     expect(designSystem.designSystem).toEqual(request.designSystem);
     expect(logo.assetHandle).toBe("LOGO");
     expect(logo.filename).toBe(request.brandKit.logo.filename);
@@ -260,9 +260,10 @@ const fakeDesignSystems = (): DesignSystemApplicationService => ({
       command: "curl -fsSL -X PUT ...",
     })),
   }),
+  getBrandKitAssetPreviewUrl: async () => "https://s3.example/logo.svg?signature=test",
   writeDesignSystem: async (_auth, request) => ({
     designSystemId: request.designSystem.id,
-    action: "created",
+    action: "CREATED",
     designSystem: {
       designSystem: request.designSystem,
       brandKit: {

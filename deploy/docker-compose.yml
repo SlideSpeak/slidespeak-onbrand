@@ -9,8 +9,23 @@ services:
         condition: service_healthy
     env_file:
       - .env
-    expose:
-      - "8080"
+    # The production image builds packages/dashboard into packages/dashboard/dist.
+    # onbrand-mcp serves the Onbrand Dashboard SPA, /api/*, /oauth/*, and /mcp from this same port.
+    ports:
+      - "${ONBRAND_HTTP_PORT:-8080}:8080"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "fetch('http://localhost:8080/health').then((response) => process.exit(response.ok ? 0 :
+          1)).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   postgres:
     image: postgres:18.4-alpine

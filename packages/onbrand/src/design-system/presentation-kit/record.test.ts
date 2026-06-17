@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toPresentationKitView } from "./presentation-kit-record";
+import { toPresentationKitView } from "./record";
 
 describe("toPresentationKitView", () => {
   it("maps a persisted Presentation Kit into the domain view", () => {

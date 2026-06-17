@@ -1,7 +1,7 @@
 import type { BrandKitAsset as DbBrandKitAsset } from "@prisma/client";
 import type { SupportedAssetMimeType } from "./index";
 
-export const brandKitAssetsOrderBy = { sortOrder: "asc" } as const;
+export const BRAND_KIT_ASSETS_ORDER_BY = { sortOrder: "asc" } as const;
 
 export type BrandKitAssetRecord = Readonly<
   Pick<

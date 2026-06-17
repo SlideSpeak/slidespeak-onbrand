@@ -1,12 +1,12 @@
-import type { BrandKitView } from "./asset-file/index";
-import { brandKitAssetsOrderBy, type BrandKitAssetRecord } from "./asset-file/record";
-import { colorTokensOrderBy, toColorToken, type ColorTokenRecord } from "./color/record";
+import type { BrandKitView } from "./index";
+import { BRAND_KIT_ASSETS_ORDER_BY, type BrandKitAssetRecord } from "./asset-file/record";
+import { COLOR_TOKENS_ORDER_BY, toColorToken, type ColorTokenRecord } from "./color/record";
 import { toDecorativeAssetView } from "./decorative-assets/record";
 import { toLogoView } from "./logo/record";
 
-export const brandKitInclude = {
-  colors: { orderBy: colorTokensOrderBy },
-  assets: { orderBy: brandKitAssetsOrderBy },
+export const BRAND_KIT_INCLUDE = {
+  colors: { orderBy: COLOR_TOKENS_ORDER_BY },
+  assets: { orderBy: BRAND_KIT_ASSETS_ORDER_BY },
 } as const;
 
 export const toBrandKitView = (
