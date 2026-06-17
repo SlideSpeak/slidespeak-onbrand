@@ -1,18 +1,12 @@
-import {
-  createRootRoute,
-  createRoute,
-  createRouter,
-  Navigate,
-  Outlet,
-} from "@tanstack/react-router";
-import { DashboardApp } from "./dashboard-app";
+import { createRootRoute, createRoute, createRouter, Outlet } from "@tanstack/react-router";
+import { DashboardApp, OnboardingPage } from "./dashboard-app";
 
 const ROOT_ROUTE = createRootRoute({ component: Outlet });
 
 const INDEX_ROUTE = createRoute({
   getParentRoute: () => ROOT_ROUTE,
   path: "/",
-  component: () => <Navigate to="/design-systems" replace />,
+  component: OnboardingPage,
 });
 
 const DESIGN_SYSTEMS_ROUTE = createRoute({
