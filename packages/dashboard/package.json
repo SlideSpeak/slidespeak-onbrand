@@ -1,5 +1,8 @@
 {
   "name": "@onbrand/dashboard",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "sonner": "^2.0.7"
+  }
 }
