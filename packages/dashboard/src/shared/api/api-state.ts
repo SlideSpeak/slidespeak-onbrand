@@ -15,18 +15,21 @@ const fetchJson = async <T>(path: string): Promise<T> => {
   return (await response.json()) as T;
 };
 
+type ApiStateForPath<T> = ApiState<T> & Readonly<{ path: string }>;
+
 export const useApi = <T>(path: string): ApiState<T> => {
-  const [state, setState] = React.useState<ApiState<T>>({ status: "LOADING" });
+  const [state, setState] = React.useState<ApiStateForPath<T>>({ path, status: "LOADING" });
 
   React.useEffect(() => {
     let cancelled = false;
     fetchJson<T>(path)
       .then((data) => {
-        if (!cancelled) setState({ status: "READY", data });
+        if (!cancelled) setState({ path, status: "READY", data });
       })
       .catch((error: unknown) => {
         if (!cancelled) {
           setState({
+            path,
             status: "ERROR",
             message: error instanceof Error ? error.message : String(error),
           });
@@ -37,5 +40,6 @@ export const useApi = <T>(path: string): ApiState<T> => {
     };
   }, [path]);
 
+  if (state.path !== path) return { status: "LOADING" };
   return state;
 };
