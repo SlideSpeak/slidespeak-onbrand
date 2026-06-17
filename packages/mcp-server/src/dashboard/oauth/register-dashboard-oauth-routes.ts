@@ -2,12 +2,13 @@ import { createHash, randomBytes } from "node:crypto";
 import { Env } from "@onbrand/core/env";
 import type { Hono } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
-import { ownerUserIdFromAuthInfo } from "../../auth/slidespeak-token-verifier";
 import type { SlideSpeakTokenVerifier } from "../../auth/slidespeak-token-verifier";
-import { setDashboardAuthCookies } from "../dashboard-session";
+import { dashboardSessionFromAuthInfo, setDashboardAuthCookies } from "../dashboard-session";
 
 const OAUTH_STATE_COOKIE = "onbrand_oauth_state";
 const OAUTH_VERIFIER_COOKIE = "onbrand_oauth_verifier";
+const OAUTH_RETURN_TO_COOKIE = "onbrand_oauth_return_to";
+const DEFAULT_DASHBOARD_RETURN_TO = "/design-systems";
 
 export type DashboardOAuthRoutesConfig = Readonly<{
   app: Hono;
@@ -56,6 +57,12 @@ export const registerDashboardOAuthRoutes = ({
     };
     setCookie(context, OAUTH_STATE_COOKIE, state, cookieOptions);
     setCookie(context, OAUTH_VERIFIER_COOKIE, codeVerifier, cookieOptions);
+    setCookie(
+      context,
+      OAUTH_RETURN_TO_COOKIE,
+      safeDashboardReturnTo(context.req.query("returnTo")),
+      cookieOptions,
+    );
     return context.redirect(authorizeUrl.toString());
   });
 
@@ -95,20 +102,24 @@ export const registerDashboardOAuthRoutes = ({
     await setDashboardAuthCookies(
       context,
       baseUrl,
-      {
-        ownerUserId: ownerUserIdFromAuthInfo(authInfo),
-        scopes: authInfo.scopes,
-        expiresAt: authInfo.expiresAt!,
-      },
+      dashboardSessionFromAuthInfo(authInfo),
       tokenJson.refresh_token,
     );
+    const returnTo = safeDashboardReturnTo(getCookie(context, OAUTH_RETURN_TO_COOKIE));
     setCookie(context, OAUTH_STATE_COOKIE, "", { path: "/", maxAge: 0 });
     setCookie(context, OAUTH_VERIFIER_COOKIE, "", { path: "/", maxAge: 0 });
-    return context.redirect("/design-systems");
+    setCookie(context, OAUTH_RETURN_TO_COOKIE, "", { path: "/", maxAge: 0 });
+    return context.redirect(returnTo);
   });
 };
 
 const codeChallengeForVerifier = (verifier: string): string =>
   createHash("sha256").update(verifier).digest("base64url");
+
+const safeDashboardReturnTo = (returnTo: string | undefined): string => {
+  if (!returnTo) return DEFAULT_DASHBOARD_RETURN_TO;
+  if (returnTo === "/design-systems" || returnTo.startsWith("/design-systems/")) return returnTo;
+  return DEFAULT_DASHBOARD_RETURN_TO;
+};
 
 const secureCookie = (baseUrl: string): boolean => new URL(baseUrl).protocol === "https:";

@@ -34,14 +34,9 @@ export const DESIGN_SYSTEM_SECTION_LINKS = [
 
 export const designSystemSectionFromPathSegment = (
   segment: string | undefined,
-): DesignSystemSection => {
-  if (segment === "prompt") return "PRESENTATION";
-
-  return (
-    DESIGN_SYSTEM_SECTION_LINKS.find((link) => link.pathSegment === segment)?.section ??
-    DEFAULT_DESIGN_SYSTEM_SECTION
-  );
-};
+): DesignSystemSection =>
+  DESIGN_SYSTEM_SECTION_LINKS.find((link) => link.pathSegment === segment)?.section ??
+  DEFAULT_DESIGN_SYSTEM_SECTION;
 
 export const designSystemSectionLabel = (section: DesignSystemSection): string =>
   DESIGN_SYSTEM_SECTION_LINKS.find((link) => link.section === section)?.label ?? section;

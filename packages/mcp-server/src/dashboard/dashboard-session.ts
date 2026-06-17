@@ -37,6 +37,17 @@ export type DashboardSessionRefreshConfig = Readonly<{
   ) => Promise<AuthInfo>;
 }>;
 
+export const dashboardSessionFromAuthInfo = (authInfo: AuthInfo): DashboardSession => {
+  if (typeof authInfo.expiresAt !== "number") {
+    throw new InvalidTokenError("Dashboard access token is missing expiration");
+  }
+  return {
+    ownerUserId: ownerUserIdFromAuthInfo(authInfo),
+    scopes: authInfo.scopes,
+    expiresAt: authInfo.expiresAt,
+  };
+};
+
 export const createDashboardSessionCookie = async (
   session: DashboardSession,
   secret: string,
@@ -166,11 +177,7 @@ const refreshDashboardSession = async (
   }
 
   const authInfo = await verifyBearerAuth(`Bearer ${tokenJson.access_token}`, verifier);
-  const session = {
-    ownerUserId: ownerUserIdFromAuthInfo(authInfo),
-    scopes: authInfo.scopes,
-    expiresAt: authInfo.expiresAt!,
-  };
+  const session = dashboardSessionFromAuthInfo(authInfo);
   await setDashboardAuthCookies(context, baseUrl, session, tokenJson.refresh_token);
   return session;
 };

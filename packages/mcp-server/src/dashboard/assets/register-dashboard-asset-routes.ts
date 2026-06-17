@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { extname, join, normalize } from "node:path";
+import { extname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Env } from "@onbrand/core/env";
 import type { Hono } from "hono";
@@ -32,15 +32,21 @@ export const registerDashboardAssetRoutes = (app: Hono): void => {
   app.get("/assets/*", async (context) => {
     if (Env.DASHBOARD_DEV_SERVER_URL) return proxyDashboardDevServer(context);
     const assetPath = context.req.path.replace(/^\/assets\//u, "assets/");
-    if (!existsSync(join(DASHBOARD_DIST_DIRECTORY, assetPath))) return context.notFound();
-    return serveDashboardAsset(context, assetPath);
+    const filePath = dashboardAssetFilePath(assetPath);
+    if (!filePath || !existsSync(filePath)) return context.notFound();
+    return serveDashboardAsset(context, filePath);
   });
   DASHBOARD_SPA_PATHS.forEach((path) => app.get(path, serveDashboard));
 };
 
-const serveDashboardAsset = async (context: Context, path: string): Promise<Response> => {
-  const safePath = normalize(path).replace(/^(\.\.(\/|\\|$))+/, "");
-  const filePath = join(DASHBOARD_DIST_DIRECTORY, safePath);
+const dashboardAssetFilePath = (path: string): string | null => {
+  const filePath = resolve(DASHBOARD_DIST_DIRECTORY, path);
+  const relativePath = relative(DASHBOARD_DIST_DIRECTORY, filePath);
+  if (relativePath.startsWith("..") || resolve(relativePath) === relativePath) return null;
+  return filePath;
+};
+
+const serveDashboardAsset = async (context: Context, filePath: string): Promise<Response> => {
   const body = await readFile(filePath);
   const contentTypes: Record<string, string> = {
     ".css": "text/css; charset=utf-8",
@@ -54,7 +60,9 @@ const serveDashboardAsset = async (context: Context, path: string): Promise<Resp
 };
 
 const proxyDashboardDevServer = async (context: Context): Promise<Response> => {
-  if (!Env.DASHBOARD_DEV_SERVER_URL) return serveDashboardAsset(context, "index.html");
+  if (!Env.DASHBOARD_DEV_SERVER_URL) {
+    return serveDashboardAsset(context, dashboardAssetFilePath("index.html")!);
+  }
 
   const devServerUrl = new URL(context.req.url);
   const targetUrl = new URL(context.req.path + devServerUrl.search, Env.DASHBOARD_DEV_SERVER_URL);
@@ -71,4 +79,4 @@ const proxyDashboardDevServer = async (context: Context): Promise<Response> => {
 const serveDashboard = async (context: Context): Promise<Response> =>
   Env.DASHBOARD_DEV_SERVER_URL
     ? proxyDashboardDevServer(context)
-    : serveDashboardAsset(context, "index.html");
+    : serveDashboardAsset(context, dashboardAssetFilePath("index.html")!);
