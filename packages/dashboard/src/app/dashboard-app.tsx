@@ -133,7 +133,7 @@ export const DashboardApp = () => {
             ) : designSystems.status === "ERROR" ? (
               <ErrorMessage message={designSystems.message} />
             ) : designSystems.status === "READY" ? (
-              <OnboardingInstructions />
+              <NoDesignSystemsPrompt />
             ) : (
               <p className="text-onbrand-charcoal/45">Loading your Design Systems…</p>
             )}
@@ -144,6 +144,15 @@ export const DashboardApp = () => {
     </div>
   );
 };
+
+const NoDesignSystemsPrompt = () => (
+  <section className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center justify-center">
+    <div className="-translate-y-10 text-center">
+      <h2 className="text-base font-normal text-onbrand-charcoal">Prompt your agent</h2>
+      <CopyableValue value="How can I create a design system?" className="mx-auto mt-2" />
+    </div>
+  </section>
+);
 
 const OnboardingInstructions = ({
   variant = "light",
