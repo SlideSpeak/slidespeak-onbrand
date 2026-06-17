@@ -1,4 +1,5 @@
 import path from "node:path";
+import { readMarkdownAsString } from "@onbrand/file";
 import type { S3 } from "@onbrand/s3";
 import { brandKitAssetFileObjectKey } from "./object-key";
 import type { BrandKitAssetDownload, BrandKitAssetMaterializationPlan } from "./index";
@@ -30,12 +31,30 @@ export type PrepareBrandKitAssetUploadsResult = Readonly<{
   uploads: readonly PreparedBrandKitAssetUpload[];
 }>;
 
+const MATERIALIZE_BRAND_KIT_ASSET_INSTRUCTIONS = readMarkdownAsString(
+  import.meta.url,
+  "materialize-instructions.mdx",
+);
+const UPLOAD_BRAND_KIT_ASSET_INSTRUCTIONS = readMarkdownAsString(
+  import.meta.url,
+  "upload-instructions.mdx",
+);
+
 export class BrandKitAssetFileWorkflow {
   constructor(
     private readonly s3: Pick<typeof S3, "getPresigned" | "putPresigned">,
     private readonly bucket: string,
     private readonly presignedUrlExpiresInSeconds: number,
   ) {}
+
+  previewUrl = (asset: BrandKitAssetRecord): Promise<string> =>
+    this.s3.getPresigned({
+      bucket: this.bucket,
+      key: asset.s3Key,
+      filename: asset.filename,
+      contentType: asset.mimeType,
+      expiresInSeconds: this.presignedUrlExpiresInSeconds,
+    });
 
   materialize = async ({
     designSystemId,
@@ -55,8 +74,7 @@ export class BrandKitAssetFileWorkflow {
       designSystemId,
       outputDirectory: normalizedOutputDirectory,
       expiresInSeconds: this.presignedUrlExpiresInSeconds,
-      instructions:
-        "Run the commands in the user's workspace to download exact Brand Kit files from short-lived S3 URLs. Do not paste, decode, or rewrite asset bytes manually from the response.",
+      instructions: MATERIALIZE_BRAND_KIT_ASSET_INSTRUCTIONS,
       commands: [
         `mkdir -p ${shellQuote(normalizedOutputDirectory)}`,
         ...downloads.map(
@@ -106,8 +124,7 @@ export class BrandKitAssetFileWorkflow {
 
     return {
       designSystemId,
-      instructions:
-        "Run each PUT command from the directory containing the exact asset file. Then submit the Design System with the returned s3Key, byteSize, and sha256 metadata. Do not send asset bytes through the application API.",
+      instructions: UPLOAD_BRAND_KIT_ASSET_INSTRUCTIONS,
       uploads: preparedUploads,
     };
   };
@@ -162,7 +179,7 @@ const hexToBase64Sha256 = (hex: string): string => Buffer.from(hex, "hex").toStr
 
 const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")}'`;
 
-const brandKitAssetHandle = (asset: BrandKitAssetRecord): string =>
+export const brandKitAssetHandle = (asset: BrandKitAssetRecord): string =>
   asset.kind === "LOGO" ? LOGO_ASSET_HANDLE : decorativeAssetHandle(asset.assetId);
 
 const joinOutputPath = (outputDirectory: string, filename: string): string =>

@@ -37,6 +37,21 @@ jobs:
       - name: Check formatting
         run: bun run format:check
 
+  tailwind-format:
+    name: Tailwind Format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Check Tailwind class formatting
+        run: bun run tailwind:check
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -81,6 +96,21 @@ jobs:
         run: bun install --frozen-lockfile
       - name: Test
         run: bun run test
+
+  react-doctor:
+    name: React Doctor
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Require 100 React Doctor score
+        run: bun run react-doctor:check
 
   build:
     name: Build

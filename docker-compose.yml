@@ -5,19 +5,49 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      onbrand-dashboard:
+        condition: service_healthy
     env_file:
       - .env
     ports:
       - "8080:8080"
+    environment:
+      DASHBOARD_DEV_SERVER_URL: "http://onbrand-dashboard:5173"
+    command:
+      - sh
+      - -c
+      - |
+        bunx prisma migrate deploy && \
+        if [ -n "$$DASHBOARD_DEV_SERVER_URL" ]; then
+          bun -e '
+            const url = process.env.DASHBOARD_DEV_SERVER_URL + "/@vite/client";
+            for (let attempt = 1; attempt <= 60; attempt++) {
+              try {
+                const response = await fetch(url);
+                if (response.ok) process.exit(0);
+              } catch {}
+              console.log("Waiting for dashboard dev server at " + url + " (" + attempt + "/60)");
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+            console.error("Dashboard dev server did not become reachable at " + url);
+            process.exit(1);
+          ';
+        fi && \
+        bun packages/mcp-server/src/server/http.ts
     extra_hosts:
       - "host.docker.internal:host-gateway"
     develop:
       watch:
-        # Source changes do not need an image rebuild; sync them and restart the MCP server.
+        # Dashboard source changes are served by the dedicated Vite container.
+        # They do not need to sync into, or restart, the MCP server.
+
+        # Non-dashboard source changes need the MCP server to restart.
         - action: sync+restart
           path: ./packages
           target: /app/packages
           ignore:
+            - "dashboard/src/**"
+            - "dashboard/index.html"
             - "**/dist/**"
             - "**/node_modules/**"
             - "**/package.json"
@@ -36,6 +66,7 @@ services:
         - action: rebuild
           path: ./packages
           ignore:
+            - "dashboard/**"
             - "**/src/**"
             - "**/dist/**"
             - "**/node_modules/**"
@@ -45,6 +76,52 @@ services:
           path: ./prisma.config.ts
         - action: rebuild
           path: ./Dockerfile
+
+  onbrand-dashboard:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "5173:5173"
+    command:
+      - bunx
+      - vite
+      - packages/dashboard
+      - --config
+      - packages/dashboard/vite.config.ts
+      - --host
+      - 0.0.0.0
+    volumes:
+      - ./packages/dashboard:/app/packages/dashboard
+    develop:
+      watch:
+        # Dashboard source is bind-mounted into the Vite container. Do not also sync it with
+        # compose watch: syncing a bind-mounted path can create repeated mtime churn and HMR loops.
+        # Dependency/config changes need a dashboard image rebuild so Vite can resolve new packages.
+        - action: rebuild
+          path: ./package.json
+        - action: rebuild
+          path: ./bun.lock
+        - action: rebuild
+          path: ./packages/dashboard/package.json
+        - action: rebuild
+          path: ./packages/dashboard/vite.config.ts
+        - action: rebuild
+          path: ./packages/dashboard/components.json
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bun",
+          "-e",
+          "fetch('http://localhost:5173/').then((response) => process.exit(response.ok ? 0 :
+          1)).catch(() => process.exit(1))",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
 
   postgres:
     image: postgres:18.4-alpine

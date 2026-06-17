@@ -19,3 +19,5 @@ export const presentationKitSchema = z
   .strict();
 
 export type PresentationKit = Readonly<z.infer<typeof presentationKitSchema>>;
+
+export type PresentationKitView = PresentationKit;

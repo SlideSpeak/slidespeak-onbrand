@@ -4,11 +4,15 @@ import type { PrismaClient } from "@prisma/client";
 import type { DesignSystemOwner } from "./owner";
 import type { DesignSystemSummary } from "./design-system";
 import type { BrandKitAssetMaterializationPlan } from "./brand-kit/asset-file/index";
+import { brandKitAssetHandle } from "./brand-kit/asset-file/workflow";
+import { toColorTokenCreateRecords } from "./brand-kit/color/record";
 import { toDecorativeAssetRecord } from "./brand-kit/decorative-assets/record";
 import { toLogoAssetRecord } from "./brand-kit/logo/record";
+import { toPresentationKitCreateRecord } from "./presentation-kit/record";
 import type {
   DesignSystemApplicationService,
   MaterializeBrandKitAssetsRequest,
+  GetBrandKitAssetPreviewUrlRequest,
   DesignSystemView,
   PrepareDesignSystemAssetUploadsRequest,
   PrepareDesignSystemAssetUploadsResult,
@@ -19,7 +23,7 @@ import {
   listDesignSystemSummaries,
   loadDesignSystemRecord,
   toDesignSystemView,
-} from "./storage/design-system-store";
+} from "./design-system-store";
 
 export class PersistentDesignSystemApplication implements DesignSystemApplicationService {
   private readonly brandKitAssetFiles: BrandKitAssetFileWorkflow;
@@ -56,6 +60,18 @@ export class PersistentDesignSystemApplication implements DesignSystemApplicatio
       outputDirectory,
       assets: record.brandKit!.assets,
     });
+  };
+
+  getBrandKitAssetPreviewUrl = async (
+    owner: DesignSystemOwner,
+    { designSystemId, assetHandle }: GetBrandKitAssetPreviewUrlRequest,
+  ): Promise<string> => {
+    const record = await loadDesignSystemRecord(this.prisma, owner, designSystemId);
+    const asset = record.brandKit!.assets.find(
+      (candidate) => brandKitAssetHandle(candidate) === assetHandle,
+    );
+    if (!asset) throw new Error(`Unknown Brand Kit asset: ${assetHandle}`);
+    return this.brandKitAssetFiles.previewUrl(asset);
   };
 
   prepareDesignSystemAssetUploads = async (
@@ -113,28 +129,14 @@ export class PersistentDesignSystemApplication implements DesignSystemApplicatio
       await tx.brandKit.create({
         data: {
           designSystemId: designSystem.id,
-          colors: {
-            create: request.brandKit.colors.map((color, index) => ({
-              tokenId: color.id,
-              name: color.name,
-              value: color.value,
-              description: color.description,
-              sortOrder: index,
-            })),
-          },
+          colors: { create: toColorTokenCreateRecords(request.brandKit.colors) },
           assets: { create: assetRecords },
         },
       });
       await tx.presentationKit.create({
-        data: {
-          designSystemId: designSystem.id,
-          canvasWidth: request.presentationKit.canvas.width,
-          canvasHeight: request.presentationKit.canvas.height,
-          canvasUnit: request.presentationKit.canvas.unit,
-          designPrompt: request.presentationKit.designPrompt,
-        },
+        data: toPresentationKitCreateRecord(designSystem.id, request.presentationKit),
       });
-      return existing ? "updated" : "created";
+      return existing ? "UPDATED" : "CREATED";
     });
 
     return {

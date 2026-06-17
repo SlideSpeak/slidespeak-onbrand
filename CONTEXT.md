@@ -46,6 +46,10 @@ layout grammar, copy style, and quality checks for AI agents. _Avoid_: Master pr
 should use its tools. It is distinct from a **Design Prompt**, which is specific to one **Design
 System**. _Avoid_: Onbrand Orientation, onboarding prompt, discovery prompt, help prompt
 
+**Onbrand Dashboard**: The browser-based Onbrand product surface where authenticated users view and
+manage their **Design Systems**. It is distinct from the MCP endpoint, which is the agent-facing
+integration surface. _Avoid_: Admin panel, Brand dashboard, MCP UI
+
 **Slide Canvas**: The canonical coordinate space used by a **Presentation Kit** to describe slide
 size and aspect ratio. _Avoid_: Page size, viewport, artboard
 

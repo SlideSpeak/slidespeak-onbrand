@@ -1,15 +1,20 @@
 import type { DesignSystemOwner } from "./owner";
-import type { BrandKitAssetMaterializationPlan, BrandKitView } from "./brand-kit/asset-file/index";
-import type { DesignSystem, DesignSystemSummary } from "./design-system";
+import type { BrandKitAssetMaterializationPlan } from "./brand-kit/asset-file/index";
+import type { BrandKitView } from "./brand-kit/index";
+import type { DesignSystemSummary } from "./design-system";
+import type { PresentationKitView } from "./presentation-kit/presentation-kit";
 
+export type { DesignSystemSummary } from "./design-system";
 export type {
   BrandKitAssetDownload,
   BrandKitAssetMaterializationPlan,
-  BrandKitView,
-  BrandKitDecorativeAsset,
-  BrandKitVisualAsset,
   SupportedAssetMimeType,
 } from "./brand-kit/asset-file/index";
+export type { BrandKitDecorativeAsset } from "./brand-kit/decorative-assets/index";
+export type { BrandKitView } from "./brand-kit/index";
+export type { BrandKitVisualAsset } from "./brand-kit/logo/index";
+export type { ColorToken } from "./brand-kit/color/index";
+export type { PresentationKitView } from "./presentation-kit/presentation-kit";
 
 export class UnknownDesignSystemError extends Error {
   constructor(readonly designSystemId: string) {
@@ -25,9 +30,6 @@ export class InvalidDesignSystemAssetUploadError extends Error {
   }
 }
 
-export type PresentationKitView = Omit<DesignSystem["presentationKit"], "designPrompt"> &
-  Readonly<{ designPrompt?: string }>;
-
 export type DesignSystemView = Readonly<{
   designSystem: DesignSystemSummary;
   brandKit: BrandKitView;
@@ -37,6 +39,11 @@ export type DesignSystemView = Readonly<{
 export type MaterializeBrandKitAssetsRequest = Readonly<{
   designSystemId: string;
   outputDirectory: string;
+}>;
+
+export type GetBrandKitAssetPreviewUrlRequest = Readonly<{
+  designSystemId: string;
+  assetHandle: string;
 }>;
 
 export type PrepareDesignSystemAssetUpload = Readonly<{
@@ -98,7 +105,7 @@ export type WriteDesignSystemRequest = Readonly<{
 
 export type WriteDesignSystemResult = Readonly<{
   designSystemId: string;
-  action: "created" | "updated";
+  action: "CREATED" | "UPDATED";
   designSystem: DesignSystemView;
 }>;
 
@@ -113,6 +120,10 @@ export interface DesignSystemApplicationService {
     owner: DesignSystemOwner,
     request: MaterializeBrandKitAssetsRequest,
   ): Promise<BrandKitAssetMaterializationPlan>;
+  getBrandKitAssetPreviewUrl(
+    owner: DesignSystemOwner,
+    request: GetBrandKitAssetPreviewUrlRequest,
+  ): Promise<string>;
   writeDesignSystem(
     owner: DesignSystemOwner,
     request: WriteDesignSystemRequest,

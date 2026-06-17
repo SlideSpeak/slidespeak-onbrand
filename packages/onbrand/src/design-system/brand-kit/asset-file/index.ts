@@ -1,9 +1,3 @@
-import type { BrandKitDecorativeAsset } from "../decorative-assets/index";
-import type { BrandKitVisualAsset } from "../logo/index";
-
-export type { BrandKitDecorativeAsset } from "../decorative-assets/index";
-export type { BrandKitVisualAsset } from "../logo/index";
-
 export type SupportedAssetMimeType = "image/svg+xml" | "image/png" | "image/jpeg" | "image/webp";
 
 export type BrandKitAssetDownload =
@@ -36,15 +30,4 @@ export type BrandKitAssetMaterializationPlan = Readonly<{
   instructions: string;
   commands: readonly string[];
   assets: readonly BrandKitAssetDownload[];
-}>;
-
-export type BrandKitView = Readonly<{
-  colors: readonly Readonly<{
-    id: string;
-    name: string;
-    value: string;
-    description: string;
-  }>[];
-  logo: BrandKitVisualAsset;
-  decorativeAssets: readonly BrandKitDecorativeAsset[];
 }>;

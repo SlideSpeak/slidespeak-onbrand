@@ -17,6 +17,9 @@ import {
   SlideSpeakTokenVerifier,
 } from "../auth/slidespeak-token-verifier";
 import { Env } from "@onbrand/core/env";
+import { registerDashboardApiRoutes } from "../dashboard/api/register-dashboard-api-routes";
+import { registerDashboardAssetRoutes } from "../dashboard/assets/register-dashboard-asset-routes";
+import { registerDashboardOAuthRoutes } from "../dashboard/oauth/register-dashboard-oauth-routes";
 import { createOnbrandMcpServer } from "./server";
 
 const HTTP_PORT = 8080;
@@ -104,16 +107,21 @@ const main = async (): Promise<void> => {
   const baseUrl = Env.BASE_URL.replace(/\/+$/, "");
   const mcpUrl = new URL("/mcp", baseUrl);
   const issuer = Env.SLIDESPEAK_OAUTH_ISSUER.replace(/\/+$/, "");
-  const jwksUrl = Env.SLIDESPEAK_JWKS_URL ?? `${issuer}/oauth/jwks.json`;
+  const backchannelBaseUrl = (Env.SLIDESPEAK_OAUTH_BACKCHANNEL_BASE_URL ?? issuer).replace(
+    /\/+$/,
+    "",
+  );
+  const jwksUrl = Env.SLIDESPEAK_JWKS_URL ?? `${backchannelBaseUrl}/oauth/jwks.json`;
   const authorizationEndpoint = `${issuer}/oauth/authorize`;
-  const tokenEndpoint = `${issuer}/oauth/token`;
+  const tokenEndpoint = `${backchannelBaseUrl}/oauth/token`;
+  const publicTokenEndpoint = `${issuer}/oauth/token`;
   const registrationEndpoint = `${issuer}/oauth/register`;
   const assetDownloadExpiresInSeconds = Env.ASSET_DOWNLOAD_EXPIRES_IN_SECONDS;
 
   const oauthMetadata: OAuthMetadata = {
     issuer,
     authorization_endpoint: authorizationEndpoint,
-    token_endpoint: tokenEndpoint,
+    token_endpoint: publicTokenEndpoint,
     registration_endpoint: registrationEndpoint,
     jwks_uri: jwksUrl,
     response_types_supported: ["code"],
@@ -145,6 +153,32 @@ const main = async (): Promise<void> => {
     context.json(protectedResourceMetadata),
   );
   app.get("/.well-known/oauth-authorization-server", (context) => context.json(oauthMetadata));
+
+  registerDashboardOAuthRoutes({
+    app,
+    authorizationEndpoint,
+    baseUrl,
+    mcpUrl,
+    requiredScopes: REQUIRED_SCOPES,
+    tokenEndpoint,
+    verifier,
+    verifyBearerAuth,
+  });
+  registerDashboardApiRoutes({
+    app,
+    designSystems,
+    handleAuthError: (context, error) =>
+      handleOAuthError(context, error, protectedResourceMetadataUrl),
+    refreshConfig: {
+      baseUrl,
+      clientId: Env.DASHBOARD_OAUTH_CLIENT_ID,
+      mcpUrl,
+      tokenEndpoint,
+      verifier,
+      verifyBearerAuth,
+    },
+  });
+  registerDashboardAssetRoutes(app);
 
   app.on(["GET", "POST"], "/mcp", async (context) => {
     try {

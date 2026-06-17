@@ -10,12 +10,13 @@ COPY packages/string/package.json packages/string/package.json
 COPY packages/s3/package.json packages/s3/package.json
 COPY packages/onbrand/package.json packages/onbrand/package.json
 COPY packages/mcp-server/package.json packages/mcp-server/package.json
+COPY packages/dashboard/package.json packages/dashboard/package.json
 
 RUN bun install --frozen-lockfile
 
 COPY . .
 
-RUN bunx prisma generate
+RUN bunx prisma generate && bunx vite build --config packages/dashboard/vite.config.ts packages/dashboard
 
 EXPOSE 8080
 

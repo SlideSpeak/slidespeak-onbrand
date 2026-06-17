@@ -10,8 +10,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
+    "jsx": "react-jsx",
     "types": ["node"],
     "paths": {
+      "@/*": ["./packages/dashboard/src/*"],
       "@onbrand/core/*": ["./packages/onbrand/src/*"],
       "@onbrand/env": ["./packages/env/src/index.ts"],
       "@onbrand/file": ["./packages/file/src/index.ts"],
@@ -21,6 +23,6 @@
       "@onbrand/string/*": ["./packages/string/src/*"]
     }
   },
-  "include": ["packages/**/*.ts"],
+  "include": ["packages/**/*.ts", "packages/**/*.tsx"],
   "exclude": ["node_modules", "dist"]
 }

@@ -1,0 +1,35 @@
+@import url("https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --font-sans:
+    Figtree, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --color-onbrand-white: #ffffff;
+  --color-onbrand-charcoal: #111111;
+
+  --color-onbrand-blue-25: #f5faff;
+  --color-onbrand-blue-50: #eff8ff;
+  --color-onbrand-blue-100: #d1e9ff;
+  --color-onbrand-blue-200: #b2ddff;
+  --color-onbrand-blue-300: #84caff;
+  --color-onbrand-blue-400: #53b1fd;
+  --color-onbrand-blue-500: #2e90fa;
+  --color-onbrand-blue-600: #1570ef;
+  --color-onbrand-blue-700: #175cd3;
+  --color-onbrand-blue-800: #1849a9;
+}
+
+@layer base {
+  html {
+    @apply bg-onbrand-white font-sans text-onbrand-charcoal;
+  }
+
+  body {
+    @apply m-0 text-sm;
+  }
+
+  a {
+    @apply text-inherit no-underline;
+  }
+}
