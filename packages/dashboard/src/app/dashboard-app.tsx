@@ -191,7 +191,7 @@ const OnboardingInstructions = ({
           </OnboardingStep>
           <OnboardingStep
             number="02"
-            title="Prompt your agent"
+            title="Restart your agent. Then prompt:"
             value="Tell me about OnBrand"
             variant={variant}
           />
