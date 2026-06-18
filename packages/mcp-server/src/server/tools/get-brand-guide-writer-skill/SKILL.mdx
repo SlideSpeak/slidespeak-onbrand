@@ -48,9 +48,8 @@
 - Write a detailed, presentation-oriented Design Prompt that is specific enough for a future agent
   to generate an on-brand HTML presentation without seeing the original source. The Design Prompt
   must translate source evidence into presentation-native systems: slide layouts, title hierarchy,
-  section dividers, callout cards, chart treatments, agenda/progress markers, proof grids,
-  framework diagrams, and closing CTA slides. It must not read like website recreation
-  instructions.
+  section dividers, callout cards, chart treatments, agenda/progress markers, proof grids, framework
+  diagrams, and closing CTA slides. It must not read like website recreation instructions.
 - Call prepare_brand_guide_asset_uploads for exact asset files, upload them directly to S3 with the
   returned PUT commands, then call write_brand_guide with the returned assetId, s3Key, byteSize, and
   sha256 references. Asset IDs must be lowercase slugs such as 'primary-logo', 'hero-orb', or
@@ -91,11 +90,11 @@ hover/animation cues, and how these motifs should translate into static slides.
 If any source evidence comes from a website or app, define how the brand translates to slides.
 Separate transferable brand signals from website-only UI chrome. Do not reproduce navigation bars,
 hamburger/search/login controls, carousel arrows, pause/play controls, cookie banners, sticky
-headers, form fields, hover states, or other interactive affordances as literal slide elements unless
-the user explicitly requested a web UI kit. Convert their visual qualities into presentation-native
-components such as section labels, agenda markers, dividers, CTA/callout blocks, proof cards,
-framework nodes, chart highlights, footers, or slide progress markers. Preserve typography, color,
-spacing, motif, asset, and surface logic; discard interaction mechanics.
+headers, form fields, hover states, or other interactive affordances as literal slide elements
+unless the user explicitly requested a web UI kit. Convert their visual qualities into
+presentation-native components such as section labels, agenda markers, dividers, CTA/callout blocks,
+proof cards, framework nodes, chart highlights, footers, or slide progress markers. Preserve
+typography, color, spacing, motif, asset, and surface logic; discard interaction mechanics.
 
 ## Core CSS Tokens
 
