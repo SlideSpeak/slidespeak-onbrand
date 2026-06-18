@@ -1,4 +1,4 @@
-# Brand Guide Writer Skill
+# Presentation-Oriented Brand Guide Writer Skill
 
 ## Instructions
 
@@ -16,9 +16,15 @@
   orbital graphic, abstract blob, or unrelated decorative shape.
 - Analyze all user-provided source material first: URLs, screenshots, PDFs, PPTX files, images,
   existing decks, notes, and downloaded assets. Treat screenshots as visual ground truth.
-- Extract everything useful: exact assets, gradients, glows, shadows, 3D renders, textures, grids,
-  line art, radii, borders, spacing systems, nav/button treatments, card styles, image treatments,
-  typography scale, animation cues, composition patterns, and recurring section archetypes.
+- Extract everything useful for presentation design: exact assets, gradients, glows, shadows, 3D
+  renders, textures, grids, line art, radii, borders, spacing systems, card styles, image
+  treatments, typography scale, animation cues, composition patterns, and recurring section
+  archetypes. When the source is a website or app, separate transferable brand signals from
+  interface chrome. Do not carry over navigation bars, hamburger menus, search/login controls,
+  carousel arrows, pause/play buttons, cookie banners, sticky headers, form controls, or other
+  interactive UI as literal slide elements unless the user explicitly asks for a web UI kit. Use
+  them only as evidence for slide-native qualities such as shape language, icon style, radius,
+  spacing, contrast, motion cues, or CTA/callout treatment.
 - If the source includes complex hero art or product visuals, download the exact image asset when
   possible. If it cannot be extracted exactly, describe how to recreate the effect with CSS/SVG in
   enough detail to match the screenshot.
@@ -39,8 +45,11 @@
 - Create role-aware Color Tokens with precise hex values and useful descriptions, not generic
   swatches. Use six-digit hex values; put opacity, gradient, and alpha usage in token descriptions
   and the Design Prompt.
-- Write a detailed Design Prompt that is specific enough for a future agent to generate an on-brand
-  HTML presentation without seeing the original source.
+- Write a detailed, presentation-oriented Design Prompt that is specific enough for a future agent
+  to generate an on-brand HTML presentation without seeing the original source. The Design Prompt
+  must translate source evidence into presentation-native systems: slide layouts, title hierarchy,
+  section dividers, callout cards, chart treatments, agenda/progress markers, proof grids, framework
+  diagrams, and closing CTA slides. It must not read like website recreation instructions.
 - Call prepare_brand_guide_asset_uploads for exact asset files, upload them directly to S3 with the
   returned PUT commands, then call write_brand_guide with the returned assetId, s3Key, byteSize, and
   sha256 references. Asset IDs must be lowercase slugs such as 'primary-logo', 'hero-orb', or
@@ -61,8 +70,9 @@ approximate, recolor, or replace exact governed assets.
 
 List every source inspected and the visual evidence extracted from each: color values, typography,
 logos, product/hero art, gradients, glows, shadows, textures, grids, 3D objects, shapes, cards,
-navigation, buttons, spacing, screenshots, and section layouts. Call out anything that must be
-exact.
+spacing, screenshots, and section layouts. If the source is a website or app, explicitly classify
+navigation, buttons, controls, menus, forms, carousel/pause controls, and other interactive chrome
+as either transferable brand evidence or website-only UI. Call out anything that must be exact.
 
 ## Brand Essence
 
@@ -74,6 +84,17 @@ source-derived phrases and forbidden generic language.
 Describe the non-obvious visual language in implementation-ready detail: gradient recipes, glow
 positions, blur radii, noise/grain, 3D or glass objects, orbital/grid systems, line art, shadows,
 hover/animation cues, and how these motifs should translate into static slides.
+
+## Website-to-Presentation Translation Rules
+
+If any source evidence comes from a website or app, define how the brand translates to slides.
+Separate transferable brand signals from website-only UI chrome. Do not reproduce navigation bars,
+hamburger/search/login controls, carousel arrows, pause/play controls, cookie banners, sticky
+headers, form fields, hover states, or other interactive affordances as literal slide elements
+unless the user explicitly requested a web UI kit. Convert their visual qualities into
+presentation-native components such as section labels, agenda markers, dividers, CTA/callout blocks,
+proof cards, framework nodes, chart highlights, footers, or slide progress markers. Preserve
+typography, color, spacing, motif, asset, and surface logic; discard interaction mechanics.
 
 ## Core CSS Tokens
 
@@ -151,11 +172,14 @@ sample validation before persistence.
 - Exact logo and all reusable visual assets.
 - Hero/product imagery, including 3D objects, glass effects, glow fields, gradients, and shadows.
 - Background systems such as grids, dots, orbital lines, noise, textures, and section dividers.
-- Navigation, buttons, chips, accordions, cards, tables, and customer/proof modules.
+- Website/app UI evidence: navigation, buttons, chips, accordions, forms, controls, cards, tables,
+  and customer/proof modules. Classify each as transferable brand signal or website-only chrome;
+  translate transferable qualities into slide-native components rather than literal webpage UI.
 - Typography family, weight, optical feel, scale, line height, tracking, and hierarchy.
 - Spacing and composition: margins, gutters, content widths, asymmetry, density, and focal points.
 - Animation or interaction cues translated into static slide rules.
-- Concrete do/don't rules derived from source screenshots, not generic SaaS defaults.
+- Concrete presentation do/don't rules derived from source screenshots, not generic SaaS defaults
+  and not literal webpage recreation.
 - Dominant background colors and surface hierarchy measured from rendered source material, not
   guessed from memory.
 - Explicit list of forbidden invented visuals that would degrade fidelity, such as generic planets,
