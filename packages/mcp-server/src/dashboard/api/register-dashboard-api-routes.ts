@@ -1,18 +1,18 @@
-import type { DesignSystemApplicationService } from "@onbrand/core/design-system/application-service";
+import type { BrandGuideApplicationService } from "@onbrand/core/brand-guide/application-service";
 import type { Hono } from "hono";
 import type { Context } from "hono";
 import { getDashboardSession, type DashboardSessionRefreshConfig } from "../dashboard-session";
 
 export type DashboardApiRoutesConfig = Readonly<{
   app: Hono;
-  designSystems: DesignSystemApplicationService;
+  brandGuides: BrandGuideApplicationService;
   handleAuthError: (context: Context, error: unknown) => Response;
   refreshConfig: DashboardSessionRefreshConfig;
 }>;
 
 export const registerDashboardApiRoutes = ({
   app,
-  designSystems,
+  brandGuides,
   handleAuthError,
   refreshConfig,
 }: DashboardApiRoutesConfig): void => {
@@ -25,24 +25,22 @@ export const registerDashboardApiRoutes = ({
     }
   });
 
-  app.get("/api/design-systems", async (context) => {
+  app.get("/api/brand-guides", async (context) => {
     try {
       const session = await getDashboardSession(context, refreshConfig);
-      return context.json(
-        await designSystems.listDesignSystems({ ownerUserId: session.ownerUserId }),
-      );
+      return context.json(await brandGuides.listBrandGuides({ ownerUserId: session.ownerUserId }));
     } catch (error) {
       return handleAuthError(context, error);
     }
   });
 
-  app.get("/api/design-systems/:id/assets/:assetHandle/preview", async (context) => {
+  app.get("/api/brand-guides/:id/assets/:assetHandle/preview", async (context) => {
     try {
       const session = await getDashboardSession(context, refreshConfig);
-      const previewUrl = await designSystems.getBrandKitAssetPreviewUrl(
+      const previewUrl = await brandGuides.getBrandKitAssetPreviewUrl(
         { ownerUserId: session.ownerUserId },
         {
-          designSystemId: context.req.param("id"),
+          brandGuideId: context.req.param("id"),
           assetHandle: context.req.param("assetHandle"),
         },
       );
@@ -52,11 +50,11 @@ export const registerDashboardApiRoutes = ({
     }
   });
 
-  app.get("/api/design-systems/:id", async (context) => {
+  app.get("/api/brand-guides/:id", async (context) => {
     try {
       const session = await getDashboardSession(context, refreshConfig);
       return context.json(
-        await designSystems.getDesignSystem(
+        await brandGuides.getBrandGuide(
           { ownerUserId: session.ownerUserId },
           context.req.param("id"),
         ),

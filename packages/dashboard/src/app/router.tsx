@@ -9,29 +9,29 @@ const INDEX_ROUTE = createRoute({
   component: OnboardingPage,
 });
 
-const DESIGN_SYSTEMS_ROUTE = createRoute({
+const BRAND_GUIDES_ROUTE = createRoute({
   getParentRoute: () => ROOT_ROUTE,
-  path: "/design-systems",
+  path: "/brand-guides",
   component: DashboardApp,
 });
 
-const DESIGN_SYSTEM_ROUTE = createRoute({
+const BRAND_GUIDE_ROUTE = createRoute({
   getParentRoute: () => ROOT_ROUTE,
-  path: "/design-systems/$designSystemId",
+  path: "/brand-guides/$brandGuideId",
   component: DashboardApp,
 });
 
-const DESIGN_SYSTEM_SECTION_ROUTE = createRoute({
+const BRAND_GUIDE_SECTION_ROUTE = createRoute({
   getParentRoute: () => ROOT_ROUTE,
-  path: "/design-systems/$designSystemId/$section",
+  path: "/brand-guides/$brandGuideId/$section",
   component: DashboardApp,
 });
 
 const ROUTE_TREE = ROOT_ROUTE.addChildren([
   INDEX_ROUTE,
-  DESIGN_SYSTEMS_ROUTE,
-  DESIGN_SYSTEM_ROUTE,
-  DESIGN_SYSTEM_SECTION_ROUTE,
+  BRAND_GUIDES_ROUTE,
+  BRAND_GUIDE_ROUTE,
+  BRAND_GUIDE_SECTION_ROUTE,
 ]);
 
 export const ROUTER = createRouter({ routeTree: ROUTE_TREE });

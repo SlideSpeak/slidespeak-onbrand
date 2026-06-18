@@ -6,5 +6,5 @@ remote Streamable HTTP MCP server over HTTPS, protected by SlideSpeak OAuth. Too
 structured MCP results as the source of truth and include the same serialized JSON in text content
 for client compatibility.
 
-Superseded storage note: the initial file-backed Design System Registry has been replaced by the
-Prisma Postgres Design System Registry.
+Superseded storage note: the initial file-backed Brand Guide Registry has been replaced by the
+Prisma Postgres Brand Guide Registry.

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { UnknownDesignSystemError } from "@onbrand/core/design-system/application-service";
+import { UnknownBrandGuideError } from "@onbrand/core/brand-guide/application-service";
 import { readMarkdownAsString } from "@onbrand/file";
 import { registerScopedTool } from "../shared/register-scoped-tool";
 import { type ToolRegistrationContext } from "../shared/types";
@@ -9,11 +9,11 @@ export const registerMaterializeBrandKitAssetsTool = (context: ToolRegistrationC
     context,
     name: "materialize_brand_kit_assets",
     scope: "onbrand:read",
-    handledErrors: [UnknownDesignSystemError],
+    handledErrors: [UnknownBrandGuideError],
     config: {
       description: readMarkdownAsString(import.meta.url, "description.mdx"),
       inputSchema: {
-        designSystemId: z.string().describe("Design System id."),
+        brandGuideId: z.string().describe("Brand Guide id."),
         outputDirectory: z
           .string()
           .min(1)
@@ -23,9 +23,9 @@ export const registerMaterializeBrandKitAssetsTool = (context: ToolRegistrationC
           ),
       },
     },
-    handler: ({ designSystemId, outputDirectory }) =>
-      context.designSystems.materializeBrandKitAssets(context.designSystemOwner, {
-        designSystemId,
+    handler: ({ brandGuideId, outputDirectory }) =>
+      context.brandGuides.materializeBrandKitAssets(context.brandGuideOwner, {
+        brandGuideId,
         outputDirectory,
       }),
   });

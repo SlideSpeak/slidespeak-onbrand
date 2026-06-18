@@ -1,14 +1,14 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Implementation } from "@modelcontextprotocol/sdk/types.js";
-import { designSystemOwnerFromMcpAuth, type McpAuthContext } from "../auth/context";
-import { type DesignSystemApplicationService } from "@onbrand/core/design-system/application-service";
-import { registerGetDesignSystemTool } from "./tools/get-design-system";
-import { registerGetDesignSystemWriterSkillTool } from "./tools/get-design-system-writer-skill";
+import { brandGuideOwnerFromMcpAuth, type McpAuthContext } from "../auth/context";
+import { type BrandGuideApplicationService } from "@onbrand/core/brand-guide/application-service";
+import { registerGetBrandGuideTool } from "./tools/get-brand-guide";
+import { registerGetBrandGuideWriterSkillTool } from "./tools/get-brand-guide-writer-skill";
 import { registerGetOnbrandSkillTool } from "./tools/get-onbrand-skill";
-import { registerListDesignSystemsTool } from "./tools/list-design-systems";
+import { registerListBrandGuidesTool } from "./tools/list-brand-guides";
 import { registerMaterializeBrandKitAssetsTool } from "./tools/materialize-brand-kit-assets";
-import { registerPrepareDesignSystemAssetUploadsTool } from "./tools/prepare-design-system-asset-uploads";
-import { registerWriteDesignSystemTool } from "./tools/write-design-system";
+import { registerPrepareBrandGuideAssetUploadsTool } from "./tools/prepare-brand-guide-asset-uploads";
+import { registerWriteBrandGuideTool } from "./tools/write-brand-guide";
 
 export { toToolResult } from "./tools/shared/result";
 
@@ -18,24 +18,24 @@ export const SERVER_INFO = {
 } satisfies Implementation;
 
 export const createOnbrandMcpServer = (
-  designSystems: DesignSystemApplicationService,
+  brandGuides: BrandGuideApplicationService,
   authContext: McpAuthContext,
 ): McpServer => {
   const server = new McpServer(SERVER_INFO);
   const context = {
     server,
-    designSystems,
+    brandGuides,
     authContext,
-    designSystemOwner: designSystemOwnerFromMcpAuth(authContext),
+    brandGuideOwner: brandGuideOwnerFromMcpAuth(authContext),
   };
 
   registerGetOnbrandSkillTool(context);
-  registerListDesignSystemsTool(context);
-  registerGetDesignSystemTool(context);
+  registerListBrandGuidesTool(context);
+  registerGetBrandGuideTool(context);
   registerMaterializeBrandKitAssetsTool(context);
-  registerGetDesignSystemWriterSkillTool(context);
-  registerPrepareDesignSystemAssetUploadsTool(context);
-  registerWriteDesignSystemTool(context);
+  registerGetBrandGuideWriterSkillTool(context);
+  registerPrepareBrandGuideAssetUploadsTool(context);
+  registerWriteBrandGuideTool(context);
 
   return server;
 };

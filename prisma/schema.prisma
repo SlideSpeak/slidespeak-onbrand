@@ -6,7 +6,7 @@ datasource db {
   provider = "postgresql"
 }
 
-model DesignSystem {
+model BrandGuide {
   id            String   @id @default(cuid())
   ownerUserId   String
   slug          String
@@ -25,9 +25,9 @@ model DesignSystem {
 
 model BrandKit {
   id             String @id @default(cuid())
-  designSystemId String @unique
+  brandGuideId String @unique
 
-  designSystem DesignSystem    @relation(fields: [designSystemId], references: [id], onDelete: Cascade)
+  brandGuide BrandGuide    @relation(fields: [brandGuideId], references: [id], onDelete: Cascade)
   colors       ColorToken[]
   assets       BrandKitAsset[]
 }
@@ -76,11 +76,11 @@ enum BrandKitAssetKind {
 
 model PresentationKit {
   id             String  @id @default(cuid())
-  designSystemId String  @unique
+  brandGuideId String  @unique
   canvasWidth    Int
   canvasHeight   Int
   canvasUnit     String
   designPrompt   String?
 
-  designSystem DesignSystem @relation(fields: [designSystemId], references: [id], onDelete: Cascade)
+  brandGuide BrandGuide @relation(fields: [brandGuideId], references: [id], onDelete: Cascade)
 }

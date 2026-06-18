@@ -1,4 +1,4 @@
-import type { DesignSystemOwner } from "@onbrand/core/design-system/owner";
+import type { BrandGuideOwner } from "@onbrand/core/brand-guide/owner";
 
 export type OnbrandScope = "onbrand:read" | "onbrand:write";
 
@@ -20,6 +20,6 @@ export const requireScope = (auth: McpAuthContext, scope: OnbrandScope): void =>
   if (!auth.scopes.includes(scope)) throw new MissingScopeError(scope);
 };
 
-export const designSystemOwnerFromMcpAuth = (auth: McpAuthContext): DesignSystemOwner => ({
+export const brandGuideOwnerFromMcpAuth = (auth: McpAuthContext): BrandGuideOwner => ({
   ownerUserId: auth.ownerUserId,
 });

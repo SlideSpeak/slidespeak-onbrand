@@ -4,10 +4,10 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./design-system/owner": "./src/design-system/owner.ts",
+    "./brand-guide/owner": "./src/brand-guide/owner.ts",
     "./database/prisma-client": "./src/database/prisma-client.ts",
-    "./design-system/application-service": "./src/design-system/application-service.ts",
-    "./design-system/application": "./src/design-system/design-system-application.ts",
+    "./brand-guide/application-service": "./src/brand-guide/application-service.ts",
+    "./brand-guide/application": "./src/brand-guide/brand-guide-application.ts",
     "./env": "./src/env.ts"
   },
   "scripts": {

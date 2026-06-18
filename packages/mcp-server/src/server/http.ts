@@ -11,7 +11,7 @@ import {
   ServerError,
 } from "@modelcontextprotocol/sdk/server/auth/errors.js";
 import { createPrismaClient } from "@onbrand/core/database/prisma-client";
-import { PersistentDesignSystemApplication } from "@onbrand/core/design-system/application";
+import { PersistentBrandGuideApplication } from "@onbrand/core/brand-guide/application";
 import {
   ownerUserIdFromAuthInfo,
   SlideSpeakTokenVerifier,
@@ -139,7 +139,7 @@ const main = async (): Promise<void> => {
   };
 
   const prisma = createPrismaClient();
-  const designSystems = new PersistentDesignSystemApplication(
+  const brandGuides = new PersistentBrandGuideApplication(
     prisma,
     S3,
     Env.AWS_S3_BUCKET_BRAND_KIT_ASSETS,
@@ -166,7 +166,7 @@ const main = async (): Promise<void> => {
   });
   registerDashboardApiRoutes({
     app,
-    designSystems,
+    brandGuides,
     handleAuthError: (context, error) =>
       handleOAuthError(context, error, protectedResourceMetadataUrl),
     refreshConfig: {
@@ -184,7 +184,7 @@ const main = async (): Promise<void> => {
     try {
       const authInfo = await verifyBearerAuth(context.req.header("authorization"), verifier);
       const ownerUserId = ownerUserIdFromAuthInfo(authInfo);
-      const server = createOnbrandMcpServer(designSystems, {
+      const server = createOnbrandMcpServer(brandGuides, {
         ownerUserId,
         scopes: authInfo.scopes,
       });

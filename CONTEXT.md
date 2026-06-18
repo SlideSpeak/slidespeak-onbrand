@@ -8,11 +8,11 @@ that remain consistent with an organization's identity and presentation conventi
 **Onbrand**: The product that gives AI agents access to an organization's governed design knowledge.
 _Avoid_: Brand MCP, branding tool
 
-**Design System**: The canonical source of truth for an organization's reusable design assets and
-design rules. In this context, each Design System contains one **Brand Kit** and one **Presentation
+**Brand Guide**: The canonical source of truth for an organization's reusable design assets and
+design rules. In this context, each Brand Guide contains one **Brand Kit** and one **Presentation
 Kit**. _Avoid_: Design context, brand, brand definition
 
-**Brand Kit**: The identity-focused part of a **Design System**, such as colors, logos, typography,
+**Brand Kit**: The identity-focused part of a **Brand Guide**, such as colors, logos, typography,
 **Decorative Assets**, imagery, icons, and voice/tone. _Avoid_: Brand, brand assets when referring
 to the whole kit
 
@@ -35,7 +35,7 @@ the **Logo** and **Decorative Assets**. The file lives in S3 object storage and 
 clients through short-lived presigned URLs. _Avoid_: server-local path, source asset path, inline
 binary payload
 
-**Presentation Kit**: The slide-focused part of a **Design System**. It defines the **Slide Canvas**
+**Presentation Kit**: The slide-focused part of a **Brand Guide**. It defines the **Slide Canvas**
 and may include a **Design Prompt** for generated presentations. _Avoid_: Slide Kit, Template Kit,
 Deck Kit
 
@@ -43,11 +43,11 @@ Deck Kit
 layout grammar, copy style, and quality checks for AI agents. _Avoid_: Master prompt, system prompt
 
 **Onbrand Skill**: General agent guidance that explains what **Onbrand** can do and how an AI agent
-should use its tools. It is distinct from a **Design Prompt**, which is specific to one **Design
-System**. _Avoid_: Onbrand Orientation, onboarding prompt, discovery prompt, help prompt
+should use its tools. It is distinct from a **Design Prompt**, which is specific to one **Brand
+Guide**. _Avoid_: Onbrand Orientation, onboarding prompt, discovery prompt, help prompt
 
 **Onbrand Dashboard**: The browser-based Onbrand product surface where authenticated users view and
-manage their **Design Systems**. It is distinct from the MCP endpoint, which is the agent-facing
+manage their **Brand Guides**. It is distinct from the MCP endpoint, which is the agent-facing
 integration surface. _Avoid_: Admin panel, Brand dashboard, MCP UI
 
 **Slide Canvas**: The canonical coordinate space used by a **Presentation Kit** to describe slide
@@ -61,7 +61,7 @@ _Avoid_: Color swatch when referring to role-aware colors
 
 **Developer**: Should the agent fetch the brand before creating slides?
 
-**Domain expert**: Fetch the Design System. The Brand Kit is only the identity layer; slide-specific
+**Domain expert**: Fetch the Brand Guide. The Brand Kit is only the identity layer; slide-specific
 conventions may live outside it.
 
 **Developer**: Should the agent use the raw blue hex value directly?
