@@ -19,7 +19,7 @@ Onbrand HttpOnly session cookie. MCP clients continue to authenticate with beare
 This keeps the first product surface simple: one domain, one TLS configuration, one `BASE_URL`, no
 CORS, no cross-subdomain cookie policy, and no separate frontend deployment. It also keeps ownership
 boundaries intact: SlideSpeak remains the identity, account, and billing system; Onbrand remains the
-owner of Design Systems, Brand Kits, Presentation Kits, assets, MCP tools, and dashboard APIs.
+owner of Brand Guides, Brand Kits, Presentation Kits, assets, MCP tools, and dashboard APIs.
 
 A future split to `app.onbrand.slidespeak.co` remains possible if the dashboard outgrows same-origin
 serving or needs independent deployment.

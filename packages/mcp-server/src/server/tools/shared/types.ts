@@ -1,11 +1,11 @@
 import { type McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { type DesignSystemApplicationService } from "@onbrand/core/design-system/application-service";
-import type { DesignSystemOwner } from "@onbrand/core/design-system/owner";
+import { type BrandGuideApplicationService } from "@onbrand/core/brand-guide/application-service";
+import type { BrandGuideOwner } from "@onbrand/core/brand-guide/owner";
 import { type McpAuthContext } from "../../../auth/context";
 
 export type ToolRegistrationContext = {
   server: McpServer;
-  designSystems: DesignSystemApplicationService;
+  brandGuides: BrandGuideApplicationService;
   authContext: McpAuthContext;
-  designSystemOwner: DesignSystemOwner;
+  brandGuideOwner: BrandGuideOwner;
 };

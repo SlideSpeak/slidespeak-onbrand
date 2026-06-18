@@ -1,17 +1,17 @@
 import {
-  designSystemSectionFromPathSegment,
-  type DesignSystemSection,
-} from "../design-system/navigation/design-system-sections";
+  brandGuideSectionFromPathSegment,
+  type BrandGuideSection,
+} from "../brand-guide/navigation/brand-guide-sections";
 
 export type DashboardRoute = Readonly<{
-  selectedDesignSystemId?: string;
-  selectedDesignSystemSection?: DesignSystemSection;
+  selectedBrandGuideId?: string;
+  selectedBrandGuideSection?: BrandGuideSection;
 }>;
 
 export const routeFromPathname = (pathname: string): DashboardRoute => {
-  const match = pathname.match(/^\/design-systems\/([^/]+)(?:\/([^/]+))?$/u);
+  const match = pathname.match(/^\/brand-guides\/([^/]+)(?:\/([^/]+))?$/u);
   return {
-    selectedDesignSystemId: match ? decodeURIComponent(match[1]) : undefined,
-    selectedDesignSystemSection: match ? designSystemSectionFromPathSegment(match[2]) : undefined,
+    selectedBrandGuideId: match ? decodeURIComponent(match[1]) : undefined,
+    selectedBrandGuideSection: match ? brandGuideSectionFromPathSegment(match[2]) : undefined,
   };
 };

@@ -1,7 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { describe, expect, test } from "vitest";
-import type { DesignSystemApplicationService } from "@onbrand/core/design-system/application-service";
+import type { BrandGuideApplicationService } from "@onbrand/core/brand-guide/application-service";
 import { createOnbrandMcpServer, toToolResult } from "./server";
 
 type ToolResultRecord = Record<string, unknown>;
@@ -26,10 +26,10 @@ const firstTextContent = (result: ToolResultRecord): string => {
   return first.text as string;
 };
 
-const ACME_DESIGN_SYSTEM = {
-  designSystem: {
+const ACME_BRAND_GUIDE = {
+  brandGuide: {
     id: "acme",
-    name: "Acme Design System",
+    name: "Acme Brand Guide",
     description: "Reusable Acme presentation system for sales and strategy decks.",
   },
   brandKit: {
@@ -57,7 +57,7 @@ const ACME_DESIGN_SYSTEM = {
 
 describe("Onbrand MCP tools", () => {
   test("returns tool results with machine-readable structured content and matching text content", () => {
-    const result = { designSystems: [ACME_DESIGN_SYSTEM.designSystem] };
+    const result = { brandGuides: [ACME_BRAND_GUIDE.brandGuide] };
     const toolResult = toToolResult(result);
 
     expect(toolResult.structuredContent).toBe(result);
@@ -67,7 +67,7 @@ describe("Onbrand MCP tools", () => {
   });
 
   test("get_onbrand_skill exposes the skill as structured data and readable text", async () => {
-    const client = await connectedClient(fakeDesignSystems());
+    const client = await connectedClient(fakeBrandGuides());
 
     const result = await callTool(client, { name: "get_onbrand_skill", arguments: {} });
     const structuredContent = record(result.structuredContent);
@@ -76,23 +76,23 @@ describe("Onbrand MCP tools", () => {
     expect(firstTextContent(result)).not.toHaveLength(0);
   });
 
-  test("get_design_system returns the requested Design System without resource links", async () => {
-    const client = await connectedClient(fakeDesignSystems());
+  test("get_brand_guide returns the requested Brand Guide without resource links", async () => {
+    const client = await connectedClient(fakeBrandGuides());
 
     const result = await callTool(client, {
-      name: "get_design_system",
-      arguments: { designSystemId: "acme" },
+      name: "get_brand_guide",
+      arguments: { brandGuideId: "acme" },
     });
 
     expect(client.getServerCapabilities()?.resources).toBeUndefined();
-    expect(result.structuredContent).toEqual(ACME_DESIGN_SYSTEM);
+    expect(result.structuredContent).toEqual(ACME_BRAND_GUIDE);
   });
 
-  test("get_design_system_writer_skill exposes the authoring skill as structured data and readable text", async () => {
-    const client = await connectedClient(fakeDesignSystems());
+  test("get_brand_guide_writer_skill exposes the authoring skill as structured data and readable text", async () => {
+    const client = await connectedClient(fakeBrandGuides());
 
     const result = await callTool(client, {
-      name: "get_design_system_writer_skill",
+      name: "get_brand_guide_writer_skill",
       arguments: {},
     });
     const structuredContent = record(result.structuredContent);
@@ -101,13 +101,13 @@ describe("Onbrand MCP tools", () => {
     expect(firstTextContent(result)).not.toHaveLength(0);
   });
 
-  test("prepare_design_system_asset_uploads delegates asset upload preparation without asset bytes", async () => {
-    const client = await connectedClient(fakeDesignSystems());
+  test("prepare_brand_guide_asset_uploads delegates asset upload preparation without asset bytes", async () => {
+    const client = await connectedClient(fakeBrandGuides());
 
     const result = await callTool(client, {
-      name: "prepare_design_system_asset_uploads",
+      name: "prepare_brand_guide_asset_uploads",
       arguments: {
-        designSystemId: "newco",
+        brandGuideId: "newco",
         uploads: [
           {
             assetId: "primary-logo",
@@ -122,20 +122,20 @@ describe("Onbrand MCP tools", () => {
 
     const structuredContent = record(result.structuredContent);
     const uploads = structuredContent.uploads;
-    expect(structuredContent.designSystemId).toBe("newco");
+    expect(structuredContent.brandGuideId).toBe("newco");
     expect(Array.isArray(uploads)).toBe(true);
     expect(record((uploads as unknown[])[0]).method).toBe("PUT");
     expect(record((uploads as unknown[])[0]).uploadUrl).toBeTypeOf("string");
     expect(JSON.stringify(result)).not.toContain("contentBase64");
   });
 
-  test("prepare_design_system_asset_uploads rejects consumer asset handles as upload ids", async () => {
-    const client = await connectedClient(fakeDesignSystems());
+  test("prepare_brand_guide_asset_uploads rejects consumer asset handles as upload ids", async () => {
+    const client = await connectedClient(fakeBrandGuides());
 
     const result = await callTool(client, {
-      name: "prepare_design_system_asset_uploads",
+      name: "prepare_brand_guide_asset_uploads",
       arguments: {
-        designSystemId: "newco",
+        brandGuideId: "newco",
         uploads: [
           {
             assetId: "LOGO",
@@ -152,13 +152,13 @@ describe("Onbrand MCP tools", () => {
     expect(firstTextContent(result)).toContain("assetId");
   });
 
-  test("write_design_system persists a model-constructed Design System without asset bytes", async () => {
-    const client = await connectedClient(fakeDesignSystems());
+  test("write_brand_guide persists a model-constructed Brand Guide without asset bytes", async () => {
+    const client = await connectedClient(fakeBrandGuides());
     const request = {
-      designSystem: {
+      brandGuide: {
         id: "newco",
-        name: "NewCo Design System",
-        description: "NewCo Design System for crisp editorial business presentations.",
+        name: "NewCo Brand Guide",
+        description: "NewCo Brand Guide for crisp editorial business presentations.",
       },
       brandKit: {
         colors: [{ id: "ink", name: "Ink", value: "#111111", description: "Primary text." }],
@@ -181,15 +181,15 @@ describe("Onbrand MCP tools", () => {
       },
     };
 
-    const result = await callTool(client, { name: "write_design_system", arguments: request });
+    const result = await callTool(client, { name: "write_brand_guide", arguments: request });
     const structuredContent = record(result.structuredContent);
-    const designSystem = record(structuredContent.designSystem);
-    const brandKit = record(designSystem.brandKit);
+    const brandGuide = record(structuredContent.brandGuide);
+    const brandKit = record(brandGuide.brandKit);
     const logo = record(brandKit.logo);
 
-    expect(structuredContent.designSystemId).toBe(request.designSystem.id);
+    expect(structuredContent.brandGuideId).toBe(request.brandGuide.id);
     expect(structuredContent.action).toBe("CREATED");
-    expect(designSystem.designSystem).toEqual(request.designSystem);
+    expect(brandGuide.brandGuide).toEqual(request.brandGuide);
     expect(logo.assetHandle).toBe("LOGO");
     expect(logo.filename).toBe(request.brandKit.logo.filename);
     expect(logo.mimeType).toBe(request.brandKit.logo.mimeType);
@@ -197,22 +197,22 @@ describe("Onbrand MCP tools", () => {
     expect(logo).not.toHaveProperty("s3Key");
     expect(logo).not.toHaveProperty("byteSize");
     expect(logo).not.toHaveProperty("sha256");
-    expect(designSystem.presentationKit).toEqual(request.presentationKit);
+    expect(brandGuide.presentationKit).toEqual(request.presentationKit);
     expect(JSON.stringify(result)).not.toContain("contentBase64");
   });
 
   test("materialize_brand_kit_assets returns download commands instead of asset bytes", async () => {
-    const client = await connectedClient(fakeDesignSystems());
+    const client = await connectedClient(fakeBrandGuides());
 
     const result = await callTool(client, {
       name: "materialize_brand_kit_assets",
-      arguments: { designSystemId: "acme", outputDirectory: "assets" },
+      arguments: { brandGuideId: "acme", outputDirectory: "assets" },
     });
     const structuredContent = record(result.structuredContent);
     const commands = structuredContent.commands;
     const assets = structuredContent.assets;
 
-    expect(structuredContent.designSystemId).toBe("acme");
+    expect(structuredContent.brandGuideId).toBe("acme");
     expect(structuredContent.outputDirectory).toBe("assets");
     expect(Array.isArray(commands)).toBe(true);
     expect(
@@ -229,8 +229,8 @@ describe("Onbrand MCP tools", () => {
   });
 });
 
-const connectedClient = async (designSystems: DesignSystemApplicationService): Promise<Client> => {
-  const server = createOnbrandMcpServer(designSystems, {
+const connectedClient = async (brandGuides: BrandGuideApplicationService): Promise<Client> => {
+  const server = createOnbrandMcpServer(brandGuides, {
     ownerUserId: "test-user",
     scopes: ["onbrand:read", "onbrand:write"],
   });
@@ -240,19 +240,19 @@ const connectedClient = async (designSystems: DesignSystemApplicationService): P
   return client;
 };
 
-const fakeDesignSystems = (): DesignSystemApplicationService => ({
-  listDesignSystems: async () => [ACME_DESIGN_SYSTEM.designSystem],
-  getDesignSystem: async (_auth, id) => {
-    if (id !== "acme") throw new Error("Unknown Design System");
-    return ACME_DESIGN_SYSTEM;
+const fakeBrandGuides = (): BrandGuideApplicationService => ({
+  listBrandGuides: async () => [ACME_BRAND_GUIDE.brandGuide],
+  getBrandGuide: async (_auth, id) => {
+    if (id !== "acme") throw new Error("Unknown Brand Guide");
+    return ACME_BRAND_GUIDE;
   },
-  prepareDesignSystemAssetUploads: async (auth, request) => ({
-    designSystemId: request.designSystemId,
+  prepareBrandGuideAssetUploads: async (auth, request) => ({
+    brandGuideId: request.brandGuideId,
     instructions:
-      "Run each PUT command from the directory containing the exact asset file. Then call write_design_system with the returned s3Key, byteSize, and sha256 metadata. Do not send asset bytes through MCP.",
+      "Run each PUT command from the directory containing the exact asset file. Then call write_brand_guide with the returned s3Key, byteSize, and sha256 metadata. Do not send asset bytes through MCP.",
     uploads: request.uploads.map((upload) => ({
       ...upload,
-      s3Key: `${auth.ownerUserId}/${request.designSystemId}/${upload.assetId}/${upload.filename}`,
+      s3Key: `${auth.ownerUserId}/${request.brandGuideId}/${upload.assetId}/${upload.filename}`,
       uploadUrl: `https://s3.example/upload/${upload.filename}?signature=test`,
       expiresInSeconds: 900,
       method: "PUT" as const,
@@ -261,11 +261,11 @@ const fakeDesignSystems = (): DesignSystemApplicationService => ({
     })),
   }),
   getBrandKitAssetPreviewUrl: async () => "https://s3.example/logo.svg?signature=test",
-  writeDesignSystem: async (_auth, request) => ({
-    designSystemId: request.designSystem.id,
+  writeBrandGuide: async (_auth, request) => ({
+    brandGuideId: request.brandGuide.id,
     action: "CREATED",
-    designSystem: {
-      designSystem: request.designSystem,
+    brandGuide: {
+      brandGuide: request.brandGuide,
       brandKit: {
         colors: request.brandKit.colors,
         logo: {
@@ -280,8 +280,8 @@ const fakeDesignSystems = (): DesignSystemApplicationService => ({
       presentationKit: request.presentationKit,
     },
   }),
-  materializeBrandKitAssets: async (_auth, { designSystemId, outputDirectory }) => ({
-    designSystemId,
+  materializeBrandKitAssets: async (_auth, { brandGuideId, outputDirectory }) => ({
+    brandGuideId,
     outputDirectory,
     expiresInSeconds: 900,
     instructions:

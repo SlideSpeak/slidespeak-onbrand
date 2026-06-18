@@ -5,8 +5,8 @@
 - A Prisma-backed `*Record` type manually redeclares fields and primitive types that already exist
   on a generated Prisma model.
 - A record file imports a Prisma model type without aliasing it with a `Db` prefix.
-- A domain type such as `ColorToken`, `BrandKitView`, `DesignSystemView`, or `PresentationKitView`
-  is changed to depend directly on a Prisma model type.
+- A domain type such as `ColorToken`, `BrandKitView`, `BrandGuideView`, or `PresentationKitView` is
+  changed to depend directly on a Prisma model type.
 
 ## Do not flag
 

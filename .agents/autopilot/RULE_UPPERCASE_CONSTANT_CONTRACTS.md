@@ -14,7 +14,7 @@
 - Ordinary local variables, parameters, functions, or inferred values.
 - JSON object field names, tool names, schema property names, or external protocol values that must
   remain in their required wire format.
-- Domain enum values that intentionally model authored design-system data, such as `required`,
+- Domain enum values that intentionally model authored brand-guide data, such as `required`,
   `optional`, `logo`, or `slideNumber`.
 
 ## Why

@@ -13,21 +13,21 @@ import { Toaster } from "../components/ui/sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/tooltip";
 import { toast } from "sonner";
 import { useApi } from "../shared/api/api-state";
-import { DesignSystemDetail } from "../design-system/detail/design-system-detail";
-import type { DesignSystemSummary } from "@onbrand/core/design-system/application-service";
+import { BrandGuideDetail } from "../brand-guide/detail/brand-guide-detail";
+import type { BrandGuideSummary } from "@onbrand/core/brand-guide/application-service";
 import {
-  DEFAULT_DESIGN_SYSTEM_SECTION,
-  DESIGN_SYSTEM_SECTION_LINKS,
-  designSystemSectionLabel,
-  designSystemSectionPathSegment,
-  type DesignSystemSection,
-} from "../design-system/navigation/design-system-sections";
+  DEFAULT_BRAND_GUIDE_SECTION,
+  BRAND_GUIDE_SECTION_LINKS,
+  brandGuideSectionLabel,
+  brandGuideSectionPathSegment,
+  type BrandGuideSection,
+} from "../brand-guide/navigation/brand-guide-sections";
 import type { ApiState } from "../shared/api/api-state";
 import { ErrorMessage } from "../shared/ui/feedback";
 import onbrandLogoUrl from "../assets/onbrand-logo.svg";
 import { routeFromPathname } from "./route";
 
-const NO_DESIGN_SYSTEM = "NO_DESIGN_SYSTEM";
+const NO_BRAND_GUIDE = "NO_BRAND_GUIDE";
 const GRAIN_TEXTURE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
 
 export const OnboardingPage = () => (
@@ -100,42 +100,42 @@ export const OnboardingPage = () => (
 export const DashboardApp = () => {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const route = routeFromPathname(pathname);
-  const designSystems = useApi<readonly DesignSystemSummary[]>("/api/design-systems");
+  const brandGuides = useApi<readonly BrandGuideSummary[]>("/api/brand-guides");
   const isHome = pathname === "/";
-  const selectedDesignSystemId =
-    route.selectedDesignSystemId ??
-    (!isHome && designSystems.status === "READY" ? designSystems.data[0]?.id : undefined);
-  const selectedDesignSystem =
-    designSystems.status === "READY"
-      ? designSystems.data.find((designSystem) => designSystem.id === selectedDesignSystemId)
+  const selectedBrandGuideId =
+    route.selectedBrandGuideId ??
+    (!isHome && brandGuides.status === "READY" ? brandGuides.data[0]?.id : undefined);
+  const selectedBrandGuide =
+    brandGuides.status === "READY"
+      ? brandGuides.data.find((brandGuide) => brandGuide.id === selectedBrandGuideId)
       : undefined;
 
   return (
     <div className="min-h-screen bg-onbrand-white text-onbrand-charcoal">
       <div className="flex min-h-screen overflow-hidden border border-onbrand-charcoal/10 bg-onbrand-white shadow-[0_32px_120px_rgba(10,10,10,0.16)]">
         <DashboardRail
-          selectedDesignSystemId={selectedDesignSystemId}
-          selectedDesignSystemSection={route.selectedDesignSystemSection}
+          selectedBrandGuideId={selectedBrandGuideId}
+          selectedBrandGuideSection={route.selectedBrandGuideSection}
         />
         <div className="min-w-0 flex-1 border-l border-onbrand-charcoal/8 bg-onbrand-white">
           <DashboardTopBar
-            designSystems={designSystems}
-            selectedDesignSystemId={selectedDesignSystemId}
-            selectedDesignSystemName={selectedDesignSystem?.name}
-            selectedDesignSystemSection={route.selectedDesignSystemSection}
+            brandGuides={brandGuides}
+            selectedBrandGuideId={selectedBrandGuideId}
+            selectedBrandGuideName={selectedBrandGuide?.name}
+            selectedBrandGuideSection={route.selectedBrandGuideSection}
           />
           <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:max-h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
-            {selectedDesignSystemId ? (
-              <DesignSystemDetail
-                id={selectedDesignSystemId}
-                section={route.selectedDesignSystemSection}
+            {selectedBrandGuideId ? (
+              <BrandGuideDetail
+                id={selectedBrandGuideId}
+                section={route.selectedBrandGuideSection}
               />
-            ) : designSystems.status === "ERROR" ? (
-              <ErrorMessage message={designSystems.message} />
-            ) : designSystems.status === "READY" ? (
-              <NoDesignSystemsPrompt />
+            ) : brandGuides.status === "ERROR" ? (
+              <ErrorMessage message={brandGuides.message} />
+            ) : brandGuides.status === "READY" ? (
+              <NoBrandGuidesPrompt />
             ) : (
-              <p className="text-onbrand-charcoal/45">Loading your Design Systems…</p>
+              <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
             )}
           </main>
         </div>
@@ -145,11 +145,11 @@ export const DashboardApp = () => {
   );
 };
 
-const NoDesignSystemsPrompt = () => (
+const NoBrandGuidesPrompt = () => (
   <section className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center justify-center">
     <div className="-translate-y-10 text-center">
       <h2 className="text-base font-normal text-onbrand-charcoal">Prompt your agent</h2>
-      <CopyableValue value="How can I create a design system?" className="mx-auto mt-2" />
+      <CopyableValue value="How can I create a brand guide?" className="mx-auto mt-2" />
     </div>
   </section>
 );
@@ -198,7 +198,7 @@ const OnboardingInstructions = ({
           <OnboardingStep
             number="03"
             value="Start Creating"
-            href="/design-systems"
+            href="/brand-guides"
             variant={variant}
           />
         </div>
@@ -381,15 +381,15 @@ const CursorIcon = ({ className }: Readonly<{ className?: string }>) => (
 );
 
 const DashboardTopBar = ({
-  designSystems,
-  selectedDesignSystemId,
-  selectedDesignSystemName,
-  selectedDesignSystemSection = DEFAULT_DESIGN_SYSTEM_SECTION,
+  brandGuides,
+  selectedBrandGuideId,
+  selectedBrandGuideName,
+  selectedBrandGuideSection = DEFAULT_BRAND_GUIDE_SECTION,
 }: Readonly<{
-  designSystems: ApiState<readonly DesignSystemSummary[]>;
-  selectedDesignSystemId?: string;
-  selectedDesignSystemName?: string;
-  selectedDesignSystemSection?: DesignSystemSection;
+  brandGuides: ApiState<readonly BrandGuideSummary[]>;
+  selectedBrandGuideId?: string;
+  selectedBrandGuideName?: string;
+  selectedBrandGuideSection?: BrandGuideSection;
 }>) => {
   const navigate = useNavigate();
 
@@ -397,46 +397,43 @@ const DashboardTopBar = ({
     <header className="flex h-16 items-center gap-4 border-b border-onbrand-charcoal/8 px-4 sm:px-6 lg:px-7">
       <div className="flex min-w-0 flex-1 items-center gap-3 text-sm">
         <span className="truncate font-normal text-onbrand-charcoal">
-          {selectedDesignSystemName ?? "Getting started"}
+          {selectedBrandGuideName ?? "Getting started"}
         </span>
-        {selectedDesignSystemName ? (
+        {selectedBrandGuideName ? (
           <>
             <span className="text-onbrand-charcoal/25">/</span>
             <span className="truncate text-onbrand-charcoal/55">
-              {designSystemSectionLabel(selectedDesignSystemSection)}
+              {brandGuideSectionLabel(selectedBrandGuideSection)}
             </span>
           </>
         ) : null}
       </div>
-      {designSystems.status === "READY" ? (
+      {brandGuides.status === "READY" ? (
         <Select
-          value={selectedDesignSystemId ?? NO_DESIGN_SYSTEM}
+          value={selectedBrandGuideId ?? NO_BRAND_GUIDE}
           onValueChange={(value) => {
-            if (value !== NO_DESIGN_SYSTEM)
+            if (value !== NO_BRAND_GUIDE)
               void navigate({
-                to: "/design-systems/$designSystemId/$section",
+                to: "/brand-guides/$brandGuideId/$section",
                 params: {
-                  designSystemId: value,
-                  section: designSystemSectionPathSegment(selectedDesignSystemSection),
+                  brandGuideId: value,
+                  section: brandGuideSectionPathSegment(selectedBrandGuideSection),
                 },
               });
           }}
         >
-          <SelectTrigger
-            aria-label="Select Design System"
-            className="w-[320px] [&>span]:text-center"
-          >
+          <SelectTrigger aria-label="Select Brand Guide" className="w-[320px] [&>span]:text-center">
             <SelectValue placeholder="Select" />
           </SelectTrigger>
           <SelectContent>
-            {!selectedDesignSystemId && (
-              <SelectItem value={NO_DESIGN_SYSTEM} disabled>
-                {designSystems.data.length === 0 ? "No Design Systems" : "Select Design System"}
+            {!selectedBrandGuideId && (
+              <SelectItem value={NO_BRAND_GUIDE} disabled>
+                {brandGuides.data.length === 0 ? "No Brand Guides" : "Select Brand Guide"}
               </SelectItem>
             )}
-            {designSystems.data.map((designSystem) => (
-              <SelectItem key={designSystem.id} value={designSystem.id}>
-                {designSystem.name}
+            {brandGuides.data.map((brandGuide) => (
+              <SelectItem key={brandGuide.id} value={brandGuide.id}>
+                {brandGuide.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -449,11 +446,11 @@ const DashboardTopBar = ({
 };
 
 const DashboardRail = ({
-  selectedDesignSystemId,
-  selectedDesignSystemSection,
+  selectedBrandGuideId,
+  selectedBrandGuideSection,
 }: Readonly<{
-  selectedDesignSystemId?: string;
-  selectedDesignSystemSection?: DesignSystemSection;
+  selectedBrandGuideId?: string;
+  selectedBrandGuideSection?: BrandGuideSection;
 }>) => (
   <aside className="hidden w-16 shrink-0 flex-col items-center bg-onbrand-white px-2 py-5 text-onbrand-charcoal lg:flex">
     <Link
@@ -465,13 +462,13 @@ const DashboardRail = ({
     </Link>
     <TooltipProvider delayDuration={150}>
       <nav className="flex flex-1 flex-col items-center gap-2" aria-label="Onbrand sections">
-        {DESIGN_SYSTEM_SECTION_LINKS.map(({ section, pathSegment, label, icon }) => {
+        {BRAND_GUIDE_SECTION_LINKS.map(({ section, pathSegment, label, icon }) => {
           const isActive =
-            Boolean(selectedDesignSystemId) &&
-            (selectedDesignSystemSection ?? DEFAULT_DESIGN_SYSTEM_SECTION) === section;
-          const href = selectedDesignSystemId
-            ? `/design-systems/${encodeURIComponent(selectedDesignSystemId)}/${pathSegment}`
-            : "/design-systems";
+            Boolean(selectedBrandGuideId) &&
+            (selectedBrandGuideSection ?? DEFAULT_BRAND_GUIDE_SECTION) === section;
+          const href = selectedBrandGuideId
+            ? `/brand-guides/${encodeURIComponent(selectedBrandGuideId)}/${pathSegment}`
+            : "/brand-guides";
 
           return (
             <Tooltip key={section}>

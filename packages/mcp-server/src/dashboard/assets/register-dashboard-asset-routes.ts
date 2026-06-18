@@ -19,9 +19,9 @@ const DASHBOARD_DEV_SERVER_PATHS = [
 ] as const;
 const DASHBOARD_SPA_PATHS = [
   "/",
-  "/design-systems",
-  "/design-systems/:id",
-  "/design-systems/:id/:section",
+  "/brand-guides",
+  "/brand-guides/:id",
+  "/brand-guides/:id/:section",
 ] as const;
 
 export const registerDashboardAssetRoutes = (app: Hono): void => {
