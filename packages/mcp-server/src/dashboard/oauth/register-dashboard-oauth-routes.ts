@@ -8,7 +8,7 @@ import { dashboardSessionFromAuthInfo, setDashboardAuthCookies } from "../dashbo
 const OAUTH_STATE_COOKIE = "onbrand_oauth_state";
 const OAUTH_VERIFIER_COOKIE = "onbrand_oauth_verifier";
 const OAUTH_RETURN_TO_COOKIE = "onbrand_oauth_return_to";
-const DEFAULT_DASHBOARD_RETURN_TO = "/";
+const DEFAULT_DASHBOARD_RETURN_TO = "/home";
 
 export type DashboardOAuthRoutesConfig = Readonly<{
   app: Hono;
@@ -120,6 +120,7 @@ const safeDashboardReturnTo = (returnTo: string | undefined): string => {
   if (!returnTo) return DEFAULT_DASHBOARD_RETURN_TO;
   if (
     returnTo === "/" ||
+    returnTo === "/home" ||
     returnTo === "/onboard" ||
     returnTo === "/brand-guides" ||
     returnTo.startsWith("/brand-guides/")

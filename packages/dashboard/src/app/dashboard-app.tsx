@@ -107,7 +107,7 @@ export const DashboardApp = () => {
   const route = routeFromPathname(pathname);
   const loadedBrandGuides = useApi<readonly BrandGuideSummary[]>("/api/brand-guides");
   const brandGuides = useSyncedBrandGuides(loadedBrandGuides);
-  const isHome = pathname === "/";
+  const isHome = pathname === "/home";
   const selectedBrandGuideId =
     route.selectedBrandGuideId ??
     (!isHome && brandGuides.status === "READY" ? brandGuides.data[0]?.id : undefined);
@@ -679,7 +679,7 @@ const DashboardTopBar = ({
   return (
     <header className="flex h-16 items-center gap-4 border-b border-onbrand-charcoal/8 px-4 sm:px-6 lg:px-7">
       <Link
-        to="/"
+        to="/home"
         aria-label="Onbrand dashboard home"
         className="grid h-9 w-9 shrink-0 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5 lg:hidden"
       >
@@ -750,7 +750,7 @@ const DashboardRail = ({
 }>) => (
   <aside className="hidden w-16 shrink-0 flex-col items-center border-r border-onbrand-charcoal/8 bg-onbrand-white px-2 py-5 text-onbrand-charcoal lg:flex">
     <Link
-      to="/"
+      to="/home"
       aria-label="Onbrand home"
       className="mb-6 grid h-9 w-9 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5"
     >

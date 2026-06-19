@@ -6,6 +6,12 @@ const ROOT_ROUTE = createRootRoute({ component: Outlet });
 const INDEX_ROUTE = createRoute({
   getParentRoute: () => ROOT_ROUTE,
   path: "/",
+  component: OnboardingPage,
+});
+
+const HOME_ROUTE = createRoute({
+  getParentRoute: () => ROOT_ROUTE,
+  path: "/home",
   component: DashboardApp,
 });
 
@@ -35,6 +41,7 @@ const BRAND_GUIDE_SECTION_ROUTE = createRoute({
 
 const ROUTE_TREE = ROOT_ROUTE.addChildren([
   INDEX_ROUTE,
+  HOME_ROUTE,
   ONBOARD_ROUTE,
   BRAND_GUIDES_ROUTE,
   BRAND_GUIDE_ROUTE,
