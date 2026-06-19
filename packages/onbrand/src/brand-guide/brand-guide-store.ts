@@ -27,7 +27,7 @@ export const loadBrandGuideRecord = async (
       presentationKit: true,
     },
   });
-  if (!row || !row.brandKit || !row.presentationKit) {
+  if (!row) {
     throw new UnknownBrandGuideError(brandGuideId);
   }
   return row;
@@ -37,6 +37,6 @@ export const toBrandGuideView = (
   record: Awaited<ReturnType<typeof loadBrandGuideRecord>>,
 ): BrandGuideView => ({
   brandGuide: { id: record.slug, name: record.name, description: record.description },
-  brandKit: toBrandKitView(record.brandKit!.assets, record.brandKit!.colors),
-  presentationKit: toPresentationKitView(record.presentationKit!),
+  brandKit: toBrandKitView(record.brandKit?.assets ?? [], record.brandKit?.colors ?? []),
+  presentationKit: toPresentationKitView(record.presentationKit),
 });

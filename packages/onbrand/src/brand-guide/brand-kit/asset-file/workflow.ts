@@ -42,7 +42,7 @@ const UPLOAD_BRAND_KIT_ASSET_INSTRUCTIONS = readMarkdownAsString(
 
 export class BrandKitAssetFileWorkflow {
   constructor(
-    private readonly s3: Pick<typeof S3, "getPresigned" | "putPresigned">,
+    private readonly s3: Pick<typeof S3, "getPresigned" | "putPresigned" | "deleteObject">,
     private readonly bucket: string,
     private readonly presignedUrlExpiresInSeconds: number,
   ) {}
@@ -85,6 +85,9 @@ export class BrandKitAssetFileWorkflow {
       assets: downloads,
     };
   };
+
+  delete = async (key: string): Promise<void> =>
+    this.s3.deleteObject({ bucket: this.bucket, key });
 
   prepareUploads = async ({
     ownerUserId,

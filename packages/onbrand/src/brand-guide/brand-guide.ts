@@ -10,7 +10,7 @@ export const brandGuideSchema = z
     schemaVersion: z.literal(1),
     id: brandGuideIdSchema,
     name: z.string().min(1),
-    description: z.string().min(1),
+    description: z.string().min(1).nullable(),
     brandKit: brandKitSchema,
     presentationKit: presentationKitSchema,
   })

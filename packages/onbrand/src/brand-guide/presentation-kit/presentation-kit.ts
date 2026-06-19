@@ -13,8 +13,8 @@ export type SlideCanvas = Readonly<z.infer<typeof slideCanvasSchema>>;
 
 export const presentationKitSchema = z
   .object({
-    canvas: slideCanvasSchema,
-    designPrompt: z.string().min(1).optional(),
+    canvas: slideCanvasSchema.nullable(),
+    designPrompt: z.string().min(1).nullable(),
   })
   .strict();
 

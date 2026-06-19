@@ -12,7 +12,7 @@ model BrandGuide {
   slug          String
   schemaVersion Int
   name          String
-  description   String
+  description   String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -77,9 +77,9 @@ enum BrandKitAssetKind {
 model PresentationKit {
   id             String  @id @default(cuid())
   brandGuideId String  @unique
-  canvasWidth    Int
-  canvasHeight   Int
-  canvasUnit     String
+  canvasWidth    Int?
+  canvasHeight   Int?
+  canvasUnit     String?
   designPrompt   String?
 
   brandGuide BrandGuide @relation(fields: [brandGuideId], references: [id], onDelete: Cascade)
