@@ -31,12 +31,15 @@ export const ColorTokensSection = ({
   const [adding, setAdding] = useState(false);
 
   return (
-    <section id="colors" className="scroll-mt-4 grid gap-3">
+    <section id="colors" className="grid scroll-mt-4 gap-3">
       <header className="mb-2 flex items-center justify-between gap-3">
         <h2 className="m-0 text-xl leading-none font-normal tracking-[-0.035em]">Colors</h2>
         <Dialog open={adding} onOpenChange={setAdding}>
           <DialogTrigger asChild>
-            <button className="rounded-md bg-onbrand-charcoal px-3 py-2 text-sm text-white" type="button">
+            <button
+              className="rounded-md bg-onbrand-charcoal px-3 py-2 text-sm text-white"
+              type="button"
+            >
               Add Color
             </button>
           </DialogTrigger>
@@ -60,7 +63,9 @@ export const ColorTokensSection = ({
           ))}
         </div>
       ) : (
-        <p className="rounded-md border border-dashed border-onbrand-charcoal/15 p-8 text-center text-sm text-onbrand-charcoal/55">No Color Tokens yet.</p>
+        <p className="rounded-md border border-dashed border-onbrand-charcoal/15 p-8 text-center text-sm text-onbrand-charcoal/55">
+          No Color Tokens yet.
+        </p>
       )}
     </section>
   );
@@ -70,7 +75,11 @@ const ColorSwatchCard = ({
   brandGuideId,
   color,
   onViewChange,
-}: Readonly<{ brandGuideId: string; color: ColorToken; onViewChange: (view: BrandGuideView) => void }>) => {
+}: Readonly<{
+  brandGuideId: string;
+  color: ColorToken;
+  onViewChange: (view: BrandGuideView) => void;
+}>) => {
   const colorTextValue = colorText(color.value);
   const uppercaseColorValue = color.value.toUpperCase();
   const pendingView = useRef<BrandGuideView | null>(null);
@@ -131,8 +140,20 @@ const ColorTokenDialogContent = ({
 }>) => {
   const [state, setState] = useReducer(
     (
-      current: { name: string; value: string; description: string; pickerOpen: boolean; deleteConfirmOpen: boolean },
-      patch: Partial<{ name: string; value: string; description: string; pickerOpen: boolean; deleteConfirmOpen: boolean }>,
+      current: {
+        name: string;
+        value: string;
+        description: string;
+        pickerOpen: boolean;
+        deleteConfirmOpen: boolean;
+      },
+      patch: Partial<{
+        name: string;
+        value: string;
+        description: string;
+        pickerOpen: boolean;
+        deleteConfirmOpen: boolean;
+      }>,
     ) => ({ ...current, ...patch }),
     {
       name: color?.name ?? "",
@@ -149,7 +170,11 @@ const ColorTokenDialogContent = ({
   );
   const valid = state.name.trim() && /^#[0-9A-Fa-f]{6}$/.test(state.value);
   const normalized = useMemo(
-    () => ({ name: state.name.trim(), value: state.value.toUpperCase(), description: state.description.trim() }),
+    () => ({
+      name: state.name.trim(),
+      value: state.value.toUpperCase(),
+      description: state.description.trim(),
+    }),
     [state.description, state.name, state.value],
   );
 
@@ -160,7 +185,8 @@ const ColorTokenDialogContent = ({
       normalized.name === lastSaved.current.name &&
       normalized.value === lastSaved.current.value &&
       normalized.description === lastSaved.current.description
-    ) return;
+    )
+      return;
     const timeout = window.setTimeout(() => {
       saveColorToken({
         brandGuideId,
@@ -176,7 +202,9 @@ const ColorTokenDialogContent = ({
           else onViewChange(view);
           toast.success("Changes saved");
         })
-        .catch((error: unknown) => toast.error("Could not save Color Token", { description: errorMessage(error) }));
+        .catch((error: unknown) =>
+          toast.error("Could not save Color Token", { description: errorMessage(error) }),
+        );
     }, 650);
     return () => window.clearTimeout(timeout);
   }, [brandGuideId, color?.name, normalized, onCreated, onViewChange, valid]);
@@ -184,7 +212,10 @@ const ColorTokenDialogContent = ({
   const remove = async () => {
     if (!color) return;
     try {
-      const saved = await sendJson<BrandGuideView>(`/api/brand-guides/${encodeURIComponent(brandGuideId)}/colors/${encodeURIComponent(lastSaved.current?.name ?? color.name)}`, { method: "DELETE" });
+      const saved = await sendJson<BrandGuideView>(
+        `/api/brand-guides/${encodeURIComponent(brandGuideId)}/colors/${encodeURIComponent(lastSaved.current?.name ?? color.name)}`,
+        { method: "DELETE" },
+      );
       setState({ deleteConfirmOpen: false });
       if (onDeleted) onDeleted(saved);
       else onViewChange(saved);
@@ -202,7 +233,10 @@ const ColorTokenDialogContent = ({
     >
       <div className="grid h-full md:grid-cols-[minmax(0,1.22fr)_minmax(0,0.78fr)]">
         <Popover open={state.pickerOpen} onOpenChange={(pickerOpen) => setState({ pickerOpen })}>
-          <div className="min-h-0 overflow-hidden rounded-l-md" style={{ background: previewColor }}>
+          <div
+            className="min-h-0 overflow-hidden rounded-l-md"
+            style={{ background: previewColor }}
+          >
             <PopoverTrigger asChild>
               <button
                 aria-label="Open color picker"
@@ -218,15 +252,18 @@ const ColorTokenDialogContent = ({
             portalled={false}
             className="onbrand-color-picker"
           >
-            <HexColorPicker color={valid ? normalized.value : "#000000"} onChange={(value) => setState({ value })} />
+            <HexColorPicker
+              color={valid ? normalized.value : "#000000"}
+              onChange={(value) => setState({ value })}
+            />
           </PopoverContent>
         </Popover>
-        <div className="flex min-w-0 overflow-hidden flex-col justify-between px-4 py-8 pr-8 md:px-8 md:py-10 md:pr-10">
+        <div className="flex min-w-0 flex-col justify-between overflow-hidden px-4 py-8 pr-8 md:px-8 md:py-10 md:pr-10">
           <div className="grid min-h-0 min-w-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-4">
             <DialogTitle asChild>
               <input
                 aria-label="Color name"
-                className="m-0 block w-full min-w-0 max-w-full overflow-hidden bg-transparent text-3xl leading-tight font-medium tracking-[-0.055em] text-ellipsis text-onbrand-charcoal outline-none"
+                className="m-0 block w-full max-w-full min-w-0 overflow-hidden bg-transparent text-3xl leading-tight font-medium tracking-[-0.055em] text-ellipsis text-onbrand-charcoal outline-none"
                 placeholder="Color name"
                 spellCheck={false}
                 value={state.name}
@@ -236,7 +273,7 @@ const ColorTokenDialogContent = ({
             <DialogDescription asChild>
               <textarea
                 aria-label="Color description"
-                className="h-full min-h-0 w-full min-w-0 max-w-full resize-none overflow-y-auto bg-transparent text-sm leading-6 text-onbrand-charcoal/62 outline-none"
+                className="h-full min-h-0 w-full max-w-full min-w-0 resize-none overflow-y-auto bg-transparent text-sm leading-6 text-onbrand-charcoal/62 outline-none"
                 placeholder="Description"
                 spellCheck={false}
                 value={state.description}
@@ -274,7 +311,10 @@ const ColorTokenDialogContent = ({
           </div>
         </div>
       </div>
-      <Dialog open={state.deleteConfirmOpen} onOpenChange={(deleteConfirmOpen) => setState({ deleteConfirmOpen })}>
+      <Dialog
+        open={state.deleteConfirmOpen}
+        onOpenChange={(deleteConfirmOpen) => setState({ deleteConfirmOpen })}
+      >
         <DialogContent className="w-[min(420px,calc(100vw-2rem))] p-6" showCloseButton={false}>
           <div className="grid gap-5">
             <div className="grid gap-2 pr-8">
@@ -365,4 +405,5 @@ const colorText = (hexColor: string): string => {
     .toString({ format: "hex" });
 };
 
-const errorMessage = (error: unknown): string => error instanceof Error ? error.message : String(error);
+const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);

@@ -18,7 +18,11 @@ export const uploadBrandGuideAsset = async (
     `/api/brand-guides/${encodeURIComponent(brandGuideId)}/asset-uploads`,
     {
       method: "POST",
-      body: { uploads: [{ assetId, filename: file.name, mimeType: file.type, byteSize: file.size, sha256 }] },
+      body: {
+        uploads: [
+          { assetId, filename: file.name, mimeType: file.type, byteSize: file.size, sha256 },
+        ],
+      },
     },
   );
   const upload = prepared.uploads[0];

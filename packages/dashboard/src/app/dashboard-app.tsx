@@ -16,7 +16,10 @@ import { toast } from "sonner";
 import { sendJson, useApi } from "../shared/api/api-state";
 import { publishBrandGuideUpdated, useSyncedBrandGuides } from "../shared/brand-guide-sync";
 import { BrandGuideDetail } from "../brand-guide/detail/brand-guide-detail";
-import type { BrandGuideSummary, BrandGuideView } from "@onbrand/core/brand-guide/application-service";
+import type {
+  BrandGuideSummary,
+  BrandGuideView,
+} from "@onbrand/core/brand-guide/application-service";
 import {
   DEFAULT_BRAND_GUIDE_SECTION,
   BRAND_GUIDE_SECTION_LINKS,
@@ -150,7 +153,9 @@ export const DashboardApp = () => {
             selectedBrandGuide={selectedBrandGuide}
             selectedBrandGuideSection={route.selectedBrandGuideSection}
           />
-          <main className={`min-w-0 px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5 ${route.selectedBrandGuideSection === "PRESENTATION" ? "overflow-hidden" : "overflow-y-auto"}`}>
+          <main
+            className={`min-w-0 px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5 ${route.selectedBrandGuideSection === "PRESENTATION" ? "overflow-hidden" : "overflow-y-auto"}`}
+          >
             {selectedBrandGuideId ? (
               <BrandGuideDetail
                 id={selectedBrandGuideId}
@@ -173,20 +178,26 @@ export const DashboardApp = () => {
 
 const HomeTopBar = () => (
   <header className="flex h-16 items-center border-b border-onbrand-charcoal/8 px-4 sm:px-6 lg:px-7">
-    <h1 className="text-sm font-medium tracking-[-0.02em] text-onbrand-charcoal">Welcome to OnBrand by SlideSpeak</h1>
+    <h1 className="text-sm font-medium tracking-[-0.02em] text-onbrand-charcoal">
+      Welcome to OnBrand by SlideSpeak
+    </h1>
   </header>
 );
 
-const HomeDashboard = ({ brandGuides }: Readonly<{ brandGuides: readonly BrandGuideSummary[] }>) => {
+const HomeDashboard = ({
+  brandGuides,
+}: Readonly<{ brandGuides: readonly BrandGuideSummary[] }>) => {
   if (brandGuides.length === 0) return <NoBrandGuidesPrompt />;
 
   return (
     <section className="grid gap-3">
       <div className="flex min-h-10 items-center justify-between gap-4">
-        <h1 className="m-0 text-xl leading-none font-normal tracking-[-0.035em] text-onbrand-charcoal">Brand Guides</h1>
+        <h1 className="m-0 text-xl leading-none font-normal tracking-[-0.035em] text-onbrand-charcoal">
+          Brand Guides
+        </h1>
         <CreateBrandGuideButton />
       </div>
-      <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
         {brandGuides.map((brandGuide) => (
           <HomeBrandGuideTile key={brandGuide.id} brandGuide={brandGuide} />
         ))}
@@ -195,9 +206,7 @@ const HomeDashboard = ({ brandGuides }: Readonly<{ brandGuides: readonly BrandGu
   );
 };
 
-const HomeBrandGuideTile = ({
-  brandGuide,
-}: Readonly<{ brandGuide: BrandGuideSummary }>) => {
+const HomeBrandGuideTile = ({ brandGuide }: Readonly<{ brandGuide: BrandGuideSummary }>) => {
   const detail = useApi<BrandGuideView>(`/api/brand-guides/${encodeURIComponent(brandGuide.id)}`);
   const colors = detail.status === "READY" ? detail.data.brandKit.colors.slice(0, 9) : [];
   const logo = detail.status === "READY" ? detail.data.brandKit.logo : null;
@@ -215,7 +224,9 @@ const HomeBrandGuideTile = ({
               src={`/api/brand-guides/${encodeURIComponent(brandGuide.id)}/assets/${encodeURIComponent(logo.assetHandle)}/preview-proxy`}
             />
           ) : (
-            <div className="grid h-full place-items-center bg-onbrand-charcoal/[0.035] text-xs text-onbrand-charcoal/35">No logo</div>
+            <div className="grid h-full place-items-center bg-onbrand-charcoal/[0.035] text-xs text-onbrand-charcoal/35">
+              No logo
+            </div>
           )}
         </div>
         <h2 className="truncate px-2 py-1.5 text-xs font-medium tracking-[-0.02em] text-onbrand-charcoal">
@@ -262,7 +273,8 @@ const HomeLogoPreview = ({ src }: Readonly<{ src: string }>) => {
           alpha;
         alphaTotal += alpha;
       }
-      if (alphaTotal > 0) setBackground(weightedLuminance / alphaTotal > 0.58 ? "charcoal" : "white");
+      if (alphaTotal > 0)
+        setBackground(weightedLuminance / alphaTotal > 0.58 ? "charcoal" : "white");
     } catch {
       setBackground("white");
     }
@@ -284,7 +296,7 @@ const NoBrandGuidesPrompt = () => (
   <section className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center justify-center">
     <div className="-translate-y-10 text-center">
       <CreateBrandGuideButton />
-      <div className="my-5 text-xs uppercase tracking-[0.22em] text-onbrand-charcoal/35">Or</div>
+      <div className="my-5 text-xs tracking-[0.22em] text-onbrand-charcoal/35 uppercase">Or</div>
       <h2 className="text-base font-normal text-onbrand-charcoal">Prompt your agent</h2>
       <CopyableValue value="How can I create a brand guide?" className="mx-auto mt-2" />
     </div>
@@ -306,7 +318,10 @@ const createBrandGuideInitialState: CreateBrandGuideState = {
 
 const CreateBrandGuideButton = () => {
   const [state, setState] = useReducer(
-    (current: CreateBrandGuideState, patch: Partial<CreateBrandGuideState>) => ({ ...current, ...patch }),
+    (current: CreateBrandGuideState, patch: Partial<CreateBrandGuideState>) => ({
+      ...current,
+      ...patch,
+    }),
     createBrandGuideInitialState,
   );
 
@@ -356,7 +371,11 @@ const CreateBrandGuideButton = () => {
           </label>
           {state.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
           <div className="flex justify-end gap-2">
-            <button className="rounded-md px-4 py-2 text-sm text-onbrand-charcoal/65" type="button" onClick={() => setState({ open: false })}> 
+            <button
+              className="rounded-md px-4 py-2 text-sm text-onbrand-charcoal/65"
+              type="button"
+              onClick={() => setState({ open: false })}
+            >
               Cancel
             </button>
             <button
@@ -606,25 +625,33 @@ const EditableBrandGuideName = ({ brandGuide }: Readonly<{ brandGuide?: BrandGui
   useEffect(() => {
     if (!brandGuide || !editedByUser.current || !name.trim() || name === brandGuide.name) return;
     const timeout = window.setTimeout(() => {
-      sendJson<BrandGuideView>(`/api/brand-guides/${encodeURIComponent(brandGuide.id)}/metadata`, { method: "PATCH", body: { name } })
+      sendJson<BrandGuideView>(`/api/brand-guides/${encodeURIComponent(brandGuide.id)}/metadata`, {
+        method: "PATCH",
+        body: { name },
+      })
         .then((saved) => {
           editedByUser.current = false;
           publishBrandGuideUpdated(saved.brandGuide);
           toast.success("Changes saved");
         })
-        .catch((error: unknown) => toast.error("Could not rename Brand Guide", { description: error instanceof Error ? error.message : String(error) }));
+        .catch((error: unknown) =>
+          toast.error("Could not rename Brand Guide", {
+            description: error instanceof Error ? error.message : String(error),
+          }),
+        );
     }, 650);
     return () => window.clearTimeout(timeout);
   }, [brandGuide, name]);
-  if (!brandGuide) return <span className="truncate font-normal text-onbrand-charcoal">Getting started</span>;
+  if (!brandGuide)
+    return <span className="truncate font-normal text-onbrand-charcoal">Getting started</span>;
   return (
     <label className="relative inline-grid max-w-[min(42rem,45vw)] flex-none items-center overflow-hidden">
-      <span className="invisible whitespace-pre font-normal" aria-hidden>
+      <span className="invisible font-normal whitespace-pre" aria-hidden>
         {name || brandGuide.name || "Brand Guide"}
       </span>
       <input
         aria-label="Brand Guide name"
-        className="absolute inset-0 w-full bg-transparent font-normal text-onbrand-charcoal outline-none transition"
+        className="absolute inset-0 w-full bg-transparent font-normal text-onbrand-charcoal transition outline-none"
         spellCheck={false}
         value={name}
         onChange={(e) => {
@@ -659,7 +686,10 @@ const DashboardTopBar = ({
         <img alt="Onbrand" className="h-6 w-6" src={onbrandLogoUrl} />
       </Link>
       <div className="flex min-w-0 flex-1 items-center gap-3 text-sm">
-        <EditableBrandGuideName key={selectedBrandGuide ? `${selectedBrandGuide.id}:${selectedBrandGuide.name}` : "empty"} brandGuide={selectedBrandGuide} />
+        <EditableBrandGuideName
+          key={selectedBrandGuide ? `${selectedBrandGuide.id}:${selectedBrandGuide.name}` : "empty"}
+          brandGuide={selectedBrandGuide}
+        />
         {selectedBrandGuide ? (
           <>
             <span className="text-onbrand-charcoal/25">/</span>
@@ -671,35 +701,38 @@ const DashboardTopBar = ({
       </div>
       {brandGuides.status === "READY" ? (
         <>
-        <Select
-          value={selectedBrandGuideId ?? NO_BRAND_GUIDE}
-          onValueChange={(value) => {
-            if (value !== NO_BRAND_GUIDE)
-              void navigate({
-                to: "/brand-guides/$brandGuideId/$section",
-                params: {
-                  brandGuideId: value,
-                  section: brandGuideSectionPathSegment(selectedBrandGuideSection),
-                },
-              });
-          }}
-        >
-          <SelectTrigger aria-label="Select Brand Guide" className="w-[320px] [&>span]:text-center">
-            <SelectValue placeholder="Select" />
-          </SelectTrigger>
-          <SelectContent>
-            {!selectedBrandGuideId && (
-              <SelectItem value={NO_BRAND_GUIDE} disabled>
-                {brandGuides.data.length === 0 ? "No Brand Guides" : "Select Brand Guide"}
-              </SelectItem>
-            )}
-            {brandGuides.data.map((brandGuide) => (
-              <SelectItem key={brandGuide.id} value={brandGuide.id}>
-                {brandGuide.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <Select
+            value={selectedBrandGuideId ?? NO_BRAND_GUIDE}
+            onValueChange={(value) => {
+              if (value !== NO_BRAND_GUIDE)
+                void navigate({
+                  to: "/brand-guides/$brandGuideId/$section",
+                  params: {
+                    brandGuideId: value,
+                    section: brandGuideSectionPathSegment(selectedBrandGuideSection),
+                  },
+                });
+            }}
+          >
+            <SelectTrigger
+              aria-label="Select Brand Guide"
+              className="w-[320px] [&>span]:text-center"
+            >
+              <SelectValue placeholder="Select" />
+            </SelectTrigger>
+            <SelectContent>
+              {!selectedBrandGuideId && (
+                <SelectItem value={NO_BRAND_GUIDE} disabled>
+                  {brandGuides.data.length === 0 ? "No Brand Guides" : "Select Brand Guide"}
+                </SelectItem>
+              )}
+              {brandGuides.data.map((brandGuide) => (
+                <SelectItem key={brandGuide.id} value={brandGuide.id}>
+                  {brandGuide.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </>
       ) : (
         <div className="h-10 w-[320px] animate-pulse rounded-md bg-onbrand-charcoal/5" />
@@ -751,7 +784,9 @@ const DashboardRail = ({
             );
           })}
           {(() => {
-            const metadataLink = BRAND_GUIDE_SECTION_LINKS.find(({ section }) => section === "METADATA");
+            const metadataLink = BRAND_GUIDE_SECTION_LINKS.find(
+              ({ section }) => section === "METADATA",
+            );
             if (!metadataLink) return null;
             const { section, pathSegment, label, icon } = metadataLink;
             const isActive = selectedBrandGuideSection === section;

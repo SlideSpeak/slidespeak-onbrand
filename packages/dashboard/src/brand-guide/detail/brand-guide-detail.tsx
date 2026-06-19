@@ -24,7 +24,13 @@ export const BrandGuideDetail = ({
   if (state.status === "LOADING")
     return <p className="text-onbrand-charcoal/55">Loading Brand Guide…</p>;
   if (state.status === "ERROR") return <ErrorMessage message={state.message} />;
-  return <BrandGuideDetailView key={state.data.brandGuide.id} initialView={state.data} section={section} />;
+  return (
+    <BrandGuideDetailView
+      key={state.data.brandGuide.id}
+      initialView={state.data}
+      section={section}
+    />
+  );
 };
 
 const BrandGuideDetailView = ({
@@ -34,18 +40,28 @@ const BrandGuideDetailView = ({
   const [view, setView] = useState(initialView);
   const [assetLayout, setAssetLayout] = useState<AssetLayout>("MASONRY");
 
-  const saveMetadata = useCallback(async (metadata: { name: string; description: string }) => {
-    setView((current) => ({
-      ...current,
-      brandGuide: { ...current.brandGuide, name: metadata.name, description: metadata.description || null },
-    }));
-    const saved = await sendJson<BrandGuideView>(
-      `/api/brand-guides/${encodeURIComponent(initialView.brandGuide.id)}/metadata`,
-      { method: "PATCH", body: { name: metadata.name, description: metadata.description || null } },
-    );
-    setView(saved);
-    publishBrandGuideUpdated(saved.brandGuide);
-  }, [initialView.brandGuide.id]);
+  const saveMetadata = useCallback(
+    async (metadata: { name: string; description: string }) => {
+      setView((current) => ({
+        ...current,
+        brandGuide: {
+          ...current.brandGuide,
+          name: metadata.name,
+          description: metadata.description || null,
+        },
+      }));
+      const saved = await sendJson<BrandGuideView>(
+        `/api/brand-guides/${encodeURIComponent(initialView.brandGuide.id)}/metadata`,
+        {
+          method: "PATCH",
+          body: { name: metadata.name, description: metadata.description || null },
+        },
+      );
+      setView(saved);
+      publishBrandGuideUpdated(saved.brandGuide);
+    },
+    [initialView.brandGuide.id],
+  );
 
   const savePresentationKit = async (presentationKit: BrandGuideView["presentationKit"]) => {
     setView((current) => ({ ...current, presentationKit }));
@@ -63,8 +79,13 @@ const BrandGuideDetailView = ({
   };
 
   return (
-    <section className={`grid gap-3 ${section === "PRESENTATION" ? "h-full min-h-0 grid-rows-[auto_minmax(0,1fr)]" : "content-start"}`}>
-      {section === "COLORS" || section === "ASSETS" || section === "LOGO" || section === "PRESENTATION" ? null : (
+    <section
+      className={`grid gap-3 ${section === "PRESENTATION" ? "h-full min-h-0 grid-rows-[auto_minmax(0,1fr)]" : "content-start"}`}
+    >
+      {section === "COLORS" ||
+      section === "ASSETS" ||
+      section === "LOGO" ||
+      section === "PRESENTATION" ? null : (
         <PageHeader title={brandGuideSectionLabel(section)} />
       )}
       <BrandGuideSectionPage
@@ -99,7 +120,12 @@ const BrandGuideSectionPage = ({
 }>) => {
   switch (section) {
     case "METADATA":
-      return <BrandGuideMetadataSection brandGuide={view.brandGuide} onMetadataChange={onMetadataChange} />;
+      return (
+        <BrandGuideMetadataSection
+          brandGuide={view.brandGuide}
+          onMetadataChange={onMetadataChange}
+        />
+      );
     case "COLORS":
       return (
         <BrandKitSections
@@ -139,4 +165,5 @@ const BrandGuideSectionPage = ({
   }
 };
 
-const errorMessage = (error: unknown): string => (error instanceof Error ? error.message : String(error));
+const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);

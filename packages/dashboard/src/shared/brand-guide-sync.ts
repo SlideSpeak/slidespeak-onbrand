@@ -48,7 +48,8 @@ export const useSyncedBrandGuides = (
       merged.push(updatedBrandGuides.get(brandGuide.id) ?? brandGuide);
     }
     for (const brandGuide of updatedBrandGuides.values()) {
-      if (!seen.has(brandGuide.id) && !deletedBrandGuideIds.has(brandGuide.id)) merged.push(brandGuide);
+      if (!seen.has(brandGuide.id) && !deletedBrandGuideIds.has(brandGuide.id))
+        merged.push(brandGuide);
     }
     return { status: "READY", data: merged };
   }, [loadedBrandGuides, syncVersion]);

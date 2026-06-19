@@ -33,7 +33,15 @@ const plugins = [
   quotePlugin(),
   thematicBreakPlugin(),
   codeBlockPlugin({ defaultCodeBlockLanguage: "css" }),
-  codeMirrorPlugin({ codeBlockLanguages: { css: "CSS", html: "HTML", javascript: "JavaScript", json: "JSON", markdown: "Markdown" } }),
+  codeMirrorPlugin({
+    codeBlockLanguages: {
+      css: "CSS",
+      html: "HTML",
+      javascript: "JavaScript",
+      json: "JSON",
+      markdown: "Markdown",
+    },
+  }),
   markdownShortcutPlugin(),
   toolbarPlugin({ toolbarContents }),
 ];

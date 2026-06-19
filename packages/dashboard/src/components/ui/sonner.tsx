@@ -7,7 +7,10 @@ type OnbrandToasterVariant = "light" | "dark";
 
 type OnbrandToasterProps = ToasterProps & { variant?: OnbrandToasterVariant };
 
-const TOASTER_COLORS: Record<OnbrandToasterVariant, { background: string; text: string; border: string }> = {
+const TOASTER_COLORS: Record<
+  OnbrandToasterVariant,
+  { background: string; text: string; border: string }
+> = {
   light: { background: "#ffffff", text: "#191919", border: "#ffffff" },
   dark: { background: "#111111", text: "#ffffff", border: "#111111" },
 };

@@ -24,9 +24,22 @@ export const BrandKitSections = ({
 }>) => {
   switch (section) {
     case "COLORS":
-      return <ColorTokensSection brandGuideId={brandGuideId} colors={brandKit.colors} onViewChange={onViewChange} />;
+      return (
+        <ColorTokensSection
+          brandGuideId={brandGuideId}
+          colors={brandKit.colors}
+          onViewChange={onViewChange}
+        />
+      );
     case "LOGO":
-      return <LogoSection key={brandKit.logo?.assetHandle ?? "empty-logo"} brandGuideId={brandGuideId} logo={brandKit.logo} onViewChange={onViewChange} />;
+      return (
+        <LogoSection
+          key={brandKit.logo?.assetHandle ?? "empty-logo"}
+          brandGuideId={brandGuideId}
+          logo={brandKit.logo}
+          onViewChange={onViewChange}
+        />
+      );
     case "ASSETS":
       return (
         <DecorativeAssetsSection

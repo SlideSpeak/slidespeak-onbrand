@@ -8,7 +8,12 @@ export const AssetShowcaseListItem = ({
   brandGuideId,
   onClick,
   previewEnabled = true,
-}: Readonly<{ asset: AssetShowcase; brandGuideId: string; onClick?: () => void; previewEnabled?: boolean }>) => {
+}: Readonly<{
+  asset: AssetShowcase;
+  brandGuideId: string;
+  onClick?: () => void;
+  previewEnabled?: boolean;
+}>) => {
   const previewUrl = assetPreviewUrl({ brandGuideId, assetHandle: asset.assetHandle });
 
   const button = (
@@ -34,5 +39,9 @@ export const AssetShowcaseListItem = ({
   );
 
   if (!previewEnabled) return button;
-  return <AssetPreviewDialog asset={asset} previewUrl={previewUrl}>{button}</AssetPreviewDialog>;
+  return (
+    <AssetPreviewDialog asset={asset} previewUrl={previewUrl}>
+      {button}
+    </AssetPreviewDialog>
+  );
 };

@@ -14,9 +14,9 @@ Kit**; either kit may be empty while the Brand Guide is being assembled. A Brand
 name and may have a description. _Avoid_: Design context, brand, brand definition
 
 **Brand Kit**: The identity-focused part of a **Brand Guide**, such as colors, logos, typography,
-**Decorative Assets**, imagery, icons, and voice/tone. A Brand Kit may be empty; nothing inside it is
-required before the Brand Guide can exist. _Avoid_: Brand, brand assets when referring to the whole
-kit
+**Decorative Assets**, imagery, icons, and voice/tone. A Brand Kit may be empty; nothing inside it
+is required before the Brand Guide can exist. _Avoid_: Brand, brand assets when referring to the
+whole kit
 
 **Logo**: The governed brand logo in a **Brand Kit**. Presentation-specific logo uses reference the
 Brand Kit logo rather than redefining logo source details in the Presentation Kit. _Avoid_: Logo
@@ -37,9 +37,9 @@ the **Logo** and **Decorative Assets**. The file lives in S3 object storage and 
 clients through short-lived presigned URLs. _Avoid_: server-local path, source asset path, inline
 binary payload
 
-**Presentation Kit**: The slide-focused part of a **Brand Guide**. It may define the **Slide Canvas**
-and may include a **Design Prompt** for generated presentations, but neither is required before the
-Brand Guide can exist. _Avoid_: Slide Kit, Template Kit, Deck Kit
+**Presentation Kit**: The slide-focused part of a **Brand Guide**. It may define the **Slide
+Canvas** and may include a **Design Prompt** for generated presentations, but neither is required
+before the Brand Guide can exist. _Avoid_: Slide Kit, Template Kit, Deck Kit
 
 **Design Prompt**: Narrative presentation guidance that captures brand-specific slide design rules,
 layout grammar, copy style, and quality checks for AI agents. _Avoid_: Master prompt, system prompt
@@ -50,8 +50,8 @@ Guide**. _Avoid_: Onbrand Orientation, onboarding prompt, discovery prompt, help
 
 **Onbrand Dashboard**: The browser-based Onbrand product surface where authenticated users view and
 manage **Brand Guides** as the top-level editable resource. Users may edit the **Brand Kit** and
-**Presentation Kit** inside a Brand Guide, but those kits are not independently managed resources. It
-is distinct from the MCP endpoint, which is the agent-facing integration surface. _Avoid_: Admin
+**Presentation Kit** inside a Brand Guide, but those kits are not independently managed resources.
+It is distinct from the MCP endpoint, which is the agent-facing integration surface. _Avoid_: Admin
 panel, Brand dashboard, MCP UI
 
 **Slide Canvas**: The optional canonical coordinate space used by a **Presentation Kit** to describe

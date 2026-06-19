@@ -118,7 +118,13 @@ const codeChallengeForVerifier = (verifier: string): string =>
 
 const safeDashboardReturnTo = (returnTo: string | undefined): string => {
   if (!returnTo) return DEFAULT_DASHBOARD_RETURN_TO;
-  if (returnTo === "/" || returnTo === "/onboard" || returnTo === "/brand-guides" || returnTo.startsWith("/brand-guides/")) return returnTo;
+  if (
+    returnTo === "/" ||
+    returnTo === "/onboard" ||
+    returnTo === "/brand-guides" ||
+    returnTo.startsWith("/brand-guides/")
+  )
+    return returnTo;
   return DEFAULT_DASHBOARD_RETURN_TO;
 };
 

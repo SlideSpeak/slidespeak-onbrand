@@ -134,7 +134,10 @@ export const registerDashboardApiRoutes = ({
   app.delete("/api/brand-guides/:id", async (context) => {
     try {
       const session = await getDashboardSession(context, refreshConfig);
-      await brandGuides.deleteBrandGuide({ ownerUserId: session.ownerUserId }, context.req.param("id"));
+      await brandGuides.deleteBrandGuide(
+        { ownerUserId: session.ownerUserId },
+        context.req.param("id"),
+      );
       return context.body(null, 204);
     } catch (error) {
       return handleDashboardApiError(context, error, handleAuthError);
@@ -187,7 +190,10 @@ export const registerDashboardApiRoutes = ({
     try {
       const session = await getDashboardSession(context, refreshConfig);
       return context.json(
-        await brandGuides.deleteLogo({ ownerUserId: session.ownerUserId }, { brandGuideId: context.req.param("id") }),
+        await brandGuides.deleteLogo(
+          { ownerUserId: session.ownerUserId },
+          { brandGuideId: context.req.param("id") },
+        ),
       );
     } catch (error) {
       return handleDashboardApiError(context, error, handleAuthError);

@@ -1,5 +1,9 @@
 import { BrandKitAssetFileWorkflow } from "./brand-kit/asset-file/workflow";
-import { brandGuideSlugFromName, colorTokenIdFromName, decorativeAssetIdFromName } from "./management-identifiers";
+import {
+  brandGuideSlugFromName,
+  colorTokenIdFromName,
+  decorativeAssetIdFromName,
+} from "./management-identifiers";
 import type { S3 } from "@onbrand/s3";
 import type { PrismaClient } from "@prisma/client";
 import type { BrandGuideOwner } from "./owner";
@@ -9,7 +13,10 @@ import { brandKitAssetHandle } from "./brand-kit/asset-file/workflow";
 import { toColorTokenCreateRecords } from "./brand-kit/color/record";
 import { toDecorativeAssetRecord } from "./brand-kit/decorative-assets/record";
 import { toLogoAssetRecord } from "./brand-kit/logo/record";
-import { toPresentationKitCreateRecord, toPresentationKitWriteRecord } from "./presentation-kit/record";
+import {
+  toPresentationKitCreateRecord,
+  toPresentationKitWriteRecord,
+} from "./presentation-kit/record";
 import { DuplicateBrandGuideNameError } from "./application-service";
 import type {
   BrandGuideApplicationService,
@@ -100,7 +107,8 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
 
   deleteBrandGuide = async (owner: BrandGuideOwner, brandGuideId: string): Promise<void> => {
     const record = await loadBrandGuideRecord(this.prisma, owner, brandGuideId);
-    for (const asset of record.brandKit?.assets ?? []) await this.brandKitAssetFiles.delete(asset.s3Key);
+    for (const asset of record.brandKit?.assets ?? [])
+      await this.brandKitAssetFiles.delete(asset.s3Key);
     await this.prisma.brandGuide.delete({
       where: { ownerUserId_slug: { ownerUserId: owner.ownerUserId, slug: brandGuideId } },
     });
@@ -114,7 +122,9 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
     const tokenId = colorTokenIdFromName(request.name);
     const existing = request.previousName
       ? await this.prisma.colorToken.findUnique({
-          where: { brandKitId_tokenId: { brandKitId, tokenId: colorTokenIdFromName(request.previousName) } },
+          where: {
+            brandKitId_tokenId: { brandKitId, tokenId: colorTokenIdFromName(request.previousName) },
+          },
           select: { id: true },
         })
       : null;
@@ -196,7 +206,10 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
       uploads: request.uploads,
     });
 
-  upsertLogo = async (owner: BrandGuideOwner, request: UpsertLogoRequest): Promise<BrandGuideView> => {
+  upsertLogo = async (
+    owner: BrandGuideOwner,
+    request: UpsertLogoRequest,
+  ): Promise<BrandGuideView> => {
     const brandKitId = await this.ensureBrandKitId(owner, request.brandGuideId);
     const existing = await this.prisma.brandKitAsset.findFirst({
       where: { brandKitId, kind: "LOGO" },
@@ -212,9 +225,15 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
     const record = toLogoAssetRecord({
       ownerUserId: owner.ownerUserId,
       brandGuideId: request.brandGuideId,
-      asset: { ...request.asset, assetId: "logo", name: "Logo", description: normalizeOptionalText(request.asset.description) ?? "" },
+      asset: {
+        ...request.asset,
+        assetId: "logo",
+        name: "Logo",
+        description: normalizeOptionalText(request.asset.description) ?? "",
+      },
     });
-    if (existing && existing.s3Key !== record.s3Key) await this.brandKitAssetFiles.delete(existing.s3Key);
+    if (existing && existing.s3Key !== record.s3Key)
+      await this.brandKitAssetFiles.delete(existing.s3Key);
     await this.prisma.brandKitAsset.upsert({
       where: { id: existing?.id ?? "missing" },
       create: { ...record, brandKitId, sortOrder: 0 },
@@ -223,9 +242,14 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
     return this.getBrandGuide(owner, request.brandGuideId);
   };
 
-  deleteLogo = async (owner: BrandGuideOwner, request: DeleteLogoRequest): Promise<BrandGuideView> => {
+  deleteLogo = async (
+    owner: BrandGuideOwner,
+    request: DeleteLogoRequest,
+  ): Promise<BrandGuideView> => {
     const brandKitId = await this.ensureBrandKitId(owner, request.brandGuideId);
-    const existing = await this.prisma.brandKitAsset.findFirst({ where: { brandKitId, kind: "LOGO" } });
+    const existing = await this.prisma.brandKitAsset.findFirst({
+      where: { brandKitId, kind: "LOGO" },
+    });
     if (existing) {
       await this.brandKitAssetFiles.delete(existing.s3Key);
       await this.prisma.brandKitAsset.delete({ where: { id: existing.id } });
@@ -241,14 +265,21 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
     const assetId = decorativeAssetIdFromName(request.asset.name);
     const existingByPreviousName = request.previousName
       ? await this.prisma.brandKitAsset.findUnique({
-          where: { brandKitId_assetId: { brandKitId, assetId: decorativeAssetIdFromName(request.previousName) } },
+          where: {
+            brandKitId_assetId: {
+              brandKitId,
+              assetId: decorativeAssetIdFromName(request.previousName),
+            },
+          },
           select: { id: true, s3Key: true },
         })
       : null;
-    const existing = existingByPreviousName ?? await this.prisma.brandKitAsset.findUnique({
-      where: { brandKitId_assetId: { brandKitId, assetId } },
-      select: { id: true, s3Key: true },
-    });
+    const existing =
+      existingByPreviousName ??
+      (await this.prisma.brandKitAsset.findUnique({
+        where: { brandKitId_assetId: { brandKitId, assetId } },
+        select: { id: true, s3Key: true },
+      }));
     if (existing && (request.asset.s3Key === "" || request.asset.s3Key === existing.s3Key)) {
       await this.prisma.brandKitAsset.update({
         where: { id: existing.id },
@@ -263,10 +294,15 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
     const record = toDecorativeAssetRecord({
       ownerUserId: owner.ownerUserId,
       brandGuideId: request.brandGuideId,
-      asset: { ...request.asset, id: assetId, description: normalizeOptionalText(request.asset.description) ?? "" },
+      asset: {
+        ...request.asset,
+        id: assetId,
+        description: normalizeOptionalText(request.asset.description) ?? "",
+      },
       sortOrder: 0,
     });
-    if (existing && existing.s3Key !== record.s3Key) await this.brandKitAssetFiles.delete(existing.s3Key);
+    if (existing && existing.s3Key !== record.s3Key)
+      await this.brandKitAssetFiles.delete(existing.s3Key);
     await this.prisma.brandKitAsset.upsert({
       where: { id: existing?.id ?? "missing" },
       create: { ...record, brandKitId },
@@ -281,7 +317,9 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
   ): Promise<BrandGuideView> => {
     const brandKitId = await this.ensureBrandKitId(owner, request.brandGuideId);
     const existing = await this.prisma.brandKitAsset.findUnique({
-      where: { brandKitId_assetId: { brandKitId, assetId: decorativeAssetIdFromName(request.name) } },
+      where: {
+        brandKitId_assetId: { brandKitId, assetId: decorativeAssetIdFromName(request.name) },
+      },
     });
     if (existing) {
       await this.brandKitAssetFiles.delete(existing.s3Key);
@@ -368,7 +406,10 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
     if (row) throw new DuplicateBrandGuideNameError(name);
   };
 
-  private ensureBrandKitId = async (owner: BrandGuideOwner, brandGuideId: string): Promise<string> => {
+  private ensureBrandKitId = async (
+    owner: BrandGuideOwner,
+    brandGuideId: string,
+  ): Promise<string> => {
     const record = await loadBrandGuideRecord(this.prisma, owner, brandGuideId);
     if (record.brandKit) return record.brandKit.id;
     const brandKit = await this.prisma.brandKit.create({ data: { brandGuideId: record.id } });

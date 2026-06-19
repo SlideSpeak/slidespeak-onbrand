@@ -5,6 +5,9 @@ export type DeleteObjectInput = Readonly<{
   key: string;
 }>;
 
-export const deleteObject = async (client: S3Client, { bucket, key }: DeleteObjectInput): Promise<void> => {
+export const deleteObject = async (
+  client: S3Client,
+  { bucket, key }: DeleteObjectInput,
+): Promise<void> => {
   await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
 };

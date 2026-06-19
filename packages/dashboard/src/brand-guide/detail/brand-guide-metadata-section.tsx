@@ -49,14 +49,16 @@ export const BrandGuideMetadataSection = ({
     if (
       normalized.name === lastSaved.current.name &&
       normalized.description === lastSaved.current.description
-    ) return;
+    )
+      return;
 
     const saveKey = `${normalized.name}\n${normalized.description}`;
     if (pendingSaveKey.current === saveKey) return;
 
     const timeout = window.setTimeout(() => {
       pendingSaveKey.current = saveKey;
-      saveMetadata.current(normalized)
+      saveMetadata
+        .current(normalized)
         .then(() => {
           lastSaved.current = normalized;
           toast.success("Changes saved");
@@ -75,7 +77,10 @@ export const BrandGuideMetadataSection = ({
   }, [normalized]);
 
   return (
-    <section id="details" className="flex min-h-[calc(100vh-12rem)] w-full scroll-mt-4 flex-col gap-8">
+    <section
+      id="details"
+      className="flex min-h-[calc(100vh-12rem)] w-full scroll-mt-4 flex-col gap-8"
+    >
       <label className="grid gap-3">
         <span className="text-sm text-onbrand-charcoal/45">Name</span>
         <input
@@ -103,7 +108,9 @@ export const BrandGuideMetadataSection = ({
   );
 };
 
-const BrandGuideDangerZone = ({ brandGuide }: Readonly<{ brandGuide: BrandGuideView["brandGuide"] }>) => {
+const BrandGuideDangerZone = ({
+  brandGuide,
+}: Readonly<{ brandGuide: BrandGuideView["brandGuide"] }>) => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [typed, setTyped] = useState("");
@@ -111,7 +118,9 @@ const BrandGuideDangerZone = ({ brandGuide }: Readonly<{ brandGuide: BrandGuideV
   const remove = async () => {
     if (typed !== brandGuide.name) return;
     try {
-      await sendJson<void>(`/api/brand-guides/${encodeURIComponent(brandGuide.id)}`, { method: "DELETE" });
+      await sendJson<void>(`/api/brand-guides/${encodeURIComponent(brandGuide.id)}`, {
+        method: "DELETE",
+      });
       publishBrandGuideDeleted(brandGuide.id);
       setOpen(false);
       await navigate({ to: "/" });
@@ -140,7 +149,8 @@ const BrandGuideDangerZone = ({ brandGuide }: Readonly<{ brandGuide: BrandGuideV
           <div className="grid gap-4">
             <DialogTitle>Delete {brandGuide.name}?</DialogTitle>
             <DialogDescription>
-              This permanently deletes the Brand Guide, contained kits, database records, and S3 asset objects. This action cannot be reverted.
+              This permanently deletes the Brand Guide, contained kits, database records, and S3
+              asset objects. This action cannot be reverted.
             </DialogDescription>
             <label className="grid gap-2 text-sm">
               Type <strong>{brandGuide.name}</strong> to confirm
@@ -152,7 +162,11 @@ const BrandGuideDangerZone = ({ brandGuide }: Readonly<{ brandGuide: BrandGuideV
               />
             </label>
             <div className="flex justify-end gap-2">
-              <button className="rounded-md px-4 py-2 text-sm text-onbrand-charcoal/65" type="button" onClick={() => setOpen(false)}>
+              <button
+                className="rounded-md px-4 py-2 text-sm text-onbrand-charcoal/65"
+                type="button"
+                onClick={() => setOpen(false)}
+              >
                 Cancel
               </button>
               <button

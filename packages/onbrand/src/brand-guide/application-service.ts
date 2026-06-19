@@ -150,14 +150,23 @@ export type UpdatePresentationKitRequest = Readonly<{
 export interface BrandGuideApplicationService {
   listBrandGuides(owner: BrandGuideOwner): Promise<readonly BrandGuideSummary[]>;
   getBrandGuide(owner: BrandGuideOwner, brandGuideId: string): Promise<BrandGuideView>;
-  createBrandGuide(owner: BrandGuideOwner, request: CreateBrandGuideRequest): Promise<BrandGuideView>;
+  createBrandGuide(
+    owner: BrandGuideOwner,
+    request: CreateBrandGuideRequest,
+  ): Promise<BrandGuideView>;
   updateBrandGuideMetadata(
     owner: BrandGuideOwner,
     request: UpdateBrandGuideMetadataRequest,
   ): Promise<BrandGuideView>;
   deleteBrandGuide(owner: BrandGuideOwner, brandGuideId: string): Promise<void>;
-  upsertColorToken(owner: BrandGuideOwner, request: UpsertColorTokenRequest): Promise<BrandGuideView>;
-  deleteColorToken(owner: BrandGuideOwner, request: DeleteColorTokenRequest): Promise<BrandGuideView>;
+  upsertColorToken(
+    owner: BrandGuideOwner,
+    request: UpsertColorTokenRequest,
+  ): Promise<BrandGuideView>;
+  deleteColorToken(
+    owner: BrandGuideOwner,
+    request: DeleteColorTokenRequest,
+  ): Promise<BrandGuideView>;
   upsertLogo(owner: BrandGuideOwner, request: UpsertLogoRequest): Promise<BrandGuideView>;
   deleteLogo(owner: BrandGuideOwner, request: DeleteLogoRequest): Promise<BrandGuideView>;
   upsertDecorativeAsset(

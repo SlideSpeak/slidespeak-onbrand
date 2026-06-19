@@ -36,7 +36,9 @@ export const toPresentationKitView = (
   designPrompt: presentationKit?.designPrompt ?? null,
 });
 
-const toSlideCanvasUnit = (canvasUnit: string): NonNullable<PresentationKitView["canvas"]>["unit"] => {
+const toSlideCanvasUnit = (
+  canvasUnit: string,
+): NonNullable<PresentationKitView["canvas"]>["unit"] => {
   if (canvasUnit === "px") return canvasUnit;
   throw new Error(`Unsupported Presentation Kit record Slide Canvas unit: ${canvasUnit}`);
 };

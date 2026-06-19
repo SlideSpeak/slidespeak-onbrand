@@ -9,7 +9,12 @@ describe("sparse Brand Guide views", () => {
 
   test("represents an empty Presentation Kit with null canvas and null design prompt", () => {
     expect(
-      toPresentationKitView({ canvasWidth: null, canvasHeight: null, canvasUnit: null, designPrompt: null }),
+      toPresentationKitView({
+        canvasWidth: null,
+        canvasHeight: null,
+        canvasUnit: null,
+        designPrompt: null,
+      }),
     ).toEqual({ canvas: null, designPrompt: null });
   });
 });

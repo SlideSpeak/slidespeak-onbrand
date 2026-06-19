@@ -86,8 +86,7 @@ export class BrandKitAssetFileWorkflow {
     };
   };
 
-  delete = async (key: string): Promise<void> =>
-    this.s3.deleteObject({ bucket: this.bucket, key });
+  delete = async (key: string): Promise<void> => this.s3.deleteObject({ bucket: this.bucket, key });
 
   prepareUploads = async ({
     ownerUserId,

@@ -52,7 +52,10 @@ const ACME_BRAND_GUIDE = {
       },
     ],
   },
-  presentationKit: { canvas: { width: 1920, height: 1080, unit: "px" as const }, designPrompt: null },
+  presentationKit: {
+    canvas: { width: 1920, height: 1080, unit: "px" as const },
+    designPrompt: null,
+  },
 };
 
 describe("Onbrand MCP tools", () => {
@@ -261,7 +264,6 @@ const fakeBrandGuides = (): BrandGuideApplicationService => ({
   deleteDecorativeAsset: async () => ACME_BRAND_GUIDE,
   updatePresentationKit: async () => ACME_BRAND_GUIDE,
   prepareBrandGuideAssetUploads: async (auth, request) => ({
-
     brandGuideId: request.brandGuideId,
     instructions:
       "Run each PUT command from the directory containing the exact asset file. Then call write_brand_guide with the returned s3Key, byteSize, and sha256 metadata. Do not send asset bytes through MCP.",
