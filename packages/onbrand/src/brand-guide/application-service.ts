@@ -37,6 +37,13 @@ export class DuplicateBrandGuideNameError extends Error {
   }
 }
 
+export class DuplicateColorTokenNameError extends Error {
+  constructor(readonly name: string) {
+    super(`Duplicate Color Token name: ${name}`);
+    this.name = "DuplicateColorTokenNameError";
+  }
+}
+
 export type BrandGuideView = Readonly<{
   brandGuide: BrandGuideSummary;
   brandKit: BrandKitView;

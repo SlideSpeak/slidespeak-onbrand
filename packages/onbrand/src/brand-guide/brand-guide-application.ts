@@ -17,7 +17,7 @@ import {
   toPresentationKitCreateRecord,
   toPresentationKitWriteRecord,
 } from "./presentation-kit/record";
-import { DuplicateBrandGuideNameError } from "./application-service";
+import { DuplicateBrandGuideNameError, DuplicateColorTokenNameError } from "./application-service";
 import type {
   BrandGuideApplicationService,
   MaterializeBrandKitAssetsRequest,
@@ -107,11 +107,11 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
 
   deleteBrandGuide = async (owner: BrandGuideOwner, brandGuideId: string): Promise<void> => {
     const record = await loadBrandGuideRecord(this.prisma, owner, brandGuideId);
-    for (const asset of record.brandKit?.assets ?? [])
-      await this.brandKitAssetFiles.delete(asset.s3Key);
+    const assetKeys = record.brandKit?.assets.map((asset) => asset.s3Key) ?? [];
     await this.prisma.brandGuide.delete({
       where: { ownerUserId_slug: { ownerUserId: owner.ownerUserId, slug: brandGuideId } },
     });
+    for (const s3Key of assetKeys) await this.brandKitAssetFiles.delete(s3Key);
   };
 
   upsertColorToken = async (
@@ -128,6 +128,13 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
           select: { id: true },
         })
       : null;
+    const tokenWithTargetId = await this.prisma.colorToken.findUnique({
+      where: { brandKitId_tokenId: { brandKitId, tokenId } },
+      select: { id: true },
+    });
+    if (tokenWithTargetId && tokenWithTargetId.id !== existing?.id) {
+      throw new DuplicateColorTokenNameError(request.name);
+    }
     await this.prisma.colorToken.upsert({
       where: { id: existing?.id ?? "missing" },
       create: {
@@ -232,13 +239,13 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
         description: normalizeOptionalText(request.asset.description) ?? "",
       },
     });
-    if (existing && existing.s3Key !== record.s3Key)
-      await this.brandKitAssetFiles.delete(existing.s3Key);
     await this.prisma.brandKitAsset.upsert({
       where: { id: existing?.id ?? "missing" },
       create: { ...record, brandKitId, sortOrder: 0 },
       update: record,
     });
+    if (existing && existing.s3Key !== record.s3Key)
+      await this.brandKitAssetFiles.delete(existing.s3Key);
     return this.getBrandGuide(owner, request.brandGuideId);
   };
 
@@ -251,8 +258,8 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
       where: { brandKitId, kind: "LOGO" },
     });
     if (existing) {
-      await this.brandKitAssetFiles.delete(existing.s3Key);
       await this.prisma.brandKitAsset.delete({ where: { id: existing.id } });
+      await this.brandKitAssetFiles.delete(existing.s3Key);
     }
     return this.getBrandGuide(owner, request.brandGuideId);
   };
@@ -301,13 +308,13 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
       },
       sortOrder: 0,
     });
-    if (existing && existing.s3Key !== record.s3Key)
-      await this.brandKitAssetFiles.delete(existing.s3Key);
     await this.prisma.brandKitAsset.upsert({
       where: { id: existing?.id ?? "missing" },
       create: { ...record, brandKitId },
       update: record,
     });
+    if (existing && existing.s3Key !== record.s3Key)
+      await this.brandKitAssetFiles.delete(existing.s3Key);
     return this.getBrandGuide(owner, request.brandGuideId);
   };
 
@@ -322,8 +329,8 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
       },
     });
     if (existing) {
-      await this.brandKitAssetFiles.delete(existing.s3Key);
       await this.prisma.brandKitAsset.delete({ where: { id: existing.id } });
+      await this.brandKitAssetFiles.delete(existing.s3Key);
     }
     return this.getBrandGuide(owner, request.brandGuideId);
   };

@@ -1,4 +1,7 @@
-import type { BrandGuideApplicationService } from "@onbrand/core/brand-guide/application-service";
+import {
+  UnknownBrandGuideError,
+  type BrandGuideApplicationService,
+} from "@onbrand/core/brand-guide/application-service";
 import type { Hono } from "hono";
 import type { Context } from "hono";
 import { getDashboardSession, type DashboardSessionRefreshConfig } from "../dashboard-session";
@@ -249,8 +252,14 @@ const handleDashboardApiError = (
   handleAuthError: (context: Context, error: unknown) => Response,
 ): Response => {
   const message = error instanceof Error ? error.message : String(error);
+  if (error instanceof UnknownBrandGuideError || isPrismaRecordNotFoundError(error)) {
+    return context.text(message, 404);
+  }
   if (message.includes("Duplicate") || message.includes("Invalid") || message.includes("must")) {
     return context.text(message, 400);
   }
   return handleAuthError(context, error);
 };
+
+const isPrismaRecordNotFoundError = (error: unknown): boolean =>
+  typeof error === "object" && error !== null && "code" in error && error.code === "P2025";
