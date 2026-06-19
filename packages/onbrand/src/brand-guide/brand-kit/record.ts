@@ -14,11 +14,10 @@ export const toBrandKitView = (
   colors: readonly ColorTokenRecord[],
 ): BrandKitView => {
   const logo = assets.find((asset) => asset.kind === "LOGO");
-  if (!logo) throw new Error("Brand Guide record is missing its Logo");
 
   return {
     colors: colors.map(toColorToken),
-    logo: toLogoView(logo),
+    logo: logo ? toLogoView(logo) : null,
     decorativeAssets: assets
       .filter((asset) => asset.kind === "DECORATIVE_ASSET")
       .map(toDecorativeAssetView),
