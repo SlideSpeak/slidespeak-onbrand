@@ -255,7 +255,12 @@ const handleDashboardApiError = (
   if (error instanceof UnknownBrandGuideError || isPrismaRecordNotFoundError(error)) {
     return context.text(message, 404);
   }
-  if (message.includes("Duplicate") || message.includes("Invalid") || message.includes("must")) {
+  if (
+    isPrismaUniqueConstraintError(error) ||
+    message.includes("Duplicate") ||
+    message.includes("Invalid") ||
+    message.includes("must")
+  ) {
     return context.text(message, 400);
   }
   return handleAuthError(context, error);
@@ -263,3 +268,6 @@ const handleDashboardApiError = (
 
 const isPrismaRecordNotFoundError = (error: unknown): boolean =>
   typeof error === "object" && error !== null && "code" in error && error.code === "P2025";
+
+const isPrismaUniqueConstraintError = (error: unknown): boolean =>
+  typeof error === "object" && error !== null && "code" in error && error.code === "P2002";

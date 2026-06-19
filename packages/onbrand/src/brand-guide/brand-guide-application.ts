@@ -71,6 +71,7 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
   ): Promise<BrandGuideView> => {
     await this.assertUniqueBrandGuideName(owner, request.name);
     const slug = brandGuideSlugFromName(request.name);
+    await this.assertUniqueBrandGuideSlug(owner, slug);
     await this.prisma.brandGuide.create({
       data: {
         ownerUserId: owner.ownerUserId,
@@ -411,6 +412,17 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
       select: { id: true },
     });
     if (row) throw new DuplicateBrandGuideNameError(name);
+  };
+
+  private assertUniqueBrandGuideSlug = async (
+    owner: BrandGuideOwner,
+    slug: string,
+  ): Promise<void> => {
+    const row = await this.prisma.brandGuide.findUnique({
+      where: { ownerUserId_slug: { ownerUserId: owner.ownerUserId, slug } },
+      select: { name: true },
+    });
+    if (row) throw new DuplicateBrandGuideNameError(row.name);
   };
 
   private ensureBrandKitId = async (
