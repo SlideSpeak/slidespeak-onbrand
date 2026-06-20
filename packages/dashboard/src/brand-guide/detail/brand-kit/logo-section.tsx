@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Upload01Icon, WasteIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { toast } from "sonner";
 import type {
   BrandGuideView,
   BrandKitVisualAsset,
@@ -9,8 +8,7 @@ import type {
 
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { sendJson } from "../../../shared/api/api-state";
-import { uploadBrandGuideAsset } from "../asset-upload";
+import { createBrandGuideEditor } from "../brand-guide-editor";
 import { AssetPreview } from "./asset-preview";
 import { assetPreviewUrl } from "./asset-preview-url";
 import { AssetShowcaseCard } from "./asset-showcase-card";
@@ -76,77 +74,58 @@ const LogoEditor = ({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const lastSavedDescription = useRef(logo?.description ?? "");
   const normalizedDescription = useMemo(() => description.trim(), [description]);
+  const editor = useMemo(() => createBrandGuideEditor(brandGuideId), [brandGuideId]);
 
   useEffect(() => {
     if (!logo || normalizedDescription === lastSavedDescription.current) return;
-    const timeout = window.setTimeout(() => {
-      sendJson<BrandGuideView>(`/api/brand-guides/${encodeURIComponent(brandGuideId)}/logo`, {
-        method: "PUT",
-        body: {
+    const debounced = editor.debounce(
+      async () => {
+        const { view } = await editor.saveLogo({
           filename: logo.filename,
           mimeType: logo.mimeType,
-          description: normalizedDescription || null,
-          s3Key: "",
-          byteSize: 0,
-          sha256: "",
-        },
-      })
-        .then((view) => {
-          lastSavedDescription.current = normalizedDescription;
-          onViewChange(view);
-          toast.success("Changes saved");
-        })
-        .catch((error: unknown) =>
-          toast.error("Could not save Logo", { description: errorMessage(error) }),
-        );
-    }, 650);
-    return () => window.clearTimeout(timeout);
-  }, [brandGuideId, logo, normalizedDescription, onViewChange]);
+          description: normalizedDescription,
+          storedFile: logo,
+        });
+        lastSavedDescription.current = normalizedDescription;
+        onViewChange(view);
+      },
+      { errorLabel: "Logo" },
+    );
+    debounced.schedule();
+    return debounced.cancel;
+  }, [editor, logo, normalizedDescription, onViewChange]);
 
   useEffect(() => {
     if (!file) return;
     let cancelled = false;
-    uploadBrandGuideAsset(brandGuideId, "logo", file)
-      .then((upload) =>
-        sendJson<BrandGuideView>(`/api/brand-guides/${encodeURIComponent(brandGuideId)}/logo`, {
-          method: "PUT",
-          body: {
-            filename: upload.filename,
-            mimeType: upload.mimeType,
-            description: normalizedDescription || null,
-            s3Key: upload.s3Key,
-            byteSize: upload.byteSize,
-            sha256: upload.sha256,
-          },
-        }),
-      )
-      .then((view) => {
+    editor
+      .saveLogo({
+        filename: file.name,
+        mimeType: file.type,
+        description: normalizedDescription,
+        upload: { file },
+      })
+      .then(({ view }) => {
         if (cancelled) return;
+        lastSavedDescription.current = normalizedDescription;
         onViewChange(view);
         setFile(null);
-        toast.success("Changes saved");
         if (!logo) onClose();
       })
-      .catch((error: unknown) =>
-        toast.error("Could not save Logo", { description: errorMessage(error) }),
-      );
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [brandGuideId, file, logo, normalizedDescription, onClose, onViewChange]);
+  }, [editor, file, logo, normalizedDescription, onClose, onViewChange]);
 
   const remove = async () => {
     try {
-      onViewChange(
-        await sendJson<BrandGuideView>(
-          `/api/brand-guides/${encodeURIComponent(brandGuideId)}/logo`,
-          { method: "DELETE" },
-        ),
-      );
+      const { view } = await editor.deleteLogo();
+      onViewChange(view);
       setDeleteOpen(false);
       onClose();
-    } catch (error) {
-      toast.error("Could not delete Logo", { description: errorMessage(error) });
+    } catch {
+      // Toast policy lives in the Brand Guide editor.
     }
   };
 
@@ -268,6 +247,3 @@ const LogoEditor = ({
     </Dialog>
   );
 };
-
-const errorMessage = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error);
