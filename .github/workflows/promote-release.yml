@@ -1,0 +1,85 @@
+name: Promote Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [develop]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: promote-release
+  cancel-in-progress: false
+
+env:
+  PROMOTION_BASE_BRANCH: main
+  PROMOTION_HEAD_BRANCH: develop
+  PROMOTION_PR_TITLE: "chore(release): promote develop to main"
+
+jobs:
+  promote-release:
+    name: Create or update production promotion PR
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name,
+      'autorelease: pending') && contains(github.event.pull_request.labels.*.name, 'release-please')
+    steps:
+      - name: Compare release branch with production
+        id: compare
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PROMOTION_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          ahead_by="$(gh api "repos/${GITHUB_REPOSITORY}/compare/${PROMOTION_BASE_BRANCH}...${PROMOTION_HEAD_BRANCH}" --jq '.ahead_by')"
+
+          if [ -z "${ahead_by}" ] || [ "${ahead_by}" = "null" ]; then
+            echo "Unexpected ahead_by value from GitHub compare API; aborting."
+            exit 1
+          fi
+
+          echo "ahead_by=${ahead_by}" >> "${GITHUB_OUTPUT}"
+
+          if [ "${ahead_by}" = "0" ]; then
+            echo "${PROMOTION_HEAD_BRANCH} has no commits ahead of ${PROMOTION_BASE_BRANCH}; skipping promotion PR."
+          fi
+
+      - name: Create or update promotion PR
+        if: steps.compare.outputs.ahead_by != '0'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PROMOTION_TOKEN || secrets.GITHUB_TOKEN }}
+          RELEASE_PR_NUMBER: ${{ github.event.pull_request.number }}
+          RELEASE_PR_TITLE: ${{ github.event.pull_request.title }}
+          RELEASE_PR_URL: ${{ github.event.pull_request.html_url }}
+          RELEASE_MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          body_file="$(mktemp)"
+          {
+            printf '## Production promotion\n\n'
+            printf 'This PR promotes the latest Release Please release from `%s` to `%s`.\n\n' "${PROMOTION_HEAD_BRANCH}" "${PROMOTION_BASE_BRANCH}"
+            printf 'Release source:\n\n'
+            printf -- '- Release PR: #%s - %s\n' "${RELEASE_PR_NUMBER}" "${RELEASE_PR_TITLE}"
+            printf -- '- Release PR URL: %s\n' "${RELEASE_PR_URL}"
+            printf -- '- Release merge commit: `%s`\n\n' "${RELEASE_MERGE_SHA}"
+            printf 'Merge this PR to promote the version and changelog updates to production.\n'
+          } > "${body_file}"
+
+          existing_number="$(gh pr list \
+            --state open \
+            --base "${PROMOTION_BASE_BRANCH}" \
+            --head "${PROMOTION_HEAD_BRANCH}" \
+            --json number \
+            --jq '.[0].number // ""')"
+
+          if [ -n "${existing_number}" ]; then
+            gh pr edit "${existing_number}" \
+              --title "${PROMOTION_PR_TITLE}" \
+              --body-file "${body_file}"
+            echo "Updated promotion PR #${existing_number}."
+          else
+            gh pr create \
+              --base "${PROMOTION_BASE_BRANCH}" \
+              --head "${PROMOTION_HEAD_BRANCH}" \
+              --title "${PROMOTION_PR_TITLE}" \
+              --body-file "${body_file}"
+          fi
