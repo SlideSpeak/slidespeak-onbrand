@@ -109,8 +109,12 @@ describe("PrismaBrandGuideRegistry", () => {
         designPrompt: "Use energetic, sport-forward slide layouts.",
       },
     };
+    type BrandGuideFindUniqueArgs = Readonly<{ include?: unknown }>;
+
     const transactionBrandGuide = {
-      findUnique: vi.fn(async (args) => (args.include ? persistedRecord : null)),
+      findUnique: vi.fn(async (args: BrandGuideFindUniqueArgs) =>
+        args.include ? persistedRecord : null,
+      ),
       upsert: vi.fn(async () => ({
         id: persistedRecord.id,
         slug: persistedRecord.slug,
@@ -129,13 +133,16 @@ describe("PrismaBrandGuideRegistry", () => {
         create: vi.fn(async () => ({})),
       },
     };
+    const runTransaction = async <Result>(
+      callback: (transactionClient: typeof tx) => Promise<Result>,
+    ): Promise<Result> => callback(tx);
     const prisma = {
       brandGuide: {
         findUnique: vi.fn(async () => {
           throw new Error("replace must not read Brand Guide state after the transaction commits");
         }),
       },
-      $transaction: vi.fn(async (callback) => callback(tx)),
+      $transaction: vi.fn(runTransaction),
     };
     const registry = new PrismaBrandGuideRegistry(prisma as never);
 
