@@ -52,7 +52,10 @@ const ACME_BRAND_GUIDE = {
       },
     ],
   },
-  presentationKit: { canvas: { width: 1920, height: 1080, unit: "px" as const } },
+  presentationKit: {
+    canvas: { width: 1920, height: 1080, unit: "px" as const },
+    designPrompt: null,
+  },
 };
 
 describe("Onbrand MCP tools", () => {
@@ -246,6 +249,20 @@ const fakeBrandGuides = (): BrandGuideApplicationService => ({
     if (id !== "acme") throw new Error("Unknown Brand Guide");
     return ACME_BRAND_GUIDE;
   },
+  createBrandGuide: async (_auth, request) => ({
+    brandGuide: { id: "newco", name: request.name, description: request.description ?? null },
+    brandKit: { colors: [], logo: null, decorativeAssets: [] },
+    presentationKit: { canvas: null, designPrompt: null },
+  }),
+  updateBrandGuideMetadata: async () => ACME_BRAND_GUIDE,
+  deleteBrandGuide: async () => undefined,
+  upsertColorToken: async () => ACME_BRAND_GUIDE,
+  deleteColorToken: async () => ACME_BRAND_GUIDE,
+  upsertLogo: async () => ACME_BRAND_GUIDE,
+  deleteLogo: async () => ACME_BRAND_GUIDE,
+  upsertDecorativeAsset: async () => ACME_BRAND_GUIDE,
+  deleteDecorativeAsset: async () => ACME_BRAND_GUIDE,
+  updatePresentationKit: async () => ACME_BRAND_GUIDE,
   prepareBrandGuideAssetUploads: async (auth, request) => ({
     brandGuideId: request.brandGuideId,
     instructions:

@@ -15,7 +15,7 @@ export type BrandKit = Readonly<z.infer<typeof brandKitSchema>>;
 
 export type BrandKitView = Readonly<
   Omit<BrandKit, "logo" | "decorativeAssets"> & {
-    logo: BrandKitVisualAsset;
+    logo: BrandKitVisualAsset | null;
     decorativeAssets: readonly BrandKitDecorativeAsset[];
   }
 >;

@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.1",
     "@types/node": "25.9.2",
     "@types/pg": "8.20.0",
@@ -52,10 +53,12 @@
     "@hono/node-server": "2.0.4",
     "@hugeicons/core-free-icons": "4.2.0",
     "@hugeicons/react": "1.1.7",
+    "@mdxeditor/editor": "^4.0.0",
     "@onbrand/env": "workspace:*",
     "@prisma/adapter-pg": "7.8.0",
     "@prisma/client": "7.8.0",
     "@radix-ui/react-dialog": "1.1.15",
+    "@radix-ui/react-popover": "^1.1.17",
     "@radix-ui/react-select": "^2.3.1",
     "@radix-ui/react-toggle-group": "1.1.11",
     "@radix-ui/react-tooltip": "^1.2.10",
@@ -68,9 +71,8 @@
     "jose": "6.2.3",
     "pg": "8.21.0",
     "react": "^19.2.7",
+    "react-colorful": "^5.7.0",
     "react-dom": "^19.2.7",
-    "react-markdown": "10.1.0",
-    "remark-gfm": "4.0.1",
     "tailwind-merge": "^3.6.0"
   }
 }
