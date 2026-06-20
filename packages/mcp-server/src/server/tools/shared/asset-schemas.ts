@@ -1,12 +1,8 @@
+import { SUPPORTED_BRAND_KIT_ASSET_MIME_TYPES } from "@onbrand/core/brand-guide/brand-kit/asset-file/rules";
 import { slugSchema } from "@onbrand/string";
 import { z } from "zod";
 
-export const supportedAssetMimeTypeSchema = z.enum([
-  "image/svg+xml",
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-]);
+export const supportedAssetMimeTypeSchema = z.enum(SUPPORTED_BRAND_KIT_ASSET_MIME_TYPES);
 
 export const assetSlugSchema = slugSchema;
 

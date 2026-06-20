@@ -32,8 +32,9 @@ format. _Avoid_: Brand image, icon, illustration
 **Brand Kit Asset File**: The exact downloadable file and metadata for a declared visual from a
 **Brand Kit** that an MCP client can write into its own workspace. Current downloadable visuals are
 the **Logo** and **Decorative Assets**. The file lives in S3 object storage and is exposed to
-clients through short-lived presigned URLs. _Avoid_: server-local path, source asset path, inline
-binary payload
+clients through short-lived presigned URLs. Its module owns storage-key validation, asset handles,
+supported MIME types, materialization commands, and dashboard preview paths. _Avoid_: server-local
+path, source asset path, inline binary payload
 
 **Presentation Kit**: The slide-focused part of a **Brand Guide**. It defines the **Slide Canvas**
 and may include a **Design Prompt** for generated presentations. _Avoid_: Slide Kit, Template Kit,

@@ -1,5 +1,1 @@
-export const assetPreviewUrl = ({
-  brandGuideId,
-  assetHandle,
-}: Readonly<{ brandGuideId: string; assetHandle: string }>): string =>
-  `/api/brand-guides/${encodeURIComponent(brandGuideId)}/assets/${encodeURIComponent(assetHandle)}/preview`;
+export { brandKitAssetFilePreviewPath as assetPreviewUrl } from "@onbrand/core/brand-guide/brand-kit/asset-file/rules";
