@@ -28,10 +28,12 @@ describe("PersistentBrandGuideApplication duplicate Brand Guide handling", () =>
   };
 
   it("rejects names that normalize to an existing Brand Guide slug before writing", async () => {
+    const findUnique = vi.fn().mockResolvedValue({ name: "My Brand" });
+    const create = vi.fn();
     const prisma = brandGuidePrismaStub({
       findFirst: vi.fn().mockResolvedValue(null),
-      findUnique: vi.fn().mockResolvedValue({ name: "My Brand" }),
-      create: vi.fn(),
+      findUnique,
+      create,
     });
     const service = new PersistentBrandGuideApplication(
       prisma,
@@ -44,11 +46,11 @@ describe("PersistentBrandGuideApplication duplicate Brand Guide handling", () =>
       DuplicateBrandGuideNameError,
     );
 
-    expect(prisma.brandGuide.findUnique).toHaveBeenCalledWith({
+    expect(findUnique).toHaveBeenCalledWith({
       where: { ownerUserId_slug: { ownerUserId: owner.ownerUserId, slug: "my-brand" } },
       select: { name: true },
     });
-    expect(prisma.brandGuide.create).not.toHaveBeenCalled();
+    expect(create).not.toHaveBeenCalled();
   });
 
   it("turns a Brand Guide slug race into a duplicate-name domain error", async () => {
@@ -79,6 +81,12 @@ describe("PersistentBrandGuideApplication decorative asset duplicate handling", 
   };
 
   it("rejects renamed decorative assets that normalize to an existing asset id before writing", async () => {
+    const findUnique = vi
+      .fn()
+      .mockResolvedValueOnce({ id: "asset-being-renamed", s3Key: "old-key" })
+      .mockResolvedValueOnce({ id: "colliding-asset", s3Key: "other-key" });
+    const update = vi.fn();
+    const upsert = vi.fn();
     const prisma = {
       brandGuide: {
         findUnique: vi.fn().mockResolvedValue({
@@ -91,12 +99,9 @@ describe("PersistentBrandGuideApplication decorative asset duplicate handling", 
         }),
       },
       brandKitAsset: {
-        findUnique: vi
-          .fn()
-          .mockResolvedValueOnce({ id: "asset-being-renamed", s3Key: "old-key" })
-          .mockResolvedValueOnce({ id: "colliding-asset", s3Key: "other-key" }),
-        update: vi.fn(),
-        upsert: vi.fn(),
+        findUnique,
+        update,
+        upsert,
       },
     } as unknown as PrismaClient;
     const service = new PersistentBrandGuideApplication(
@@ -122,12 +127,12 @@ describe("PersistentBrandGuideApplication decorative asset duplicate handling", 
 
     await expect(result).rejects.toThrow(DuplicateDecorativeAssetNameError);
     await expect(result).rejects.not.toMatchObject({ code: "P2002" });
-    expect(prisma.brandKitAsset.findUnique).toHaveBeenNthCalledWith(2, {
+    expect(findUnique).toHaveBeenNthCalledWith(2, {
       where: { brandKitId_assetId: { brandKitId: "brand-kit-row", assetId: "icon-2" } },
       select: { id: true, s3Key: true },
     });
-    expect(prisma.brandKitAsset.update).not.toHaveBeenCalled();
-    expect(prisma.brandKitAsset.upsert).not.toHaveBeenCalled();
+    expect(update).not.toHaveBeenCalled();
+    expect(upsert).not.toHaveBeenCalled();
   });
 });
 
