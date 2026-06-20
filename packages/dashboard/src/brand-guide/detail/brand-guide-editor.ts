@@ -429,11 +429,6 @@ export const optimisticMetadataView = (
   },
 });
 
-export const optimisticPresentationKitView = (
-  current: BrandGuideView,
-  presentationKit: PresentationKitView,
-): BrandGuideView => ({ ...current, presentationKit });
-
 const defaultDependencies = (): BrandGuideEditorDependencies => ({
   sendJson,
   uploadAsset: uploadBrandGuideAsset,

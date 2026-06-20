@@ -116,7 +116,7 @@ const LogoEditor = ({
     return () => {
       cancelled = true;
     };
-  }, [editor, file, logo, normalizedDescription, onClose, onViewChange]);
+  }, [descriptionDraftSave, editor, file, logo, normalizedDescription, onClose, onViewChange]);
 
   const remove = async () => {
     try {

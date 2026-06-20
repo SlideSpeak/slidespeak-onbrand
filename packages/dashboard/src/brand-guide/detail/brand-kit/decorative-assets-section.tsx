@@ -171,7 +171,7 @@ const DecorativeAssetEditor = ({
     return () => {
       cancelled = true;
     };
-  }, [asset, editor, file, normalized, onClose, onViewChange]);
+  }, [asset, editor, file, metadataDraftSave, normalized, onClose, onViewChange]);
   const remove = async () => {
     if (!asset) return;
     try {
