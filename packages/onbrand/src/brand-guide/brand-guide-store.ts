@@ -2,6 +2,7 @@ import type { BrandGuide as DbBrandGuide, PrismaClient } from "@prisma/client";
 import {
   UnknownBrandGuideError,
   type BrandGuideView,
+  type WriteBrandGuideResult,
   type WriteBrandGuideRequest,
 } from "./application-service";
 import { BRAND_KIT_INCLUDE, toBrandKitView } from "./brand-kit/record";
@@ -13,12 +14,6 @@ import type { BrandGuideSummary } from "./brand-guide";
 
 type BrandGuideSummaryRecord = Readonly<Pick<DbBrandGuide, "slug" | "name" | "description">>;
 
-export type BrandGuideRegistryWriteResult = Readonly<{
-  brandGuideId: string;
-  action: "CREATED" | "UPDATED";
-  brandGuide: BrandGuideView;
-}>;
-
 export interface BrandGuideRegistry {
   list(owner: BrandGuideOwner): Promise<readonly BrandGuideSummary[]>;
   load(owner: BrandGuideOwner, brandGuideId: string): Promise<BrandGuideView>;
@@ -26,10 +21,7 @@ export interface BrandGuideRegistry {
     owner: BrandGuideOwner,
     brandGuideId: string,
   ): Promise<readonly BrandKitAssetRecord[]>;
-  replace(
-    owner: BrandGuideOwner,
-    request: WriteBrandGuideRequest,
-  ): Promise<BrandGuideRegistryWriteResult>;
+  replace(owner: BrandGuideOwner, request: WriteBrandGuideRequest): Promise<WriteBrandGuideResult>;
 }
 
 export class PrismaBrandGuideRegistry implements BrandGuideRegistry {
@@ -58,7 +50,7 @@ export class PrismaBrandGuideRegistry implements BrandGuideRegistry {
   replace = async (
     owner: BrandGuideOwner,
     request: WriteBrandGuideRequest,
-  ): Promise<BrandGuideRegistryWriteResult> => {
+  ): Promise<WriteBrandGuideResult> => {
     const assetRecords = [
       toBrandKitAssetFileRecord({
         kind: "LOGO",
@@ -77,7 +69,7 @@ export class PrismaBrandGuideRegistry implements BrandGuideRegistry {
       ),
     ];
 
-    const action = await this.prisma.$transaction(async (tx) => {
+    return this.prisma.$transaction(async (tx) => {
       const existing = await tx.brandGuide.findUnique({
         where: {
           ownerUserId_slug: { ownerUserId: owner.ownerUserId, slug: request.brandGuide.id },
@@ -109,19 +101,19 @@ export class PrismaBrandGuideRegistry implements BrandGuideRegistry {
       await tx.presentationKit.create({
         data: toPresentationKitCreateRecord(brandGuide.id, request.presentationKit),
       });
-      return existing ? "UPDATED" : "CREATED";
-    });
+      const persistedBrandGuide = await loadBrandGuideRecord(tx, owner, request.brandGuide.id);
 
-    return {
-      brandGuideId: request.brandGuide.id,
-      action,
-      brandGuide: await this.load(owner, request.brandGuide.id),
-    };
+      return {
+        brandGuideId: request.brandGuide.id,
+        action: existing ? "UPDATED" : "CREATED",
+        brandGuide: toBrandGuideView(persistedBrandGuide),
+      };
+    });
   };
 }
 
 const loadBrandGuideRecord = async (
-  prisma: PrismaClient,
+  prisma: Pick<PrismaClient, "brandGuide">,
   owner: BrandGuideOwner,
   brandGuideId: string,
 ) => {
