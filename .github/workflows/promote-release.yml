@@ -32,6 +32,12 @@ jobs:
           GH_TOKEN: ${{ secrets.RELEASE_PROMOTION_TOKEN || secrets.GITHUB_TOKEN }}
         run: |
           ahead_by="$(gh api "repos/${GITHUB_REPOSITORY}/compare/${PROMOTION_BASE_BRANCH}...${PROMOTION_HEAD_BRANCH}" --jq '.ahead_by')"
+
+          if [ -z "${ahead_by}" ] || [ "${ahead_by}" = "null" ]; then
+            echo "Unexpected ahead_by value from GitHub compare API; aborting."
+            exit 1
+          fi
+
           echo "ahead_by=${ahead_by}" >> "${GITHUB_OUTPUT}"
 
           if [ "${ahead_by}" = "0" ]; then
