@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@onbrand/core": "workspace:*",
     "sonner": "^2.0.7"
   }
 }

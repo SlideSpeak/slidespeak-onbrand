@@ -57,6 +57,7 @@
     "packages/dashboard": {
       "name": "@onbrand/dashboard",
       "dependencies": {
+        "@onbrand/core": "workspace:*",
         "sonner": "^2.0.7",
       },
     },

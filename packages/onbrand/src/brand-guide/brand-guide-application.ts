@@ -4,10 +4,8 @@ import type { PrismaClient } from "@prisma/client";
 import type { BrandGuideOwner } from "./owner";
 import type { BrandGuideSummary } from "./brand-guide";
 import type { BrandKitAssetMaterializationPlan } from "./brand-kit/asset-file/index";
-import { brandKitAssetHandle } from "./brand-kit/asset-file/workflow";
+import { brandKitAssetHandle, toBrandKitAssetFileRecord } from "./brand-kit/asset-file/record";
 import { toColorTokenCreateRecords } from "./brand-kit/color/record";
-import { toDecorativeAssetRecord } from "./brand-kit/decorative-assets/record";
-import { toLogoAssetRecord } from "./brand-kit/logo/record";
 import { toPresentationKitCreateRecord } from "./presentation-kit/record";
 import type {
   BrandGuideApplicationService,
@@ -86,13 +84,15 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
     request: WriteBrandGuideRequest,
   ): Promise<WriteBrandGuideResult> => {
     const assetRecords = [
-      toLogoAssetRecord({
+      toBrandKitAssetFileRecord({
+        kind: "LOGO",
         ownerUserId: owner.ownerUserId,
         brandGuideId: request.brandGuide.id,
         asset: request.brandKit.logo,
       }),
       ...(request.brandKit.decorativeAssets ?? []).map((asset, index) =>
-        toDecorativeAssetRecord({
+        toBrandKitAssetFileRecord({
+          kind: "DECORATIVE_ASSET",
           ownerUserId: owner.ownerUserId,
           brandGuideId: request.brandGuide.id,
           asset,

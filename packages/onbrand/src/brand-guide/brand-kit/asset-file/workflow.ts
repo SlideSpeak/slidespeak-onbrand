@@ -3,9 +3,8 @@ import { readMarkdownAsString } from "@onbrand/file";
 import type { S3 } from "@onbrand/s3";
 import { brandKitAssetFileObjectKey } from "./object-key";
 import type { BrandKitAssetDownload, BrandKitAssetMaterializationPlan } from "./index";
-import { decorativeAssetHandle } from "../decorative-assets/index";
-import { LOGO_ASSET_HANDLE } from "../logo/index";
-import { asSupportedBrandKitAssetMimeType, type BrandKitAssetRecord } from "./record";
+import { brandKitAssetHandle, type BrandKitAssetRecord } from "./record";
+import { asSupportedBrandKitAssetMimeType } from "./rules";
 
 export type PrepareBrandKitAssetUpload = Readonly<{
   assetId: string;
@@ -179,8 +178,7 @@ const hexToBase64Sha256 = (hex: string): string => Buffer.from(hex, "hex").toStr
 
 const shellQuote = (value: string): string => `'${value.replaceAll("'", "'\\''")}'`;
 
-export const brandKitAssetHandle = (asset: BrandKitAssetRecord): string =>
-  asset.kind === "LOGO" ? LOGO_ASSET_HANDLE : decorativeAssetHandle(asset.assetId);
+export { brandKitAssetHandle } from "./record";
 
 const joinOutputPath = (outputDirectory: string, filename: string): string =>
   outputDirectory === "." ? filename : path.posix.join(outputDirectory, filename);
