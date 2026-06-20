@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Upload01Icon, WasteIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type {
@@ -72,55 +72,33 @@ const LogoEditor = ({
   const [description, setDescription] = useState(logo?.description ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const lastSavedDescription = useRef(logo?.description ?? "");
-  const pendingDescriptionSave = useRef<{
-    logo: BrandKitVisualAsset;
-    description: string;
-    onViewChange: (view: BrandGuideView) => void;
-  } | null>(null);
   const normalizedDescription = useMemo(() => description.trim(), [description]);
   const editor = useMemo(() => createBrandGuideEditor(brandGuideId), [brandGuideId]);
-  const debouncedDescriptionSave = useMemo(
+  const descriptionDraftSave = useMemo(
     () =>
-      editor.debounce(
-        async () => {
-          const pending = pendingDescriptionSave.current;
-          if (!pending) return;
-          const { view } = await editor.saveLogo({
-            filename: pending.logo.filename,
-            mimeType: pending.logo.mimeType,
-            description: pending.description,
-            storedFile: pending.logo,
-          });
-          lastSavedDescription.current = pending.description;
-          pending.onViewChange(view);
+      editor.createLogoDescriptionDraftSave(logo, {
+        onSaved: (view, draft) => {
+          setDescription(draft.description);
+          onViewChange(view);
         },
-        { errorLabel: "Logo" },
-      ),
-    [editor],
+      }),
+    [editor, logo, onViewChange],
   );
 
   useEffect(() => {
     return () => {
-      debouncedDescriptionSave.cancel();
+      descriptionDraftSave.cancel();
     };
-  }, [debouncedDescriptionSave]);
+  }, [descriptionDraftSave]);
 
   const scheduleDescriptionSave = (nextDescription: string) => {
-    if (!logo) return;
-    const nextNormalizedDescription = nextDescription.trim();
-    if (nextNormalizedDescription === lastSavedDescription.current) return;
-    pendingDescriptionSave.current = {
-      logo,
-      description: nextNormalizedDescription,
-      onViewChange,
-    };
-    debouncedDescriptionSave.schedule();
+    descriptionDraftSave.update({ description: nextDescription });
   };
 
   useEffect(() => {
     if (!file) return;
     let cancelled = false;
+    descriptionDraftSave.cancel();
     editor
       .saveLogo({
         filename: file.name,
@@ -130,7 +108,6 @@ const LogoEditor = ({
       })
       .then(({ view }) => {
         if (cancelled) return;
-        lastSavedDescription.current = normalizedDescription;
         onViewChange(view);
         setFile(null);
         if (!logo) onClose();

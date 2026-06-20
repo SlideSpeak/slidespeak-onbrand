@@ -118,67 +118,39 @@ const DecorativeAssetEditor = ({
   const [description, setDescription] = useState(asset?.description ?? "");
   const [file, setFile] = useState<File | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const lastSaved = useRef({ name: asset?.name ?? "", description: asset?.description ?? "" });
   const previousName = useRef(asset?.name);
-  const pendingMetadataSave = useRef<{
-    asset: BrandKitDecorativeAsset;
-    metadata: { name: string; description: string };
-    onViewChange: (view: BrandGuideView) => void;
-  } | null>(null);
   const normalized = useMemo(
     () => ({ name: name.trim(), description: description.trim() }),
     [description, name],
   );
   const editor = useMemo(() => createBrandGuideEditor(brandGuideId), [brandGuideId]);
-  const debouncedMetadataSave = useMemo(
+  const metadataDraftSave = useMemo(
     () =>
-      editor.debounce(
-        async () => {
-          const pending = pendingMetadataSave.current;
-          if (!pending) return;
-          const { view } = await editor.saveDecorativeAsset({
-            previousName: previousName.current,
-            name: pending.metadata.name,
-            filename: pending.asset.filename,
-            mimeType: pending.asset.mimeType,
-            description: pending.metadata.description,
-            storedFile: pending.asset,
-          });
-          previousName.current = pending.metadata.name;
-          lastSaved.current = pending.metadata;
-          pending.onViewChange(view);
+      editor.createDecorativeAssetMetadataDraftSave(asset, {
+        onSaved: (view, draft) => {
+          previousName.current = draft.name;
+          setName(draft.name);
+          setDescription(draft.description);
+          onViewChange(view);
         },
-        { errorLabel: "Decorative Asset" },
-      ),
-    [editor],
+      }),
+    [asset, editor, onViewChange],
   );
 
   useEffect(() => {
     return () => {
-      debouncedMetadataSave.cancel();
+      metadataDraftSave.cancel();
     };
-  }, [debouncedMetadataSave]);
+  }, [metadataDraftSave]);
 
   const scheduleMetadataSave = (nextName: string, nextDescription: string) => {
-    if (!asset) return;
-    const nextNormalized = { name: nextName.trim(), description: nextDescription.trim() };
-    if (!nextNormalized.name) return;
-    if (
-      nextNormalized.name === lastSaved.current.name &&
-      nextNormalized.description === lastSaved.current.description
-    )
-      return;
-    pendingMetadataSave.current = {
-      asset,
-      metadata: nextNormalized,
-      onViewChange,
-    };
-    debouncedMetadataSave.schedule();
+    metadataDraftSave.update({ name: nextName, description: nextDescription });
   };
 
   useEffect(() => {
     if (!file || !normalized.name) return;
     let cancelled = false;
+    metadataDraftSave.cancel();
     editor
       .saveDecorativeAsset({
         previousName: previousName.current,
@@ -191,7 +163,6 @@ const DecorativeAssetEditor = ({
       .then(({ view }) => {
         if (cancelled) return;
         previousName.current = normalized.name;
-        lastSaved.current = normalized;
         onViewChange(view);
         setFile(null);
         if (!asset) onClose();

@@ -4,11 +4,7 @@ import { useApi } from "../../shared/api/api-state";
 import { BrandGuideMetadataSection } from "./brand-guide-metadata-section";
 import { BrandKitSections } from "./brand-kit/brand-kit-sections";
 import type { AssetLayout } from "./brand-kit/brand-kit-assets-sections";
-import {
-  createBrandGuideEditor,
-  optimisticMetadataView,
-  optimisticPresentationKitView,
-} from "./brand-guide-editor";
+import { createBrandGuideEditor, optimisticMetadataView } from "./brand-guide-editor";
 import { PresentationKitSection } from "./presentation-kit/presentation-kit-sections";
 import { ErrorMessage } from "../../shared/ui/feedback";
 import { PageHeader } from "../../shared/ui/page-header";
@@ -56,12 +52,6 @@ const BrandGuideDetailView = ({
     [editor],
   );
 
-  const savePresentationKit = async (presentationKit: BrandGuideView["presentationKit"]) => {
-    setView((current) => optimisticPresentationKitView(current, presentationKit));
-    const { view: saved } = await editor.savePresentationKit(presentationKit);
-    setView(saved);
-  };
-
   return (
     <section
       className={`grid gap-3 ${section === "PRESENTATION" ? "h-full min-h-0 grid-rows-[auto_minmax(0,1fr)]" : "content-start"}`}
@@ -79,7 +69,6 @@ const BrandGuideDetailView = ({
         onAssetLayoutChange={setAssetLayout}
         onViewChange={setView}
         onMetadataChange={saveMetadata}
-        onPresentationKitChange={savePresentationKit}
       />
     </section>
   );
@@ -92,7 +81,6 @@ const BrandGuideSectionPage = ({
   onViewChange,
   onAssetLayoutChange,
   onMetadataChange,
-  onPresentationKitChange,
 }: Readonly<{
   assetLayout: AssetLayout;
   view: BrandGuideView;
@@ -100,7 +88,6 @@ const BrandGuideSectionPage = ({
   onViewChange: (view: BrandGuideView) => void;
   onAssetLayoutChange: (assetLayout: AssetLayout) => void;
   onMetadataChange: (metadata: { name: string; description: string }) => Promise<void>;
-  onPresentationKitChange: (presentationKit: BrandGuideView["presentationKit"]) => Promise<void>;
 }>) => {
   switch (section) {
     case "METADATA":
@@ -142,8 +129,9 @@ const BrandGuideSectionPage = ({
     case "PRESENTATION":
       return (
         <PresentationKitSection
+          brandGuideId={view.brandGuide.id}
           presentationKit={view.presentationKit}
-          onPresentationKitChange={onPresentationKitChange}
+          onViewChange={onViewChange}
         />
       );
   }

@@ -82,6 +82,112 @@ describe("BrandGuideEditor", () => {
     expect(save).toHaveBeenCalledTimes(1);
   });
 
+  it("tracks Color Token previous names across autosaved renames", async () => {
+    vi.useFakeTimers();
+    const { editor, send } = createEditor();
+    const onSaved = vi.fn();
+    const draftSave = editor.createColorTokenDraftSave(
+      { name: "Sky", value: "#67A8FF", description: "Soft blue" },
+      { onSaved },
+    );
+
+    draftSave.update({ name: "Blue", value: "#0050bd", description: "Primary" });
+    await vi.advanceTimersByTimeAsync(650);
+    draftSave.update({ name: "Core Blue", value: "#0050BD", description: "Primary" });
+    await vi.advanceTimersByTimeAsync(650);
+
+    expect(send).toHaveBeenNthCalledWith(1, "/api/brand-guides/brand%20guide%2F1/colors", {
+      method: "PUT",
+      body: {
+        previousName: "Sky",
+        name: "Blue",
+        value: "#0050BD",
+        description: "Primary",
+      },
+    });
+    expect(send).toHaveBeenNthCalledWith(2, "/api/brand-guides/brand%20guide%2F1/colors", {
+      method: "PUT",
+      body: {
+        previousName: "Blue",
+        name: "Core Blue",
+        value: "#0050BD",
+        description: "Primary",
+      },
+    });
+    expect(onSaved).toHaveBeenCalledTimes(2);
+  });
+
+  it("cancels debounced Logo metadata saves so file uploads can own the saved declaration", async () => {
+    vi.useFakeTimers();
+    const { editor, send } = createEditor();
+    const draftSave = editor.createLogoDescriptionDraftSave(
+      {
+        name: "Logo",
+        assetHandle: "asset:logo",
+        filename: "logo.svg",
+        mimeType: "image/svg+xml",
+        description: "Old",
+      },
+      { onSaved: vi.fn() },
+    );
+
+    draftSave.update({ description: "Pending metadata" });
+    draftSave.cancel();
+    await editor.saveLogo({
+      filename: "logo.png",
+      mimeType: "image/png",
+      description: "Uploaded metadata",
+      upload: { file: file("logo.png", "image/png") },
+    });
+    await vi.advanceTimersByTimeAsync(650);
+
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send).toHaveBeenCalledWith("/api/brand-guides/brand%20guide%2F1/logo", {
+      method: "PUT",
+      body: {
+        filename: "logo.svg",
+        mimeType: "image/svg+xml",
+        description: "Uploaded metadata",
+        s3Key: "brand-kit-assets/owner/acme/logo/logo.svg",
+        byteSize: 123,
+        sha256: "abc123",
+      },
+    });
+  });
+
+  it("debounces Presentation Kit drafts behind the editor interface", async () => {
+    vi.useFakeTimers();
+    const { editor, send, publishBrandGuide } = createEditor();
+    const onSaved = vi.fn();
+    const draftSave = editor.createPresentationKitDraftSave(
+      { canvas: null, designPrompt: null },
+      { onSaved },
+    );
+
+    draftSave.update({
+      canvas: { width: 1280, height: 720, unit: "px" },
+      designPrompt: "Use minimal layouts.",
+    });
+    draftSave.update({
+      canvas: { width: 1920, height: 1080, unit: "px" },
+      designPrompt: "Use minimal layouts.",
+    });
+    await vi.advanceTimersByTimeAsync(649);
+    expect(send).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send).toHaveBeenCalledWith("/api/brand-guides/brand%20guide%2F1/presentation-kit", {
+      method: "PATCH",
+      body: {
+        canvas: { width: 1920, height: 1080, unit: "px" },
+        designPrompt: "Use minimal layouts.",
+      },
+    });
+    expect(onSaved).toHaveBeenCalledTimes(1);
+    expect(publishBrandGuide).toHaveBeenCalledWith(baseView().brandGuide);
+  });
+
   it("uploads a Logo file before saving the Logo declaration", async () => {
     const { editor, send, uploadAsset, notify } = createEditor();
     const logoFile = file("logo.svg", "image/svg+xml");

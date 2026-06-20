@@ -76,6 +76,26 @@ export type DebouncedSave = Readonly<{
   cancel: () => void;
 }>;
 
+export type DraftSaveSession<TDraft> = Readonly<{
+  update: (draft: TDraft) => void;
+  cancel: () => void;
+}>;
+
+export type ColorTokenDraft = Readonly<{
+  name: string;
+  value: string;
+  description: string;
+}>;
+
+export type LogoDescriptionDraft = Readonly<{
+  description: string;
+}>;
+
+export type DecorativeAssetMetadataDraft = Readonly<{
+  name: string;
+  description: string;
+}>;
+
 export class BrandGuideEditor {
   readonly #deps: BrandGuideEditorDependencies;
   readonly #brandGuideId: string;
@@ -223,6 +243,151 @@ export class BrandGuideEditor {
     };
   }
 
+  createColorTokenDraftSave(
+    initial: ColorTokenDraft | null,
+    callbacks: Readonly<{
+      onSaved: (view: BrandGuideView, draft: ColorTokenDraft) => void;
+      onCreated?: (view: BrandGuideView, draft: ColorTokenDraft) => void;
+      delayMs?: number;
+    }>,
+  ): DraftSaveSession<ColorTokenDraft> {
+    let lastSaved = initial ? normalizeColorTokenDraft(initial) : null;
+    let pending: ColorTokenDraft | null = null;
+    const debounced = this.debounce(
+      async () => {
+        if (!pending) return;
+        const draft = pending;
+        const { view } = await this.saveColorToken({
+          previousName: lastSaved?.name ?? initial?.name,
+          name: draft.name,
+          value: draft.value,
+          description: draft.description,
+        });
+        const wasCreating = !lastSaved;
+        lastSaved = draft;
+        if (wasCreating && callbacks.onCreated) callbacks.onCreated(view, draft);
+        else callbacks.onSaved(view, draft);
+      },
+      { delayMs: callbacks.delayMs, errorLabel: "Color Token" },
+    );
+    return {
+      update: (draft) => {
+        const normalized = normalizeColorTokenDraft(draft);
+        if (!normalized.name || !/^#[0-9A-F]{6}$/.test(normalized.value)) return;
+        if (lastSaved && sameColorTokenDraft(normalized, lastSaved)) return;
+        pending = normalized;
+        debounced.schedule();
+      },
+      cancel: debounced.cancel,
+    };
+  }
+
+  createLogoDescriptionDraftSave(
+    logo: BrandKitVisualAsset | null,
+    callbacks: Readonly<{
+      onSaved: (view: BrandGuideView, draft: LogoDescriptionDraft) => void;
+      delayMs?: number;
+    }>,
+  ): DraftSaveSession<LogoDescriptionDraft> {
+    let lastSaved = logo?.description ?? "";
+    let pending: string | null = null;
+    const debounced = this.debounce(
+      async () => {
+        if (!logo || pending === null) return;
+        const description = pending;
+        const { view } = await this.saveLogo({
+          filename: logo.filename,
+          mimeType: logo.mimeType,
+          description,
+          storedFile: logo,
+        });
+        lastSaved = description;
+        callbacks.onSaved(view, { description });
+      },
+      { delayMs: callbacks.delayMs, errorLabel: "Logo" },
+    );
+    return {
+      update: (draft) => {
+        if (!logo) return;
+        const description = draft.description.trim();
+        if (description === lastSaved) return;
+        pending = description;
+        debounced.schedule();
+      },
+      cancel: debounced.cancel,
+    };
+  }
+
+  createDecorativeAssetMetadataDraftSave(
+    asset: BrandKitDecorativeAsset | null,
+    callbacks: Readonly<{
+      onSaved: (view: BrandGuideView, draft: DecorativeAssetMetadataDraft) => void;
+      delayMs?: number;
+    }>,
+  ): DraftSaveSession<DecorativeAssetMetadataDraft> {
+    let previousName = asset?.name;
+    let lastSaved = { name: asset?.name ?? "", description: asset?.description ?? "" };
+    let pending: DecorativeAssetMetadataDraft | null = null;
+    const debounced = this.debounce(
+      async () => {
+        if (!asset || !pending) return;
+        const draft = pending;
+        const { view } = await this.saveDecorativeAsset({
+          previousName,
+          name: draft.name,
+          filename: asset.filename,
+          mimeType: asset.mimeType,
+          description: draft.description,
+          storedFile: asset,
+        });
+        previousName = draft.name;
+        lastSaved = draft;
+        callbacks.onSaved(view, draft);
+      },
+      { delayMs: callbacks.delayMs, errorLabel: "Decorative Asset" },
+    );
+    return {
+      update: (draft) => {
+        const normalized = {
+          name: draft.name.trim(),
+          description: draft.description.trim(),
+        };
+        if (!asset || !normalized.name) return;
+        if (normalized.name === lastSaved.name && normalized.description === lastSaved.description)
+          return;
+        pending = normalized;
+        debounced.schedule();
+      },
+      cancel: debounced.cancel,
+    };
+  }
+
+  createPresentationKitDraftSave(
+    initial: PresentationKitView,
+    callbacks: Readonly<{ onSaved: (view: BrandGuideView) => void; delayMs?: number }>,
+  ): DraftSaveSession<PresentationKitView> {
+    let lastSaved = initial;
+    let pending: PresentationKitView | null = null;
+    const debounced = this.debounce(
+      async () => {
+        if (!pending) return;
+        const draft = pending;
+        const { view } = await this.savePresentationKit(draft);
+        lastSaved = draft;
+        callbacks.onSaved(view);
+      },
+      { delayMs: callbacks.delayMs, errorLabel: "Presentation Kit" },
+    );
+    return {
+      update: (draft) => {
+        if (samePresentationKitDraft(draft, lastSaved)) return;
+        pending = draft;
+        debounced.schedule();
+      },
+      cancel: debounced.cancel,
+    };
+  }
+
   async #saveWithToast(
     label: string,
     path: string,
@@ -281,3 +446,17 @@ const nullableText = (value: string): string | null => value || null;
 
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
+
+const normalizeColorTokenDraft = (draft: ColorTokenDraft): ColorTokenDraft => ({
+  name: draft.name.trim(),
+  value: draft.value.toUpperCase(),
+  description: draft.description.trim(),
+});
+
+const sameColorTokenDraft = (left: ColorTokenDraft, right: ColorTokenDraft): boolean =>
+  left.name === right.name && left.value === right.value && left.description === right.description;
+
+const samePresentationKitDraft = (left: PresentationKitView, right: PresentationKitView): boolean =>
+  (left.designPrompt ?? "") === (right.designPrompt ?? "") &&
+  (left.canvas?.width ?? null) === (right.canvas?.width ?? null) &&
+  (left.canvas?.height ?? null) === (right.canvas?.height ?? null);

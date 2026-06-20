@@ -162,11 +162,7 @@ const ColorTokenDialogContent = ({
       deleteConfirmOpen: false,
     },
   );
-  const lastSaved = useRef(
-    color
-      ? { name: color.name, value: color.value.toUpperCase(), description: color.description ?? "" }
-      : null,
-  );
+  const currentSavedName = useRef(color?.name ?? "");
   const valid = state.name.trim() && /^#[0-9A-Fa-f]{6}$/.test(state.value);
   const normalized = useMemo(
     () => ({
@@ -177,39 +173,38 @@ const ColorTokenDialogContent = ({
     [state.description, state.name, state.value],
   );
   const editor = useMemo(() => createBrandGuideEditor(brandGuideId), [brandGuideId]);
+  const draftSave = useMemo(
+    () =>
+      editor.createColorTokenDraftSave(
+        color
+          ? { name: color.name, value: color.value, description: color.description ?? "" }
+          : null,
+        {
+          onSaved: (view, draft) => {
+            currentSavedName.current = draft.name;
+            onViewChange(view);
+          },
+          onCreated: onCreated
+            ? (view, draft) => {
+                currentSavedName.current = draft.name;
+                onCreated(view);
+              }
+            : undefined,
+        },
+      ),
+    [color, editor, onCreated, onViewChange],
+  );
 
   useEffect(() => {
-    if (!valid) return;
-    if (
-      lastSaved.current &&
-      normalized.name === lastSaved.current.name &&
-      normalized.value === lastSaved.current.value &&
-      normalized.description === lastSaved.current.description
-    )
-      return;
-    const debounced = editor.debounce(
-      async () => {
-        const { view } = await editor.saveColorToken({
-          previousName: lastSaved.current?.name ?? color?.name,
-          name: normalized.name,
-          value: normalized.value,
-          description: normalized.description,
-        });
-        const wasCreating = !lastSaved.current;
-        lastSaved.current = normalized;
-        if (wasCreating && onCreated) onCreated(view);
-        else onViewChange(view);
-      },
-      { errorLabel: "Color Token" },
-    );
-    debounced.schedule();
-    return debounced.cancel;
-  }, [color?.name, editor, normalized, onCreated, onViewChange, valid]);
+    if (valid) draftSave.update(normalized);
+    return draftSave.cancel;
+  }, [draftSave, normalized, valid]);
 
   const remove = async () => {
     if (!color) return;
     try {
-      const { view } = await editor.deleteColorToken(lastSaved.current?.name ?? color.name);
+      draftSave.cancel();
+      const { view } = await editor.deleteColorToken(currentSavedName.current || color.name);
       setState({ deleteConfirmOpen: false });
       if (onDeleted) onDeleted(view);
       else onViewChange(view);
@@ -313,7 +308,7 @@ const ColorTokenDialogContent = ({
           <div className="grid gap-5">
             <div className="grid gap-2 pr-8">
               <DialogTitle className="text-lg font-semibold tracking-[-0.03em] text-onbrand-charcoal">
-                Delete {lastSaved.current?.name ?? color?.name}?
+                Delete {currentSavedName.current || color?.name}?
               </DialogTitle>
               <DialogDescription className="text-sm leading-6 text-onbrand-charcoal/60">
                 This permanently deletes the color. This action cannot be reverted.

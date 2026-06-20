@@ -1,14 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import type { PresentationKitView } from "@onbrand/core/brand-guide/application-service";
+import type {
+  BrandGuideView,
+  PresentationKitView,
+} from "@onbrand/core/brand-guide/application-service";
 
+import { createBrandGuideEditor } from "../brand-guide-editor";
 import { MarkdownDesignPromptEditor } from "./markdown-design-prompt-editor";
 
 export const PresentationKitSection = ({
+  brandGuideId,
   presentationKit,
-  onPresentationKitChange,
+  onViewChange,
 }: Readonly<{
+  brandGuideId: string;
   presentationKit: PresentationKitView;
-  onPresentationKitChange: (presentationKit: PresentationKitView) => Promise<void>;
+  onViewChange: (view: BrandGuideView) => void;
 }>) => {
   const [width, setWidth] = useState(presentationKit.canvas?.width.toString() ?? "");
   const [height, setHeight] = useState(presentationKit.canvas?.height.toString() ?? "");
@@ -23,26 +29,20 @@ export const PresentationKitSection = ({
         : null;
     return { canvas, designPrompt: designPrompt.trim() || null };
   }, [designPrompt, height, width]);
+  const editor = useMemo(() => createBrandGuideEditor(brandGuideId), [brandGuideId]);
+  const draftSave = useMemo(
+    () =>
+      editor.createPresentationKitDraftSave(presentationKit, {
+        onSaved: onViewChange,
+      }),
+    [editor, onViewChange, presentationKit],
+  );
 
   useEffect(() => {
     if (!nextPresentationKit) return;
-    const currentCanvas = presentationKit.canvas;
-    if (
-      (nextPresentationKit.designPrompt ?? "") === (presentationKit.designPrompt ?? "") &&
-      (nextPresentationKit.canvas?.width ?? null) === (currentCanvas?.width ?? null) &&
-      (nextPresentationKit.canvas?.height ?? null) === (currentCanvas?.height ?? null)
-    )
-      return;
-    const timeout = window.setTimeout(() => {
-      void onPresentationKitChange(nextPresentationKit);
-    }, 650);
-    return () => window.clearTimeout(timeout);
-  }, [
-    nextPresentationKit,
-    onPresentationKitChange,
-    presentationKit.canvas,
-    presentationKit.designPrompt,
-  ]);
+    draftSave.update(nextPresentationKit);
+    return draftSave.cancel;
+  }, [draftSave, nextPresentationKit]);
 
   return (
     <section
