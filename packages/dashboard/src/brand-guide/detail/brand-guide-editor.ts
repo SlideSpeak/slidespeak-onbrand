@@ -266,8 +266,6 @@ export const optimisticPresentationKitView = (
   presentationKit: PresentationKitView,
 ): BrandGuideView => ({ ...current, presentationKit });
 
-export const editorErrorMessage = (error: unknown): string => errorMessage(error);
-
 const defaultDependencies = (): BrandGuideEditorDependencies => ({
   sendJson,
   uploadAsset: uploadBrandGuideAsset,

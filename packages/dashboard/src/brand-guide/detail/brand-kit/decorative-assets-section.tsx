@@ -120,38 +120,61 @@ const DecorativeAssetEditor = ({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const lastSaved = useRef({ name: asset?.name ?? "", description: asset?.description ?? "" });
   const previousName = useRef(asset?.name);
+  const pendingMetadataSave = useRef<{
+    asset: BrandKitDecorativeAsset;
+    metadata: { name: string; description: string };
+    onViewChange: (view: BrandGuideView) => void;
+  } | null>(null);
   const normalized = useMemo(
     () => ({ name: name.trim(), description: description.trim() }),
     [description, name],
   );
   const editor = useMemo(() => createBrandGuideEditor(brandGuideId), [brandGuideId]);
+  const debouncedMetadataSave = useMemo(
+    () =>
+      editor.debounce(
+        async () => {
+          const pending = pendingMetadataSave.current;
+          if (!pending) return;
+          const { view } = await editor.saveDecorativeAsset({
+            previousName: previousName.current,
+            name: pending.metadata.name,
+            filename: pending.asset.filename,
+            mimeType: pending.asset.mimeType,
+            description: pending.metadata.description,
+            storedFile: pending.asset,
+          });
+          previousName.current = pending.metadata.name;
+          lastSaved.current = pending.metadata;
+          pending.onViewChange(view);
+        },
+        { errorLabel: "Decorative Asset" },
+      ),
+    [editor],
+  );
 
   useEffect(() => {
-    if (!asset || !normalized.name) return;
+    return () => {
+      debouncedMetadataSave.cancel();
+    };
+  }, [debouncedMetadataSave]);
+
+  const scheduleMetadataSave = (nextName: string, nextDescription: string) => {
+    if (!asset) return;
+    const nextNormalized = { name: nextName.trim(), description: nextDescription.trim() };
+    if (!nextNormalized.name) return;
     if (
-      normalized.name === lastSaved.current.name &&
-      normalized.description === lastSaved.current.description
+      nextNormalized.name === lastSaved.current.name &&
+      nextNormalized.description === lastSaved.current.description
     )
       return;
-    const debounced = editor.debounce(
-      async () => {
-        const { view } = await editor.saveDecorativeAsset({
-          previousName: previousName.current,
-          name: normalized.name,
-          filename: asset.filename,
-          mimeType: asset.mimeType,
-          description: normalized.description,
-          storedFile: asset,
-        });
-        previousName.current = normalized.name;
-        lastSaved.current = normalized;
-        onViewChange(view);
-      },
-      { errorLabel: "Decorative Asset" },
-    );
-    debounced.schedule();
-    return debounced.cancel;
-  }, [asset, editor, normalized, onViewChange]);
+    pendingMetadataSave.current = {
+      asset,
+      metadata: nextNormalized,
+      onViewChange,
+    };
+    debouncedMetadataSave.schedule();
+  };
 
   useEffect(() => {
     if (!file || !normalized.name) return;
@@ -247,7 +270,10 @@ const DecorativeAssetEditor = ({
                   placeholder="Asset name"
                   spellCheck={false}
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    scheduleMetadataSave(event.target.value, description);
+                  }}
                 />
               </DialogTitle>
               <DialogDescription asChild>
@@ -257,7 +283,10 @@ const DecorativeAssetEditor = ({
                   placeholder="Description"
                   spellCheck={false}
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(event) => {
+                    setDescription(event.target.value);
+                    scheduleMetadataSave(name, event.target.value);
+                  }}
                 />
               </DialogDescription>
             </div>
