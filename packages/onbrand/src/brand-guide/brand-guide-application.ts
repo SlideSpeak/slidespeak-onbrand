@@ -10,7 +10,6 @@ import type { BrandGuideOwner } from "./owner";
 import type { BrandGuideSummary } from "./brand-guide";
 import type { BrandKitAssetMaterializationPlan } from "./brand-kit/asset-file/index";
 import { brandKitAssetHandle, toBrandKitAssetFileRecord } from "./brand-kit/asset-file/record";
-import { toColorTokenCreateRecords } from "./brand-kit/color/record";
 import {
   toPresentationKitCreateRecord,
   toPresentationKitWriteRecord,
@@ -40,20 +39,23 @@ import type {
   UpdatePresentationKitRequest,
 } from "./application-service";
 import {
-  listBrandGuideSummaries,
   loadBrandGuideRecord,
-  toBrandGuideView,
+  PrismaBrandGuideRegistry,
+  type BrandGuideRegistry,
 } from "./brand-guide-store";
 
 export class PersistentBrandGuideApplication implements BrandGuideApplicationService {
   private readonly brandKitAssetFiles: BrandKitAssetFileWorkflow;
+  private readonly brandGuides: BrandGuideRegistry;
 
   constructor(
     private readonly prisma: PrismaClient,
     s3: Pick<typeof S3, "getPresigned" | "putPresigned" | "deleteObject">,
     brandKitAssetBucket: string,
     assetPresignedUrlExpiresInSeconds: number,
+    brandGuides: BrandGuideRegistry = new PrismaBrandGuideRegistry(prisma),
   ) {
+    this.brandGuides = brandGuides;
     this.brandKitAssetFiles = new BrandKitAssetFileWorkflow(
       s3,
       brandKitAssetBucket,
@@ -62,10 +64,10 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
   }
 
   listBrandGuides = async (owner: BrandGuideOwner): Promise<readonly BrandGuideSummary[]> =>
-    listBrandGuideSummaries(this.prisma, owner);
+    this.brandGuides.list(owner);
 
   getBrandGuide = async (owner: BrandGuideOwner, brandGuideId: string): Promise<BrandGuideView> =>
-    toBrandGuideView(await loadBrandGuideRecord(this.prisma, owner, brandGuideId));
+    this.brandGuides.load(owner, brandGuideId);
 
   createBrandGuide = async (
     owner: BrandGuideOwner,
@@ -192,11 +194,11 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
     owner: BrandGuideOwner,
     { brandGuideId, outputDirectory }: MaterializeBrandKitAssetsRequest,
   ): Promise<BrandKitAssetMaterializationPlan> => {
-    const record = await loadBrandGuideRecord(this.prisma, owner, brandGuideId);
+    const assets = await this.brandGuides.loadBrandKitAssets(owner, brandGuideId);
     return this.brandKitAssetFiles.materialize({
       brandGuideId,
       outputDirectory,
-      assets: record.brandKit?.assets ?? [],
+      assets,
     });
   };
 
@@ -204,10 +206,8 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
     owner: BrandGuideOwner,
     { brandGuideId, assetHandle }: GetBrandKitAssetPreviewUrlRequest,
   ): Promise<string> => {
-    const record = await loadBrandGuideRecord(this.prisma, owner, brandGuideId);
-    const asset = record.brandKit?.assets.find(
-      (candidate) => brandKitAssetHandle(candidate) === assetHandle,
-    );
+    const assets = await this.brandGuides.loadBrandKitAssets(owner, brandGuideId);
+    const asset = assets.find((candidate) => brandKitAssetHandle(candidate) === assetHandle);
     if (!asset) throw new Error(`Unknown Brand Kit asset: ${assetHandle}`);
     return this.brandKitAssetFiles.previewUrl(asset);
   };
@@ -355,66 +355,7 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
   writeBrandGuide = async (
     owner: BrandGuideOwner,
     request: WriteBrandGuideRequest,
-  ): Promise<WriteBrandGuideResult> => {
-    const assetRecords = [
-      toBrandKitAssetFileRecord({
-        kind: "LOGO",
-        ownerUserId: owner.ownerUserId,
-        brandGuideId: request.brandGuide.id,
-        asset: request.brandKit.logo,
-      }),
-      ...(request.brandKit.decorativeAssets ?? []).map((asset, index) =>
-        toBrandKitAssetFileRecord({
-          kind: "DECORATIVE_ASSET",
-          ownerUserId: owner.ownerUserId,
-          brandGuideId: request.brandGuide.id,
-          asset,
-          sortOrder: index + 1,
-        }),
-      ),
-    ];
-
-    const action = await this.prisma.$transaction(async (tx) => {
-      const existing = await tx.brandGuide.findUnique({
-        where: {
-          ownerUserId_slug: { ownerUserId: owner.ownerUserId, slug: request.brandGuide.id },
-        },
-        select: { id: true },
-      });
-      const brandGuide = await tx.brandGuide.upsert({
-        where: {
-          ownerUserId_slug: { ownerUserId: owner.ownerUserId, slug: request.brandGuide.id },
-        },
-        create: {
-          ownerUserId: owner.ownerUserId,
-          slug: request.brandGuide.id,
-          schemaVersion: 1,
-          name: request.brandGuide.name,
-          description: request.brandGuide.description,
-        },
-        update: { name: request.brandGuide.name, description: request.brandGuide.description },
-      });
-      await tx.brandKit.deleteMany({ where: { brandGuideId: brandGuide.id } });
-      await tx.presentationKit.deleteMany({ where: { brandGuideId: brandGuide.id } });
-      await tx.brandKit.create({
-        data: {
-          brandGuideId: brandGuide.id,
-          colors: { create: toColorTokenCreateRecords(request.brandKit.colors) },
-          assets: { create: assetRecords },
-        },
-      });
-      await tx.presentationKit.create({
-        data: toPresentationKitCreateRecord(brandGuide.id, request.presentationKit),
-      });
-      return existing ? "UPDATED" : "CREATED";
-    });
-
-    return {
-      brandGuideId: request.brandGuide.id,
-      action,
-      brandGuide: await this.getBrandGuide(owner, request.brandGuide.id),
-    };
-  };
+  ): Promise<WriteBrandGuideResult> => this.brandGuides.replace(owner, request);
 
   private assertUniqueBrandGuideName = async (
     owner: BrandGuideOwner,

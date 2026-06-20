@@ -1,22 +1,119 @@
 import type { BrandGuide as DbBrandGuide, PrismaClient } from "@prisma/client";
-import { UnknownBrandGuideError, type BrandGuideView } from "./application-service";
+import {
+  UnknownBrandGuideError,
+  type BrandGuideView,
+  type WriteBrandGuideResult,
+  type WriteBrandGuideRequest,
+} from "./application-service";
 import { BRAND_KIT_INCLUDE, toBrandKitView } from "./brand-kit/record";
+import { toBrandKitAssetFileRecord, type BrandKitAssetRecord } from "./brand-kit/asset-file/record";
+import { toColorTokenCreateRecords } from "./brand-kit/color/record";
 import type { BrandGuideOwner } from "./owner";
-import { toPresentationKitView } from "./presentation-kit/record";
+import { toPresentationKitCreateRecord, toPresentationKitView } from "./presentation-kit/record";
+import type { BrandGuideSummary } from "./brand-guide";
 
 type BrandGuideSummaryRecord = Readonly<Pick<DbBrandGuide, "slug" | "name" | "description">>;
 
-export const listBrandGuideSummaries = async (prisma: PrismaClient, owner: BrandGuideOwner) => {
-  const rows: readonly BrandGuideSummaryRecord[] = await prisma.brandGuide.findMany({
-    where: { ownerUserId: owner.ownerUserId },
-    orderBy: { id: "asc" },
-    select: { slug: true, name: true, description: true },
-  });
-  return rows.map((row) => ({ id: row.slug, name: row.name, description: row.description }));
-};
+export interface BrandGuideRegistry {
+  list(owner: BrandGuideOwner): Promise<readonly BrandGuideSummary[]>;
+  load(owner: BrandGuideOwner, brandGuideId: string): Promise<BrandGuideView>;
+  loadBrandKitAssets(
+    owner: BrandGuideOwner,
+    brandGuideId: string,
+  ): Promise<readonly BrandKitAssetRecord[]>;
+  replace(owner: BrandGuideOwner, request: WriteBrandGuideRequest): Promise<WriteBrandGuideResult>;
+}
+
+export class PrismaBrandGuideRegistry implements BrandGuideRegistry {
+  constructor(private readonly prisma: PrismaClient) {}
+
+  list = async (owner: BrandGuideOwner): Promise<readonly BrandGuideSummary[]> => {
+    const rows: readonly BrandGuideSummaryRecord[] = await this.prisma.brandGuide.findMany({
+      where: { ownerUserId: owner.ownerUserId },
+      orderBy: { id: "asc" },
+      select: { slug: true, name: true, description: true },
+    });
+    return rows.map((row) => ({ id: row.slug, name: row.name, description: row.description }));
+  };
+
+  load = async (owner: BrandGuideOwner, brandGuideId: string): Promise<BrandGuideView> =>
+    toBrandGuideView(await loadBrandGuideRecord(this.prisma, owner, brandGuideId));
+
+  loadBrandKitAssets = async (
+    owner: BrandGuideOwner,
+    brandGuideId: string,
+  ): Promise<readonly BrandKitAssetRecord[]> => {
+    const record = await loadBrandGuideRecord(this.prisma, owner, brandGuideId);
+    return record.brandKit!.assets;
+  };
+
+  replace = async (
+    owner: BrandGuideOwner,
+    request: WriteBrandGuideRequest,
+  ): Promise<WriteBrandGuideResult> => {
+    const assetRecords = [
+      toBrandKitAssetFileRecord({
+        kind: "LOGO",
+        ownerUserId: owner.ownerUserId,
+        brandGuideId: request.brandGuide.id,
+        asset: request.brandKit.logo,
+      }),
+      ...(request.brandKit.decorativeAssets ?? []).map((asset, index) =>
+        toBrandKitAssetFileRecord({
+          kind: "DECORATIVE_ASSET",
+          ownerUserId: owner.ownerUserId,
+          brandGuideId: request.brandGuide.id,
+          asset,
+          sortOrder: index + 1,
+        }),
+      ),
+    ];
+
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.brandGuide.findUnique({
+        where: {
+          ownerUserId_slug: { ownerUserId: owner.ownerUserId, slug: request.brandGuide.id },
+        },
+        select: { id: true },
+      });
+      const brandGuide = await tx.brandGuide.upsert({
+        where: {
+          ownerUserId_slug: { ownerUserId: owner.ownerUserId, slug: request.brandGuide.id },
+        },
+        create: {
+          ownerUserId: owner.ownerUserId,
+          slug: request.brandGuide.id,
+          schemaVersion: 1,
+          name: request.brandGuide.name,
+          description: request.brandGuide.description,
+        },
+        update: { name: request.brandGuide.name, description: request.brandGuide.description },
+      });
+      await tx.brandKit.deleteMany({ where: { brandGuideId: brandGuide.id } });
+      await tx.presentationKit.deleteMany({ where: { brandGuideId: brandGuide.id } });
+      await tx.brandKit.create({
+        data: {
+          brandGuideId: brandGuide.id,
+          colors: { create: toColorTokenCreateRecords(request.brandKit.colors) },
+          assets: { create: assetRecords },
+        },
+      });
+      await tx.presentationKit.create({
+        data: toPresentationKitCreateRecord(brandGuide.id, request.presentationKit),
+      });
+      const persistedBrandGuide = await loadBrandGuideRecord(tx, owner, request.brandGuide.id);
+
+      return {
+        brandGuideId: request.brandGuide.id,
+        action: existing ? "UPDATED" : "CREATED",
+        brandGuide: toBrandGuideView(persistedBrandGuide),
+      };
+    });
+  };
+}
 
 export const loadBrandGuideRecord = async (
-  prisma: PrismaClient,
+  prisma: Pick<PrismaClient, "brandGuide">,
   owner: BrandGuideOwner,
   brandGuideId: string,
 ) => {
@@ -33,7 +130,7 @@ export const loadBrandGuideRecord = async (
   return row;
 };
 
-export const toBrandGuideView = (
+const toBrandGuideView = (
   record: Awaited<ReturnType<typeof loadBrandGuideRecord>>,
 ): BrandGuideView => ({
   brandGuide: { id: record.slug, name: record.name, description: record.description },
