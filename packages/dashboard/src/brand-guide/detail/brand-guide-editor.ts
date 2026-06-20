@@ -99,12 +99,15 @@ export class BrandGuideEditor {
   }
 
   async savePresentationKit(presentationKit: PresentationKitView): Promise<SaveResult> {
-    const view = await this.#save<BrandGuideView>(`${this.#basePath}/presentation-kit`, {
-      method: "PATCH",
-      body: presentationKit,
-    });
+    const view = await this.#saveWithToast(
+      "Presentation Kit",
+      `${this.#basePath}/presentation-kit`,
+      {
+        method: "PATCH",
+        body: presentationKit,
+      },
+    );
     this.#deps.publishBrandGuide(view.brandGuide);
-    this.#deps.notify.success("Changes saved");
     return { view };
   }
 

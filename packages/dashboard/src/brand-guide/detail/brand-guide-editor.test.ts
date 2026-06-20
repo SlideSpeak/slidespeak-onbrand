@@ -165,6 +165,29 @@ describe("BrandGuideEditor", () => {
     });
   });
 
+  it("reports Presentation Kit save failures through the shared toast policy", async () => {
+    const { editor, send, notify, publishBrandGuide } = createEditor();
+    send.mockRejectedValueOnce(new Error("Network unavailable"));
+    const presentationKit = {
+      canvas: { width: 1280, height: 720, unit: "px" as const },
+      designPrompt: "Use the launch narrative.",
+    };
+
+    await expect(editor.savePresentationKit(presentationKit)).rejects.toThrow(
+      "Network unavailable",
+    );
+
+    expect(send).toHaveBeenCalledWith("/api/brand-guides/brand%20guide%2F1/presentation-kit", {
+      method: "PATCH",
+      body: presentationKit,
+    });
+    expect(notify.error).toHaveBeenCalledWith("Could not save Presentation Kit", {
+      description: "Network unavailable",
+    });
+    expect(notify.success).not.toHaveBeenCalled();
+    expect(publishBrandGuide).not.toHaveBeenCalled();
+  });
+
   it("keeps delete endpoint paths inside the editor", async () => {
     const { editor, send } = createEditor();
 
