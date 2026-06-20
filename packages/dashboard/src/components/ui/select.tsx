@@ -19,7 +19,7 @@ const SelectTrigger = ({ className, children, ref, ...props }: SelectTriggerProp
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "group flex h-10 w-full items-center justify-between gap-2 rounded-md border border-onbrand-charcoal/12 bg-onbrand-white px-4 py-2 text-sm font-normal text-onbrand-charcoal shadow-[0_6px_18px_rgba(17,17,17,0.04)] transition outline-none hover:border-onbrand-charcoal/18 focus:ring-2 focus:ring-onbrand-charcoal/10 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      "group flex h-10 w-full items-center justify-between gap-2 rounded-md border border-onbrand-charcoal/12 bg-onbrand-white px-4 py-2 text-sm font-normal text-onbrand-charcoal shadow-[0_6px_18px_rgba(17,17,17,0.04)] transition outline-none hover:border-onbrand-charcoal/22 focus:ring-2 focus:ring-onbrand-blue-200 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
       className,
     )}
     {...props}
@@ -100,7 +100,7 @@ const SelectItem = ({ className, children, ref, ...props }: SelectItemProps) => 
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-default items-center rounded-sm py-2 pr-3 pl-8 text-sm transition outline-none select-none focus:bg-onbrand-charcoal/5 focus:text-onbrand-charcoal data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>span:last-child]:truncate",
+      "relative flex w-full cursor-default items-center rounded-sm py-2 pr-3 pl-8 text-sm transition outline-none select-none focus:bg-onbrand-blue-50 focus:text-onbrand-blue-600 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&>span:last-child]:truncate",
       className,
     )}
     {...props}

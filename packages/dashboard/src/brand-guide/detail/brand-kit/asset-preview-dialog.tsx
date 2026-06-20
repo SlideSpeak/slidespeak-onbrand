@@ -23,7 +23,7 @@ export const AssetPreviewDialog = ({
       showCloseButton={false}
     >
       <div className="grid h-full md:grid-cols-[minmax(0,1.22fr)_minmax(0,0.78fr)]">
-        <div className="min-h-0 overflow-hidden bg-onbrand-charcoal/5">
+        <div className="onbrand-asset-preview-surface min-h-0 overflow-hidden">
           <AssetPreview
             alt={asset.description}
             className="h-full w-full object-cover"

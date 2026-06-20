@@ -11,7 +11,11 @@ const TOASTER_COLORS: Record<
   OnbrandToasterVariant,
   { background: string; text: string; border: string }
 > = {
-  light: { background: "#ffffff", text: "#191919", border: "#ffffff" },
+  light: {
+    background: "var(--onbrand-surface)",
+    text: "var(--onbrand-ink)",
+    border: "color-mix(in oklab, var(--onbrand-ink) 12%, transparent)",
+  },
   dark: { background: "#111111", text: "#ffffff", border: "#111111" },
 };
 

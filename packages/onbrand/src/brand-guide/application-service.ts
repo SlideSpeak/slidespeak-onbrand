@@ -1,9 +1,11 @@
 import type { BrandGuideOwner } from "./owner";
 import type { BrandKitAssetMaterializationPlan } from "./brand-kit/asset-file/index";
+import type { SupportedAssetMimeType } from "./brand-kit/asset-file/rules";
 import type { BrandKitView } from "./brand-kit/index";
 import type { BrandGuideSummary } from "./brand-guide";
 import type { PresentationKitView } from "./presentation-kit/presentation-kit";
 
+export { InvalidBrandGuideAssetUploadError } from "./brand-kit/asset-file/record";
 export type { BrandGuideSummary } from "./brand-guide";
 export type {
   BrandKitAssetDownload,
@@ -20,13 +22,6 @@ export class UnknownBrandGuideError extends Error {
   constructor(readonly brandGuideId: string) {
     super(`Unknown Brand Guide: ${brandGuideId}`);
     this.name = "UnknownBrandGuideError";
-  }
-}
-
-export class InvalidBrandGuideAssetUploadError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "InvalidBrandGuideAssetUploadError";
   }
 }
 
@@ -63,7 +58,7 @@ export type GetBrandKitAssetPreviewUrlRequest = Readonly<{
 export type PrepareBrandGuideAssetUpload = Readonly<{
   assetId: string;
   filename: string;
-  mimeType: "image/svg+xml" | "image/png" | "image/jpeg" | "image/webp";
+  mimeType: SupportedAssetMimeType;
   byteSize: number;
   sha256: string;
 }>;
@@ -92,7 +87,7 @@ export type PrepareBrandGuideAssetUploadsResult = Readonly<{
 export type WriteBrandGuideAsset = Readonly<{
   name: string;
   filename: string;
-  mimeType: "image/svg+xml" | "image/png" | "image/jpeg" | "image/webp";
+  mimeType: SupportedAssetMimeType;
   description: string;
   s3Key: string;
   byteSize: number;

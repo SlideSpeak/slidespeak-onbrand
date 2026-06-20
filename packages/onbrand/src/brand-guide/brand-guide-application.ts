@@ -9,10 +9,8 @@ import type { PrismaClient } from "@prisma/client";
 import type { BrandGuideOwner } from "./owner";
 import type { BrandGuideSummary } from "./brand-guide";
 import type { BrandKitAssetMaterializationPlan } from "./brand-kit/asset-file/index";
-import { brandKitAssetHandle } from "./brand-kit/asset-file/workflow";
+import { brandKitAssetHandle, toBrandKitAssetFileRecord } from "./brand-kit/asset-file/record";
 import { toColorTokenCreateRecords } from "./brand-kit/color/record";
-import { toDecorativeAssetRecord } from "./brand-kit/decorative-assets/record";
-import { toLogoAssetRecord } from "./brand-kit/logo/record";
 import {
   toPresentationKitCreateRecord,
   toPresentationKitWriteRecord,
@@ -230,7 +228,8 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
       });
       return this.getBrandGuide(owner, request.brandGuideId);
     }
-    const record = toLogoAssetRecord({
+    const record = toBrandKitAssetFileRecord({
+      kind: "LOGO",
       ownerUserId: owner.ownerUserId,
       brandGuideId: request.brandGuideId,
       asset: {
@@ -299,7 +298,8 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
       });
       return this.getBrandGuide(owner, request.brandGuideId);
     }
-    const record = toDecorativeAssetRecord({
+    const record = toBrandKitAssetFileRecord({
+      kind: "DECORATIVE_ASSET",
       ownerUserId: owner.ownerUserId,
       brandGuideId: request.brandGuideId,
       asset: {
@@ -341,13 +341,15 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
     request: WriteBrandGuideRequest,
   ): Promise<WriteBrandGuideResult> => {
     const assetRecords = [
-      toLogoAssetRecord({
+      toBrandKitAssetFileRecord({
+        kind: "LOGO",
         ownerUserId: owner.ownerUserId,
         brandGuideId: request.brandGuide.id,
         asset: request.brandKit.logo,
       }),
       ...(request.brandKit.decorativeAssets ?? []).map((asset, index) =>
-        toDecorativeAssetRecord({
+        toBrandKitAssetFileRecord({
+          kind: "DECORATIVE_ASSET",
           ownerUserId: owner.ownerUserId,
           brandGuideId: request.brandGuide.id,
           asset,

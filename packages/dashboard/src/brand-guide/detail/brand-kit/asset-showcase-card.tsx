@@ -18,7 +18,7 @@ export const AssetShowcaseCard = ({
 
   const button = (
     <button
-      className="relative mb-2.5 block w-full cursor-pointer break-inside-avoid overflow-hidden rounded-md border border-onbrand-charcoal/8 bg-transparent p-0 text-left transition hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-onbrand-blue-200 focus-visible:outline-none"
+      className="onbrand-asset-preview-surface relative mb-2.5 block w-full cursor-pointer break-inside-avoid overflow-hidden rounded-md border border-onbrand-charcoal/8 p-0 text-left transition hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-onbrand-blue-200 focus-visible:outline-none"
       type="button"
       onClick={onClick}
     >

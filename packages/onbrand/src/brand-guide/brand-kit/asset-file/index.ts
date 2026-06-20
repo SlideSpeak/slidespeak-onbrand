@@ -1,4 +1,11 @@
-export type SupportedAssetMimeType = "image/svg+xml" | "image/png" | "image/jpeg" | "image/webp";
+import type { SupportedAssetMimeType } from "./rules";
+
+export {
+  asSupportedBrandKitAssetMimeType,
+  brandKitAssetFilePreviewPath,
+  SUPPORTED_BRAND_KIT_ASSET_MIME_TYPES,
+  type SupportedAssetMimeType,
+} from "./rules";
 
 export type BrandKitAssetDownload =
   | Readonly<{
