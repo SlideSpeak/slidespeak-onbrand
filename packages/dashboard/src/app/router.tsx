@@ -9,6 +9,18 @@ const INDEX_ROUTE = createRoute({
   component: OnboardingPage,
 });
 
+const HOME_ROUTE = createRoute({
+  getParentRoute: () => ROOT_ROUTE,
+  path: "/home",
+  component: DashboardApp,
+});
+
+const ONBOARD_ROUTE = createRoute({
+  getParentRoute: () => ROOT_ROUTE,
+  path: "/onboard",
+  component: OnboardingPage,
+});
+
 const BRAND_GUIDES_ROUTE = createRoute({
   getParentRoute: () => ROOT_ROUTE,
   path: "/brand-guides",
@@ -29,6 +41,8 @@ const BRAND_GUIDE_SECTION_ROUTE = createRoute({
 
 const ROUTE_TREE = ROOT_ROUTE.addChildren([
   INDEX_ROUTE,
+  HOME_ROUTE,
+  ONBOARD_ROUTE,
   BRAND_GUIDES_ROUTE,
   BRAND_GUIDE_ROUTE,
   BRAND_GUIDE_SECTION_ROUTE,

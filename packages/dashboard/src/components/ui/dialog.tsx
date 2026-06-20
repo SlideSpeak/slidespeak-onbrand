@@ -28,6 +28,7 @@ export const DialogContent = ({
   className,
   children,
   showCloseButton = true,
+  onOpenAutoFocus,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
@@ -39,6 +40,10 @@ export const DialogContent = ({
         "data-[state=closed]:animate-out data-[state=open]:animate-in fixed top-1/2 left-1/2 z-50 max-h-[min(720px,calc(100vh-2rem))] w-[min(760px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-md border border-onbrand-charcoal/10 bg-onbrand-white shadow-[0_32px_120px_rgba(10,10,10,0.2)] outline-none",
         className,
       )}
+      onOpenAutoFocus={(event) => {
+        onOpenAutoFocus?.(event);
+        if (!event.defaultPrevented) event.preventDefault();
+      }}
       {...props}
     >
       {children}

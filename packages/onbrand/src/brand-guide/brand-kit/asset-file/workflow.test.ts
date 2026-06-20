@@ -22,6 +22,7 @@ describe("Brand Kit Asset File materialization", () => {
         getPresigned: async ({ key, filename }) =>
           `https://s3.example/download/${key}?filename=${filename}`,
         putPresigned: async () => "unused",
+        deleteObject: async () => undefined,
       },
       "brand-kit-assets",
       900,

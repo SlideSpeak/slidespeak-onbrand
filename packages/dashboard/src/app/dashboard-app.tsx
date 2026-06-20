@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useReducer, useRef, useState } from "react";
 import { Copy01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
@@ -9,12 +9,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
+import { Dialog, DialogContent, DialogTitle } from "../components/ui/dialog";
 import { Toaster } from "../components/ui/sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/tooltip";
 import { toast } from "sonner";
-import { useApi } from "../shared/api/api-state";
+import { sendJson, useApi } from "../shared/api/api-state";
+import { publishBrandGuideUpdated, useSyncedBrandGuides } from "../shared/brand-guide-sync";
 import { BrandGuideDetail } from "../brand-guide/detail/brand-guide-detail";
-import type { BrandGuideSummary } from "@onbrand/core/brand-guide/application-service";
+import type {
+  BrandGuideSummary,
+  BrandGuideView,
+} from "@onbrand/core/brand-guide/application-service";
 import {
   DEFAULT_BRAND_GUIDE_SECTION,
   BRAND_GUIDE_SECTION_LINKS,
@@ -102,9 +107,10 @@ export const OnboardingPage = () => (
 export const DashboardApp = () => {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const route = routeFromPathname(pathname);
-  const brandGuides = useApi<readonly BrandGuideSummary[]>("/api/brand-guides");
+  const loadedBrandGuides = useApi<readonly BrandGuideSummary[]>("/api/brand-guides");
+  const brandGuides = useSyncedBrandGuides(loadedBrandGuides);
   const { setTheme, theme } = useDashboardTheme();
-  const isHome = pathname === "/";
+  const isHome = pathname === "/home";
   const selectedBrandGuideId =
     route.selectedBrandGuideId ??
     (!isHome && brandGuides.status === "READY" ? brandGuides.data[0]?.id : undefined);
@@ -113,6 +119,29 @@ export const DashboardApp = () => {
       ? brandGuides.data.find((brandGuide) => brandGuide.id === selectedBrandGuideId)
       : undefined;
 
+  if (isHome) {
+    return (
+      <div className="min-h-screen bg-onbrand-white text-onbrand-charcoal">
+        <div className="flex min-h-screen overflow-hidden bg-onbrand-white">
+          <DashboardRail />
+          <div className="min-w-0 flex-1 bg-onbrand-white">
+            <HomeTopBar />
+            <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
+              {brandGuides.status === "ERROR" ? (
+                <ErrorMessage message={brandGuides.message} />
+              ) : brandGuides.status === "READY" ? (
+                <HomeDashboard brandGuides={brandGuides.data} />
+              ) : (
+                <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
+              )}
+            </main>
+          </div>
+        </div>
+        <Toaster variant="dark" position="bottom-right" visibleToasts={4} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-onbrand-canvas text-onbrand-charcoal">
       <div className="flex min-h-screen overflow-hidden border border-onbrand-charcoal/10 bg-onbrand-panel shadow-[0_32px_120px_rgba(10,10,10,0.16)]">
@@ -120,16 +149,18 @@ export const DashboardApp = () => {
           selectedBrandGuideId={selectedBrandGuideId}
           selectedBrandGuideSection={route.selectedBrandGuideSection}
         />
-        <div className="min-w-0 flex-1 border-l border-onbrand-charcoal/8 bg-onbrand-white">
+        <div className="min-w-0 flex-1 bg-onbrand-white">
           <DashboardTopBar
             brandGuides={brandGuides}
             selectedBrandGuideId={selectedBrandGuideId}
-            selectedBrandGuideName={selectedBrandGuide?.name}
+            selectedBrandGuide={selectedBrandGuide}
             selectedBrandGuideSection={route.selectedBrandGuideSection}
             onThemeChange={setTheme}
             theme={theme}
           />
-          <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:max-h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
+          <main
+            className={`min-w-0 px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5 ${route.selectedBrandGuideSection === "PRESENTATION" ? "overflow-hidden" : "overflow-y-auto"}`}
+          >
             {selectedBrandGuideId ? (
               <BrandGuideDetail
                 id={selectedBrandGuideId}
@@ -145,7 +176,123 @@ export const DashboardApp = () => {
           </main>
         </div>
       </div>
-      <Toaster position="bottom-right" visibleToasts={4} />
+      <Toaster variant="dark" position="bottom-right" visibleToasts={4} />
+    </div>
+  );
+};
+
+const HomeTopBar = () => (
+  <header className="flex h-16 items-center border-b border-onbrand-charcoal/8 px-4 sm:px-6 lg:px-7">
+    <h1 className="text-sm font-medium tracking-[-0.02em] text-onbrand-charcoal">
+      Welcome to OnBrand by SlideSpeak
+    </h1>
+  </header>
+);
+
+const HomeDashboard = ({
+  brandGuides,
+}: Readonly<{ brandGuides: readonly BrandGuideSummary[] }>) => {
+  if (brandGuides.length === 0) return <NoBrandGuidesPrompt />;
+
+  return (
+    <section className="grid gap-3">
+      <div className="flex min-h-10 items-center justify-between gap-4">
+        <h1 className="m-0 text-xl leading-none font-normal tracking-[-0.035em] text-onbrand-charcoal">
+          Brand Guides
+        </h1>
+        <CreateBrandGuideButton />
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
+        {brandGuides.map((brandGuide) => (
+          <HomeBrandGuideTile key={brandGuide.id} brandGuide={brandGuide} />
+        ))}
+      </div>
+    </section>
+  );
+};
+
+const HomeBrandGuideTile = ({ brandGuide }: Readonly<{ brandGuide: BrandGuideSummary }>) => {
+  const detail = useApi<BrandGuideView>(`/api/brand-guides/${encodeURIComponent(brandGuide.id)}`);
+  const colors = detail.status === "READY" ? detail.data.brandKit.colors.slice(0, 9) : [];
+  const logo = detail.status === "READY" ? detail.data.brandKit.logo : null;
+
+  return (
+    <div className="group relative overflow-hidden rounded-md border border-onbrand-charcoal/10 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-onbrand-blue-200 hover:shadow-md">
+      <Link
+        to="/brand-guides/$brandGuideId/$section"
+        params={{ brandGuideId: brandGuide.id, section: "colors" }}
+        className="grid"
+      >
+        <div className="aspect-square overflow-hidden">
+          {logo ? (
+            <HomeLogoPreview
+              src={`/api/brand-guides/${encodeURIComponent(brandGuide.id)}/assets/${encodeURIComponent(logo.assetHandle)}/preview-proxy`}
+            />
+          ) : (
+            <div className="grid h-full place-items-center bg-onbrand-charcoal/[0.035] text-xs text-onbrand-charcoal/35">
+              No logo
+            </div>
+          )}
+        </div>
+        <h2 className="truncate px-2 py-1.5 text-xs font-medium tracking-[-0.02em] text-onbrand-charcoal">
+          {brandGuide.name}
+        </h2>
+        <div className="grid grid-cols-9 border-t border-onbrand-charcoal/10">
+          {Array.from({ length: 9 }, (_, index) => {
+            const color = colors[index];
+            return (
+              <span
+                key={color?.id ?? index}
+                className="aspect-square bg-onbrand-charcoal/[0.04]"
+                style={color ? { backgroundColor: color.value } : undefined}
+              />
+            );
+          })}
+        </div>
+      </Link>
+    </div>
+  );
+};
+
+const HomeLogoPreview = ({ src }: Readonly<{ src: string }>) => {
+  const [background, setBackground] = useState<"white" | "charcoal">("white");
+
+  const chooseBackground = (image: HTMLImageElement) => {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 48;
+      canvas.height = 48;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context) return;
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      let weightedLuminance = 0;
+      let alphaTotal = 0;
+      for (let index = 0; index < pixels.length; index += 4) {
+        const alpha = pixels[index + 3] / 255;
+        if (alpha < 0.08) continue;
+        weightedLuminance +=
+          (0.2126 * (pixels[index] / 255) +
+            0.7152 * (pixels[index + 1] / 255) +
+            0.0722 * (pixels[index + 2] / 255)) *
+          alpha;
+        alphaTotal += alpha;
+      }
+      if (alphaTotal > 0)
+        setBackground(weightedLuminance / alphaTotal > 0.58 ? "charcoal" : "white");
+    } catch {
+      setBackground("white");
+    }
+  };
+
+  return (
+    <div className={background === "charcoal" ? "h-full bg-onbrand-charcoal" : "h-full bg-white"}>
+      <img
+        alt=""
+        className="h-full w-full object-contain p-3"
+        src={src}
+        onLoad={(event) => chooseBackground(event.currentTarget)}
+      />
     </div>
   );
 };
@@ -153,11 +300,102 @@ export const DashboardApp = () => {
 const NoBrandGuidesPrompt = () => (
   <section className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center justify-center">
     <div className="-translate-y-10 text-center">
+      <CreateBrandGuideButton />
+      <div className="my-5 text-xs tracking-[0.22em] text-onbrand-charcoal/35 uppercase">Or</div>
       <h2 className="text-base font-normal text-onbrand-charcoal">Prompt your agent</h2>
       <CopyableValue value="How can I create a brand guide?" className="mx-auto mt-2" />
     </div>
   </section>
 );
+
+type CreateBrandGuideState = {
+  open: boolean;
+  name: string;
+  error?: string;
+  submitting: boolean;
+};
+
+const createBrandGuideInitialState: CreateBrandGuideState = {
+  open: false,
+  name: "",
+  submitting: false,
+};
+
+const CreateBrandGuideButton = () => {
+  const [state, setState] = useReducer(
+    (current: CreateBrandGuideState, patch: Partial<CreateBrandGuideState>) => ({
+      ...current,
+      ...patch,
+    }),
+    createBrandGuideInitialState,
+  );
+
+  const create = async (event: FormEvent) => {
+    event.preventDefault();
+    setState({ error: undefined, submitting: true });
+    try {
+      const view = await sendJson<{ brandGuide: BrandGuideSummary }>("/api/brand-guides", {
+        method: "POST",
+        body: { name: state.name, description: null },
+      });
+      publishBrandGuideUpdated(view.brandGuide);
+      window.location.href = `/brand-guides/${encodeURIComponent(view.brandGuide.id)}/colors`;
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : String(caught);
+      setState({ error: message, submitting: false });
+      toast.error("Could not create Brand Guide", { description: message });
+      return;
+    }
+    setState({ submitting: false });
+  };
+
+  return (
+    <Dialog open={state.open} onOpenChange={(open) => setState({ open })}>
+      <button
+        className="rounded-md bg-onbrand-charcoal px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-black disabled:opacity-50"
+        type="button"
+        onClick={() => setState({ open: true })}
+      >
+        Create Brand Guide
+      </button>
+      <DialogContent>
+        <form className="grid gap-5 p-6" onSubmit={create}>
+          <div>
+            <DialogTitle className="text-lg font-medium text-onbrand-charcoal">
+              Create Brand Guide
+            </DialogTitle>
+          </div>
+          <label className="grid gap-2 text-sm text-onbrand-charcoal">
+            Name
+            <input
+              required
+              className="rounded-md border border-onbrand-charcoal/15 px-3 py-2 outline-none"
+              value={state.name}
+              onChange={(event) => setState({ name: event.target.value })}
+            />
+          </label>
+          {state.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
+          <div className="flex justify-end gap-2">
+            <button
+              className="rounded-md px-4 py-2 text-sm text-onbrand-charcoal/65"
+              type="button"
+              onClick={() => setState({ open: false })}
+            >
+              Cancel
+            </button>
+            <button
+              className="rounded-md bg-onbrand-charcoal px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              disabled={state.submitting || !state.name.trim()}
+              type="submit"
+            >
+              {state.submitting ? "Creating…" : "Create"}
+            </button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 const OnboardingInstructions = ({
   variant = "light",
@@ -385,18 +623,63 @@ const CursorIcon = ({ className }: Readonly<{ className?: string }>) => (
   </svg>
 );
 
+const EditableBrandGuideName = ({ brandGuide }: Readonly<{ brandGuide?: BrandGuideSummary }>) => {
+  const [name, setName] = useState(brandGuide?.name ?? "");
+  const editedByUser = useRef(false);
+
+  useEffect(() => {
+    if (!brandGuide || !editedByUser.current || !name.trim() || name === brandGuide.name) return;
+    const timeout = window.setTimeout(() => {
+      sendJson<BrandGuideView>(`/api/brand-guides/${encodeURIComponent(brandGuide.id)}/metadata`, {
+        method: "PATCH",
+        body: { name },
+      })
+        .then((saved) => {
+          editedByUser.current = false;
+          publishBrandGuideUpdated(saved.brandGuide);
+          toast.success("Changes saved");
+        })
+        .catch((error: unknown) =>
+          toast.error("Could not rename Brand Guide", {
+            description: error instanceof Error ? error.message : String(error),
+          }),
+        );
+    }, 650);
+    return () => window.clearTimeout(timeout);
+  }, [brandGuide, name]);
+  if (!brandGuide)
+    return <span className="truncate font-normal text-onbrand-charcoal">Getting started</span>;
+  return (
+    <label className="relative inline-grid max-w-[min(42rem,45vw)] flex-none items-center overflow-hidden">
+      <span className="invisible font-normal whitespace-pre" aria-hidden>
+        {name || brandGuide.name || "Brand Guide"}
+      </span>
+      <input
+        aria-label="Brand Guide name"
+        className="absolute inset-0 w-full bg-transparent font-normal text-onbrand-charcoal transition outline-none"
+        spellCheck={false}
+        value={name}
+        onChange={(e) => {
+          editedByUser.current = true;
+          setName(e.target.value);
+        }}
+      />
+    </label>
+  );
+};
+
 const DashboardTopBar = ({
   brandGuides,
   onThemeChange,
   selectedBrandGuideId,
-  selectedBrandGuideName,
+  selectedBrandGuide,
   selectedBrandGuideSection = DEFAULT_BRAND_GUIDE_SECTION,
   theme,
 }: Readonly<{
   brandGuides: ApiState<readonly BrandGuideSummary[]>;
   onThemeChange: (theme: ThemeMode) => void;
   selectedBrandGuideId?: string;
-  selectedBrandGuideName?: string;
+  selectedBrandGuide?: BrandGuideSummary;
   selectedBrandGuideSection?: BrandGuideSection;
   theme: ThemeMode;
 }>) => {
@@ -404,11 +687,19 @@ const DashboardTopBar = ({
 
   return (
     <header className="flex h-16 items-center gap-3 border-b border-onbrand-charcoal/8 bg-onbrand-white px-4 sm:gap-4 sm:px-6 lg:px-7">
+      <Link
+        to="/home"
+        aria-label="Onbrand dashboard home"
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5 lg:hidden"
+      >
+        <img alt="Onbrand" className="onbrand-dashboard-logo h-6 w-6" src={onbrandLogoUrl} />
+      </Link>
       <div className="flex min-w-0 flex-1 items-center gap-3 text-sm">
-        <span className="truncate font-normal text-onbrand-charcoal">
-          {selectedBrandGuideName ?? "Getting started"}
-        </span>
-        {selectedBrandGuideName ? (
+        <EditableBrandGuideName
+          key={selectedBrandGuide ? `${selectedBrandGuide.id}:${selectedBrandGuide.name}` : "empty"}
+          brandGuide={selectedBrandGuide}
+        />
+        {selectedBrandGuide ? (
           <>
             <span className="text-onbrand-charcoal/25">/</span>
             <span className="truncate text-onbrand-charcoal/55">
@@ -467,43 +758,69 @@ const DashboardRail = ({
 }>) => (
   <aside className="hidden w-16 shrink-0 flex-col items-center bg-onbrand-panel px-2 py-5 text-onbrand-charcoal lg:flex">
     <Link
-      to="/"
+      to="/home"
       aria-label="Onbrand home"
       className="mb-6 grid h-9 w-9 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5"
     >
       <img alt="Onbrand" className="onbrand-dashboard-logo h-6 w-6" src={onbrandLogoUrl} />
     </Link>
-    <TooltipProvider delayDuration={150}>
-      <nav className="flex flex-1 flex-col items-center gap-2" aria-label="Onbrand sections">
-        {BRAND_GUIDE_SECTION_LINKS.map(({ section, pathSegment, label, icon }) => {
-          const isActive =
-            Boolean(selectedBrandGuideId) &&
-            (selectedBrandGuideSection ?? DEFAULT_BRAND_GUIDE_SECTION) === section;
-          const href = selectedBrandGuideId
-            ? `/brand-guides/${encodeURIComponent(selectedBrandGuideId)}/${pathSegment}`
-            : "/brand-guides";
-
-          return (
-            <Tooltip key={section}>
-              <TooltipTrigger asChild>
-                <Link
-                  to={href}
-                  aria-label={label}
-                  aria-current={isActive ? "page" : undefined}
-                  className={
-                    isActive
-                      ? "grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
-                      : "grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600"
-                  }
-                >
-                  <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">{label}</TooltipContent>
-            </Tooltip>
-          );
-        })}
-      </nav>
-    </TooltipProvider>
+    {selectedBrandGuideId ? (
+      <TooltipProvider delayDuration={150}>
+        <nav className="flex flex-1 flex-col items-center gap-2" aria-label="Brand Guide sections">
+          {BRAND_GUIDE_SECTION_LINKS.map(({ section, pathSegment, label, icon }) => {
+            if (section === "METADATA") return null;
+            const isActive = (selectedBrandGuideSection ?? DEFAULT_BRAND_GUIDE_SECTION) === section;
+            return (
+              <Tooltip key={section}>
+                <TooltipTrigger asChild>
+                  <Link
+                    to="/brand-guides/$brandGuideId/$section"
+                    params={{ brandGuideId: selectedBrandGuideId, section: pathSegment }}
+                    aria-label={label}
+                    aria-current={isActive ? "page" : undefined}
+                    className={
+                      isActive
+                        ? "grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
+                        : "grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600"
+                    }
+                  >
+                    <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">{label}</TooltipContent>
+              </Tooltip>
+            );
+          })}
+          {(() => {
+            const metadataLink = BRAND_GUIDE_SECTION_LINKS.find(
+              ({ section }) => section === "METADATA",
+            );
+            if (!metadataLink) return null;
+            const { section, pathSegment, label, icon } = metadataLink;
+            const isActive = selectedBrandGuideSection === section;
+            return (
+              <Tooltip key={section}>
+                <TooltipTrigger asChild>
+                  <Link
+                    to="/brand-guides/$brandGuideId/$section"
+                    params={{ brandGuideId: selectedBrandGuideId, section: pathSegment }}
+                    aria-label={label}
+                    aria-current={isActive ? "page" : undefined}
+                    className={
+                      isActive
+                        ? "mt-auto grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
+                        : "mt-auto grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600"
+                    }
+                  >
+                    <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">{label}</TooltipContent>
+              </Tooltip>
+            );
+          })()}
+        </nav>
+      </TooltipProvider>
+    ) : null}
   </aside>
 );

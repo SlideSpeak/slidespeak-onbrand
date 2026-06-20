@@ -25,6 +25,27 @@ export class UnknownBrandGuideError extends Error {
   }
 }
 
+export class DuplicateBrandGuideNameError extends Error {
+  constructor(readonly name: string) {
+    super(`Duplicate Brand Guide name: ${name}`);
+    this.name = "DuplicateBrandGuideNameError";
+  }
+}
+
+export class DuplicateColorTokenNameError extends Error {
+  constructor(readonly name: string) {
+    super(`Duplicate Color Token name: ${name}`);
+    this.name = "DuplicateColorTokenNameError";
+  }
+}
+
+export class DuplicateDecorativeAssetNameError extends Error {
+  constructor(readonly name: string) {
+    super(`Duplicate Decorative Asset name: ${name}`);
+    this.name = "DuplicateDecorativeAssetNameError";
+  }
+}
+
 export type BrandGuideView = Readonly<{
   brandGuide: BrandGuideSummary;
   brandKit: BrandKitView;
@@ -85,7 +106,7 @@ export type WriteBrandGuideLogoAsset = WriteBrandGuideAsset & Readonly<{ assetId
 export type WriteBrandGuideMetadata = Readonly<{
   id: string;
   name: string;
-  description: string;
+  description: string | null;
 }>;
 
 export type WriteBrandGuideRequest = Readonly<{
@@ -104,9 +125,71 @@ export type WriteBrandGuideResult = Readonly<{
   brandGuide: BrandGuideView;
 }>;
 
+export type CreateBrandGuideRequest = Readonly<{ name: string; description?: string | null }>;
+export type UpdateBrandGuideMetadataRequest = Readonly<{
+  brandGuideId: string;
+  name?: string;
+  description?: string | null;
+}>;
+export type UpsertColorTokenRequest = Readonly<{
+  brandGuideId: string;
+  previousName?: string;
+  name: string;
+  value: `#${string}`;
+  description?: string | null;
+}>;
+export type DeleteColorTokenRequest = Readonly<{ brandGuideId: string; name: string }>;
+export type UpsertLogoRequest = Readonly<{
+  brandGuideId: string;
+  asset: Omit<WriteBrandGuideLogoAsset, "assetId" | "name" | "description"> &
+    Readonly<{ description?: string | null }>;
+}>;
+export type DeleteLogoRequest = Readonly<{ brandGuideId: string }>;
+export type UpsertDecorativeAssetRequest = Readonly<{
+  brandGuideId: string;
+  previousName?: string;
+  asset: Omit<WriteBrandGuideAsset, "description"> & Readonly<{ description?: string | null }>;
+}>;
+export type DeleteDecorativeAssetRequest = Readonly<{ brandGuideId: string; name: string }>;
+export type UpdatePresentationKitRequest = Readonly<{
+  brandGuideId: string;
+  presentationKit: PresentationKitView;
+}>;
+
 export interface BrandGuideApplicationService {
   listBrandGuides(owner: BrandGuideOwner): Promise<readonly BrandGuideSummary[]>;
   getBrandGuide(owner: BrandGuideOwner, brandGuideId: string): Promise<BrandGuideView>;
+  createBrandGuide(
+    owner: BrandGuideOwner,
+    request: CreateBrandGuideRequest,
+  ): Promise<BrandGuideView>;
+  updateBrandGuideMetadata(
+    owner: BrandGuideOwner,
+    request: UpdateBrandGuideMetadataRequest,
+  ): Promise<BrandGuideView>;
+  deleteBrandGuide(owner: BrandGuideOwner, brandGuideId: string): Promise<void>;
+  upsertColorToken(
+    owner: BrandGuideOwner,
+    request: UpsertColorTokenRequest,
+  ): Promise<BrandGuideView>;
+  deleteColorToken(
+    owner: BrandGuideOwner,
+    request: DeleteColorTokenRequest,
+  ): Promise<BrandGuideView>;
+  upsertLogo(owner: BrandGuideOwner, request: UpsertLogoRequest): Promise<BrandGuideView>;
+  deleteLogo(owner: BrandGuideOwner, request: DeleteLogoRequest): Promise<BrandGuideView>;
+  upsertDecorativeAsset(
+    owner: BrandGuideOwner,
+    request: UpsertDecorativeAssetRequest,
+  ): Promise<BrandGuideView>;
+  deleteDecorativeAsset(
+    owner: BrandGuideOwner,
+    request: DeleteDecorativeAssetRequest,
+  ): Promise<BrandGuideView>;
+  updatePresentationKit(
+    owner: BrandGuideOwner,
+    request: UpdatePresentationKitRequest,
+  ): Promise<BrandGuideView>;
   prepareBrandGuideAssetUploads(
     owner: BrandGuideOwner,
     request: PrepareBrandGuideAssetUploadsRequest,
