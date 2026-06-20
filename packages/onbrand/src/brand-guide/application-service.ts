@@ -1,11 +1,11 @@
 import type { BrandGuideOwner } from "./owner";
 import type { BrandKitAssetMaterializationPlan } from "./brand-kit/asset-file/index";
 import type { SupportedAssetMimeType } from "./brand-kit/asset-file/rules";
-export { InvalidBrandGuideAssetUploadError } from "./brand-kit/asset-file/record";
 import type { BrandKitView } from "./brand-kit/index";
 import type { BrandGuideSummary } from "./brand-guide";
 import type { PresentationKitView } from "./presentation-kit/presentation-kit";
 
+export { InvalidBrandGuideAssetUploadError } from "./brand-kit/asset-file/record";
 export type { BrandGuideSummary } from "./brand-guide";
 export type {
   BrandKitAssetDownload,

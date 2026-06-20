@@ -4,12 +4,12 @@ import type { S3 } from "@onbrand/s3";
 import { brandKitAssetFileObjectKey } from "./object-key";
 import type { BrandKitAssetDownload, BrandKitAssetMaterializationPlan } from "./index";
 import { brandKitAssetHandle, type BrandKitAssetRecord } from "./record";
-import { asSupportedBrandKitAssetMimeType } from "./rules";
+import { asSupportedBrandKitAssetMimeType, type SupportedAssetMimeType } from "./rules";
 
 export type PrepareBrandKitAssetUpload = Readonly<{
   assetId: string;
   filename: string;
-  mimeType: "image/svg+xml" | "image/png" | "image/jpeg" | "image/webp";
+  mimeType: SupportedAssetMimeType;
   byteSize: number;
   sha256: string;
 }>;
