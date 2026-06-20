@@ -70,17 +70,23 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
     await this.assertUniqueBrandGuideName(owner, request.name);
     const slug = brandGuideSlugFromName(request.name);
     await this.assertUniqueBrandGuideSlug(owner, slug);
-    await this.prisma.brandGuide.create({
-      data: {
-        ownerUserId: owner.ownerUserId,
-        slug,
-        schemaVersion: 1,
-        name: request.name.trim(),
-        description: normalizeOptionalText(request.description),
-        brandKit: { create: {} },
-        presentationKit: { create: {} },
-      },
-    });
+    try {
+      await this.prisma.brandGuide.create({
+        data: {
+          ownerUserId: owner.ownerUserId,
+          slug,
+          schemaVersion: 1,
+          name: request.name.trim(),
+          description: normalizeOptionalText(request.description),
+          brandKit: { create: {} },
+          presentationKit: { create: {} },
+        },
+      });
+    } catch (error) {
+      if (isPrismaUniqueConstraintError(error))
+        throw new DuplicateBrandGuideNameError(request.name);
+      throw error;
+    }
     return this.getBrandGuide(owner, slug);
   };
 
@@ -442,3 +448,6 @@ const normalizeOptionalText = (value: string | null | undefined): string | null 
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
 };
+
+const isPrismaUniqueConstraintError = (error: unknown): boolean =>
+  typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
