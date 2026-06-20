@@ -26,12 +26,14 @@ import type { ApiState } from "../shared/api/api-state";
 import { ErrorMessage } from "../shared/ui/feedback";
 import onbrandLogoUrl from "../assets/onbrand-logo.svg";
 import { routeFromPathname } from "./route";
+import { ThemeToggle } from "./theme-toggle";
+import { type ThemeMode, useDashboardTheme } from "./theme";
 
 const NO_BRAND_GUIDE = "NO_BRAND_GUIDE";
 const GRAIN_TEXTURE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
 
 export const OnboardingPage = () => (
-  <main className="relative min-h-screen overflow-hidden bg-[#020617] px-4 py-10 text-onbrand-charcoal sm:px-6 lg:px-8">
+  <main className="onbrand-static-light-tokens relative min-h-screen overflow-hidden bg-[#020617] px-4 py-10 text-onbrand-charcoal sm:px-6 lg:px-8">
     <div
       aria-hidden
       className="animate-onbrand-gradient-drift absolute -inset-10"
@@ -101,6 +103,7 @@ export const DashboardApp = () => {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const route = routeFromPathname(pathname);
   const brandGuides = useApi<readonly BrandGuideSummary[]>("/api/brand-guides");
+  const { setTheme, theme } = useDashboardTheme();
   const isHome = pathname === "/";
   const selectedBrandGuideId =
     route.selectedBrandGuideId ??
@@ -111,8 +114,8 @@ export const DashboardApp = () => {
       : undefined;
 
   return (
-    <div className="min-h-screen bg-onbrand-white text-onbrand-charcoal">
-      <div className="flex min-h-screen overflow-hidden border border-onbrand-charcoal/10 bg-onbrand-white shadow-[0_32px_120px_rgba(10,10,10,0.16)]">
+    <div className="min-h-screen bg-onbrand-canvas text-onbrand-charcoal">
+      <div className="flex min-h-screen overflow-hidden border border-onbrand-charcoal/10 bg-onbrand-panel shadow-[0_32px_120px_rgba(10,10,10,0.16)]">
         <DashboardRail
           selectedBrandGuideId={selectedBrandGuideId}
           selectedBrandGuideSection={route.selectedBrandGuideSection}
@@ -123,6 +126,8 @@ export const DashboardApp = () => {
             selectedBrandGuideId={selectedBrandGuideId}
             selectedBrandGuideName={selectedBrandGuide?.name}
             selectedBrandGuideSection={route.selectedBrandGuideSection}
+            onThemeChange={setTheme}
+            theme={theme}
           />
           <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:max-h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
             {selectedBrandGuideId ? (
@@ -330,7 +335,7 @@ const CopyableValue = ({
   const variantClasses =
     variant === "dark"
       ? "border-white bg-onbrand-charcoal text-white hover:bg-white hover:text-onbrand-charcoal"
-      : "border-onbrand-charcoal bg-onbrand-charcoal text-white hover:bg-black hover:text-white";
+      : "border-onbrand-inverse bg-onbrand-inverse text-onbrand-inverse-foreground hover:bg-onbrand-blue-600 hover:text-white";
 
   return (
     <button
@@ -382,19 +387,23 @@ const CursorIcon = ({ className }: Readonly<{ className?: string }>) => (
 
 const DashboardTopBar = ({
   brandGuides,
+  onThemeChange,
   selectedBrandGuideId,
   selectedBrandGuideName,
   selectedBrandGuideSection = DEFAULT_BRAND_GUIDE_SECTION,
+  theme,
 }: Readonly<{
   brandGuides: ApiState<readonly BrandGuideSummary[]>;
+  onThemeChange: (theme: ThemeMode) => void;
   selectedBrandGuideId?: string;
   selectedBrandGuideName?: string;
   selectedBrandGuideSection?: BrandGuideSection;
+  theme: ThemeMode;
 }>) => {
   const navigate = useNavigate();
 
   return (
-    <header className="flex h-16 items-center gap-4 border-b border-onbrand-charcoal/8 px-4 sm:px-6 lg:px-7">
+    <header className="flex h-16 items-center gap-3 border-b border-onbrand-charcoal/8 bg-onbrand-white px-4 sm:gap-4 sm:px-6 lg:px-7">
       <div className="flex min-w-0 flex-1 items-center gap-3 text-sm">
         <span className="truncate font-normal text-onbrand-charcoal">
           {selectedBrandGuideName ?? "Getting started"}
@@ -422,7 +431,10 @@ const DashboardTopBar = ({
               });
           }}
         >
-          <SelectTrigger aria-label="Select Brand Guide" className="w-[320px] [&>span]:text-center">
+          <SelectTrigger
+            aria-label="Select Brand Guide"
+            className="w-[min(320px,38vw)] min-w-32 [&>span]:text-center"
+          >
             <SelectValue placeholder="Select" />
           </SelectTrigger>
           <SelectContent>
@@ -439,8 +451,9 @@ const DashboardTopBar = ({
           </SelectContent>
         </Select>
       ) : (
-        <div className="h-10 w-[320px] animate-pulse rounded-md bg-onbrand-charcoal/5" />
+        <div className="h-10 w-[min(320px,38vw)] min-w-32 animate-pulse rounded-md bg-onbrand-charcoal/5" />
       )}
+      <ThemeToggle onThemeChange={onThemeChange} theme={theme} />
     </header>
   );
 };
@@ -452,13 +465,13 @@ const DashboardRail = ({
   selectedBrandGuideId?: string;
   selectedBrandGuideSection?: BrandGuideSection;
 }>) => (
-  <aside className="hidden w-16 shrink-0 flex-col items-center bg-onbrand-white px-2 py-5 text-onbrand-charcoal lg:flex">
+  <aside className="hidden w-16 shrink-0 flex-col items-center bg-onbrand-panel px-2 py-5 text-onbrand-charcoal lg:flex">
     <Link
       to="/"
       aria-label="Onbrand home"
       className="mb-6 grid h-9 w-9 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5"
     >
-      <img alt="Onbrand" className="h-6 w-6" src={onbrandLogoUrl} />
+      <img alt="Onbrand" className="onbrand-dashboard-logo h-6 w-6" src={onbrandLogoUrl} />
     </Link>
     <TooltipProvider delayDuration={150}>
       <nav className="flex flex-1 flex-col items-center gap-2" aria-label="Onbrand sections">

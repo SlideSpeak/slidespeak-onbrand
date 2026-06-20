@@ -42,7 +42,7 @@ const MARKDOWN_COMPONENTS = {
     </blockquote>
   ),
   code: ({ children }: Readonly<{ children?: React.ReactNode }>) => (
-    <code className="rounded-sm bg-onbrand-charcoal/[0.04] px-1 py-0.5 font-mono text-[0.85em] text-onbrand-charcoal">
+    <code className="rounded-sm bg-onbrand-blue-50 px-1 py-0.5 font-mono text-[0.85em] text-onbrand-charcoal">
       {children}
     </code>
   ),
