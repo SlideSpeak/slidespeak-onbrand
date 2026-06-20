@@ -16,9 +16,9 @@ const Toaster = ({ ...props }: ToasterProps) => (
     }}
     style={
       {
-        "--normal-bg": "#ffffff",
-        "--normal-text": "#191919",
-        "--normal-border": "#ffffff",
+        "--normal-bg": "var(--onbrand-surface)",
+        "--normal-text": "var(--onbrand-ink)",
+        "--normal-border": "color-mix(in oklab, var(--onbrand-ink) 12%, transparent)",
         "--border-radius": "0.375rem",
       } as CSSProperties
     }

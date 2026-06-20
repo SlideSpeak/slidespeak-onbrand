@@ -17,7 +17,7 @@ export const AssetShowcaseListItem = ({
       >
         <AssetPreview
           alt={asset.description}
-          className="h-14 w-14 rounded-sm object-cover"
+          className="onbrand-asset-preview-surface h-14 w-14 rounded-sm object-cover"
           src={previewUrl}
         />
         <span className="min-w-0">
