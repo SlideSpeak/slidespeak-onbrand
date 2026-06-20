@@ -2,7 +2,6 @@ import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { sort_fn } from "color-sorter";
 import Color from "colorjs.io";
 import { HexColorPicker } from "react-colorful";
-import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { WasteIcon } from "@hugeicons/core-free-icons";
 
@@ -16,7 +15,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { BrandGuideView, ColorToken } from "@onbrand/core/brand-guide/application-service";
-import { sendJson } from "../../../shared/api/api-state";
+import { createBrandGuideEditor } from "../brand-guide-editor";
 
 export const ColorTokensSection = ({
   brandGuideId,
@@ -177,6 +176,7 @@ const ColorTokenDialogContent = ({
     }),
     [state.description, state.name, state.value],
   );
+  const editor = useMemo(() => createBrandGuideEditor(brandGuideId), [brandGuideId]);
 
   useEffect(() => {
     if (!valid) return;
@@ -187,40 +187,34 @@ const ColorTokenDialogContent = ({
       normalized.description === lastSaved.current.description
     )
       return;
-    const timeout = window.setTimeout(() => {
-      saveColorToken({
-        brandGuideId,
-        previousName: lastSaved.current?.name ?? color?.name,
-        name: normalized.name,
-        value: normalized.value,
-        description: normalized.description,
-      })
-        .then((view) => {
-          const wasCreating = !lastSaved.current;
-          lastSaved.current = normalized;
-          if (wasCreating && onCreated) onCreated(view);
-          else onViewChange(view);
-          toast.success("Changes saved");
-        })
-        .catch((error: unknown) =>
-          toast.error("Could not save Color Token", { description: errorMessage(error) }),
-        );
-    }, 650);
-    return () => window.clearTimeout(timeout);
-  }, [brandGuideId, color?.name, normalized, onCreated, onViewChange, valid]);
+    const debounced = editor.debounce(
+      async () => {
+        const { view } = await editor.saveColorToken({
+          previousName: lastSaved.current?.name ?? color?.name,
+          name: normalized.name,
+          value: normalized.value,
+          description: normalized.description,
+        });
+        const wasCreating = !lastSaved.current;
+        lastSaved.current = normalized;
+        if (wasCreating && onCreated) onCreated(view);
+        else onViewChange(view);
+      },
+      { errorLabel: "Color Token" },
+    );
+    debounced.schedule();
+    return debounced.cancel;
+  }, [color?.name, editor, normalized, onCreated, onViewChange, valid]);
 
   const remove = async () => {
     if (!color) return;
     try {
-      const saved = await sendJson<BrandGuideView>(
-        `/api/brand-guides/${encodeURIComponent(brandGuideId)}/colors/${encodeURIComponent(lastSaved.current?.name ?? color.name)}`,
-        { method: "DELETE" },
-      );
+      const { view } = await editor.deleteColorToken(lastSaved.current?.name ?? color.name);
       setState({ deleteConfirmOpen: false });
-      if (onDeleted) onDeleted(saved);
-      else onViewChange(saved);
-    } catch (error) {
-      toast.error("Could not delete Color Token", { description: errorMessage(error) });
+      if (onDeleted) onDeleted(view);
+      else onViewChange(view);
+    } catch {
+      // Toast policy lives in the Brand Guide editor.
     }
   };
 
@@ -348,29 +342,6 @@ const ColorTokenDialogContent = ({
   );
 };
 
-const saveColorToken = ({
-  brandGuideId,
-  previousName,
-  name,
-  value,
-  description,
-}: Readonly<{
-  brandGuideId: string;
-  previousName?: string;
-  name: string;
-  value: string;
-  description: string;
-}>): Promise<BrandGuideView> =>
-  sendJson<BrandGuideView>(`/api/brand-guides/${encodeURIComponent(brandGuideId)}/colors`, {
-    method: "PUT",
-    body: {
-      previousName,
-      name,
-      value,
-      description: description || null,
-    },
-  });
-
 const sortColorTokensForDisplay = (colors: readonly ColorToken[]): readonly ColorToken[] =>
   colors
     .slice()
@@ -404,6 +375,3 @@ const colorText = (hexColor: string): string => {
     .toGamut()
     .toString({ format: "hex" });
 };
-
-const errorMessage = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error);

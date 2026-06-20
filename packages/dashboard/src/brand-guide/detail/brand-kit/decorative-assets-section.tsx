@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Upload01Icon, WasteIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { toast } from "sonner";
 import type {
   BrandGuideView,
   BrandKitDecorativeAsset,
@@ -9,8 +8,7 @@ import type {
 
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { sendJson } from "../../../shared/api/api-state";
-import { uploadBrandGuideAsset } from "../asset-upload";
+import { createBrandGuideEditor } from "../brand-guide-editor";
 import type { AssetLayout } from "./asset-layout";
 import { AssetLayoutSwitch } from "./asset-layout-switch";
 import { AssetPreview } from "./asset-preview";
@@ -122,103 +120,96 @@ const DecorativeAssetEditor = ({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const lastSaved = useRef({ name: asset?.name ?? "", description: asset?.description ?? "" });
   const previousName = useRef(asset?.name);
+  const pendingMetadataSave = useRef<{
+    asset: BrandKitDecorativeAsset;
+    metadata: { name: string; description: string };
+    onViewChange: (view: BrandGuideView) => void;
+  } | null>(null);
   const normalized = useMemo(
     () => ({ name: name.trim(), description: description.trim() }),
     [description, name],
   );
+  const editor = useMemo(() => createBrandGuideEditor(brandGuideId), [brandGuideId]);
+  const debouncedMetadataSave = useMemo(
+    () =>
+      editor.debounce(
+        async () => {
+          const pending = pendingMetadataSave.current;
+          if (!pending) return;
+          const { view } = await editor.saveDecorativeAsset({
+            previousName: previousName.current,
+            name: pending.metadata.name,
+            filename: pending.asset.filename,
+            mimeType: pending.asset.mimeType,
+            description: pending.metadata.description,
+            storedFile: pending.asset,
+          });
+          previousName.current = pending.metadata.name;
+          lastSaved.current = pending.metadata;
+          pending.onViewChange(view);
+        },
+        { errorLabel: "Decorative Asset" },
+      ),
+    [editor],
+  );
 
   useEffect(() => {
-    if (!asset || !normalized.name) return;
+    return () => {
+      debouncedMetadataSave.cancel();
+    };
+  }, [debouncedMetadataSave]);
+
+  const scheduleMetadataSave = (nextName: string, nextDescription: string) => {
+    if (!asset) return;
+    const nextNormalized = { name: nextName.trim(), description: nextDescription.trim() };
+    if (!nextNormalized.name) return;
     if (
-      normalized.name === lastSaved.current.name &&
-      normalized.description === lastSaved.current.description
+      nextNormalized.name === lastSaved.current.name &&
+      nextNormalized.description === lastSaved.current.description
     )
       return;
-    const timeout = window.setTimeout(() => {
-      sendJson<BrandGuideView>(
-        `/api/brand-guides/${encodeURIComponent(brandGuideId)}/decorative-assets`,
-        {
-          method: "PUT",
-          body: {
-            previousName: previousName.current,
-            asset: {
-              name: normalized.name,
-              filename: asset.filename,
-              mimeType: asset.mimeType,
-              description: normalized.description || null,
-              s3Key: "",
-              byteSize: 0,
-              sha256: "",
-            },
-          },
-        },
-      )
-        .then((saved) => {
-          previousName.current = normalized.name;
-          lastSaved.current = normalized;
-          onViewChange(saved);
-          toast.success("Changes saved");
-        })
-        .catch((error: unknown) =>
-          toast.error("Could not save Decorative Asset", { description: errorMessage(error) }),
-        );
-    }, 650);
-    return () => window.clearTimeout(timeout);
-  }, [asset, brandGuideId, normalized, onViewChange]);
+    pendingMetadataSave.current = {
+      asset,
+      metadata: nextNormalized,
+      onViewChange,
+    };
+    debouncedMetadataSave.schedule();
+  };
 
   useEffect(() => {
     if (!file || !normalized.name) return;
     let cancelled = false;
-    uploadBrandGuideAsset(brandGuideId, normalized.name, file)
-      .then((upload) =>
-        sendJson<BrandGuideView>(
-          `/api/brand-guides/${encodeURIComponent(brandGuideId)}/decorative-assets`,
-          {
-            method: "PUT",
-            body: {
-              previousName: previousName.current,
-              asset: {
-                name: normalized.name,
-                filename: upload.filename,
-                mimeType: upload.mimeType,
-                description: normalized.description || null,
-                s3Key: upload.s3Key,
-                byteSize: upload.byteSize,
-                sha256: upload.sha256,
-              },
-            },
-          },
-        ),
-      )
-      .then((saved) => {
+    editor
+      .saveDecorativeAsset({
+        previousName: previousName.current,
+        name: normalized.name,
+        filename: file.name,
+        mimeType: file.type,
+        description: normalized.description,
+        upload: { file },
+      })
+      .then(({ view }) => {
         if (cancelled) return;
         previousName.current = normalized.name;
         lastSaved.current = normalized;
-        onViewChange(saved);
+        onViewChange(view);
         setFile(null);
-        toast.success("Changes saved");
         if (!asset) onClose();
       })
-      .catch((error: unknown) =>
-        toast.error("Could not save Decorative Asset", { description: errorMessage(error) }),
-      );
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [asset, brandGuideId, file, normalized, onClose, onViewChange]);
+  }, [asset, editor, file, normalized, onClose, onViewChange]);
   const remove = async () => {
     if (!asset) return;
     try {
-      onViewChange(
-        await sendJson<BrandGuideView>(
-          `/api/brand-guides/${encodeURIComponent(brandGuideId)}/decorative-assets/${encodeURIComponent(asset.name)}`,
-          { method: "DELETE" },
-        ),
-      );
+      const { view } = await editor.deleteDecorativeAsset(asset.name);
+      onViewChange(view);
       setDeleteOpen(false);
       onClose();
-    } catch (error) {
-      toast.error("Could not delete Decorative Asset", { description: errorMessage(error) });
+    } catch {
+      // Toast policy lives in the Brand Guide editor.
     }
   };
   const previewUrl = asset
@@ -279,7 +270,10 @@ const DecorativeAssetEditor = ({
                   placeholder="Asset name"
                   spellCheck={false}
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    scheduleMetadataSave(event.target.value, description);
+                  }}
                 />
               </DialogTitle>
               <DialogDescription asChild>
@@ -289,7 +283,10 @@ const DecorativeAssetEditor = ({
                   placeholder="Description"
                   spellCheck={false}
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(event) => {
+                    setDescription(event.target.value);
+                    scheduleMetadataSave(name, event.target.value);
+                  }}
                 />
               </DialogDescription>
             </div>
@@ -348,5 +345,3 @@ const DecorativeAssetEditor = ({
     </Dialog>
   );
 };
-const errorMessage = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error);

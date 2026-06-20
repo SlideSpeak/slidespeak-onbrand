@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Upload01Icon, WasteIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { toast } from "sonner";
 import type {
   BrandGuideView,
   BrandKitVisualAsset,
@@ -9,8 +8,7 @@ import type {
 
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { sendJson } from "../../../shared/api/api-state";
-import { uploadBrandGuideAsset } from "../asset-upload";
+import { createBrandGuideEditor } from "../brand-guide-editor";
 import { AssetPreview } from "./asset-preview";
 import { assetPreviewUrl } from "./asset-preview-url";
 import { AssetShowcaseCard } from "./asset-showcase-card";
@@ -75,78 +73,82 @@ const LogoEditor = ({
   const [file, setFile] = useState<File | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const lastSavedDescription = useRef(logo?.description ?? "");
+  const pendingDescriptionSave = useRef<{
+    logo: BrandKitVisualAsset;
+    description: string;
+    onViewChange: (view: BrandGuideView) => void;
+  } | null>(null);
   const normalizedDescription = useMemo(() => description.trim(), [description]);
+  const editor = useMemo(() => createBrandGuideEditor(brandGuideId), [brandGuideId]);
+  const debouncedDescriptionSave = useMemo(
+    () =>
+      editor.debounce(
+        async () => {
+          const pending = pendingDescriptionSave.current;
+          if (!pending) return;
+          const { view } = await editor.saveLogo({
+            filename: pending.logo.filename,
+            mimeType: pending.logo.mimeType,
+            description: pending.description,
+            storedFile: pending.logo,
+          });
+          lastSavedDescription.current = pending.description;
+          pending.onViewChange(view);
+        },
+        { errorLabel: "Logo" },
+      ),
+    [editor],
+  );
 
   useEffect(() => {
-    if (!logo || normalizedDescription === lastSavedDescription.current) return;
-    const timeout = window.setTimeout(() => {
-      sendJson<BrandGuideView>(`/api/brand-guides/${encodeURIComponent(brandGuideId)}/logo`, {
-        method: "PUT",
-        body: {
-          filename: logo.filename,
-          mimeType: logo.mimeType,
-          description: normalizedDescription || null,
-          s3Key: "",
-          byteSize: 0,
-          sha256: "",
-        },
-      })
-        .then((view) => {
-          lastSavedDescription.current = normalizedDescription;
-          onViewChange(view);
-          toast.success("Changes saved");
-        })
-        .catch((error: unknown) =>
-          toast.error("Could not save Logo", { description: errorMessage(error) }),
-        );
-    }, 650);
-    return () => window.clearTimeout(timeout);
-  }, [brandGuideId, logo, normalizedDescription, onViewChange]);
+    return () => {
+      debouncedDescriptionSave.cancel();
+    };
+  }, [debouncedDescriptionSave]);
+
+  const scheduleDescriptionSave = (nextDescription: string) => {
+    if (!logo) return;
+    const nextNormalizedDescription = nextDescription.trim();
+    if (nextNormalizedDescription === lastSavedDescription.current) return;
+    pendingDescriptionSave.current = {
+      logo,
+      description: nextNormalizedDescription,
+      onViewChange,
+    };
+    debouncedDescriptionSave.schedule();
+  };
 
   useEffect(() => {
     if (!file) return;
     let cancelled = false;
-    uploadBrandGuideAsset(brandGuideId, "logo", file)
-      .then((upload) =>
-        sendJson<BrandGuideView>(`/api/brand-guides/${encodeURIComponent(brandGuideId)}/logo`, {
-          method: "PUT",
-          body: {
-            filename: upload.filename,
-            mimeType: upload.mimeType,
-            description: normalizedDescription || null,
-            s3Key: upload.s3Key,
-            byteSize: upload.byteSize,
-            sha256: upload.sha256,
-          },
-        }),
-      )
-      .then((view) => {
+    editor
+      .saveLogo({
+        filename: file.name,
+        mimeType: file.type,
+        description: normalizedDescription,
+        upload: { file },
+      })
+      .then(({ view }) => {
         if (cancelled) return;
+        lastSavedDescription.current = normalizedDescription;
         onViewChange(view);
         setFile(null);
-        toast.success("Changes saved");
         if (!logo) onClose();
       })
-      .catch((error: unknown) =>
-        toast.error("Could not save Logo", { description: errorMessage(error) }),
-      );
+      .catch(() => undefined);
     return () => {
       cancelled = true;
     };
-  }, [brandGuideId, file, logo, normalizedDescription, onClose, onViewChange]);
+  }, [editor, file, logo, normalizedDescription, onClose, onViewChange]);
 
   const remove = async () => {
     try {
-      onViewChange(
-        await sendJson<BrandGuideView>(
-          `/api/brand-guides/${encodeURIComponent(brandGuideId)}/logo`,
-          { method: "DELETE" },
-        ),
-      );
+      const { view } = await editor.deleteLogo();
+      onViewChange(view);
       setDeleteOpen(false);
       onClose();
-    } catch (error) {
-      toast.error("Could not delete Logo", { description: errorMessage(error) });
+    } catch {
+      // Toast policy lives in the Brand Guide editor.
     }
   };
 
@@ -209,7 +211,10 @@ const LogoEditor = ({
                   placeholder="Usage description"
                   spellCheck={false}
                   value={description}
-                  onChange={(event) => setDescription(event.target.value)}
+                  onChange={(event) => {
+                    setDescription(event.target.value);
+                    scheduleDescriptionSave(event.target.value);
+                  }}
                 />
               </DialogDescription>
             </div>
@@ -268,6 +273,3 @@ const LogoEditor = ({
     </Dialog>
   );
 };
-
-const errorMessage = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error);

@@ -1,11 +1,14 @@
-import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { useCallback, useMemo, useState } from "react";
 
-import { sendJson, useApi } from "../../shared/api/api-state";
-import { publishBrandGuideUpdated } from "../../shared/brand-guide-sync";
+import { useApi } from "../../shared/api/api-state";
 import { BrandGuideMetadataSection } from "./brand-guide-metadata-section";
 import { BrandKitSections } from "./brand-kit/brand-kit-sections";
 import type { AssetLayout } from "./brand-kit/brand-kit-assets-sections";
+import {
+  createBrandGuideEditor,
+  optimisticMetadataView,
+  optimisticPresentationKitView,
+} from "./brand-guide-editor";
 import { PresentationKitSection } from "./presentation-kit/presentation-kit-sections";
 import { ErrorMessage } from "../../shared/ui/feedback";
 import { PageHeader } from "../../shared/ui/page-header";
@@ -39,43 +42,24 @@ const BrandGuideDetailView = ({
 }: Readonly<{ initialView: BrandGuideView; section: BrandGuideSection }>) => {
   const [view, setView] = useState(initialView);
   const [assetLayout, setAssetLayout] = useState<AssetLayout>("MASONRY");
-
-  const saveMetadata = useCallback(
-    async (metadata: { name: string; description: string }) => {
-      setView((current) => ({
-        ...current,
-        brandGuide: {
-          ...current.brandGuide,
-          name: metadata.name,
-          description: metadata.description || null,
-        },
-      }));
-      const saved = await sendJson<BrandGuideView>(
-        `/api/brand-guides/${encodeURIComponent(initialView.brandGuide.id)}/metadata`,
-        {
-          method: "PATCH",
-          body: { name: metadata.name, description: metadata.description || null },
-        },
-      );
-      setView(saved);
-      publishBrandGuideUpdated(saved.brandGuide);
-    },
+  const editor = useMemo(
+    () => createBrandGuideEditor(initialView.brandGuide.id),
     [initialView.brandGuide.id],
   );
 
-  const savePresentationKit = async (presentationKit: BrandGuideView["presentationKit"]) => {
-    setView((current) => ({ ...current, presentationKit }));
-    try {
-      const saved = await sendJson<BrandGuideView>(
-        `/api/brand-guides/${encodeURIComponent(initialView.brandGuide.id)}/presentation-kit`,
-        { method: "PATCH", body: presentationKit },
-      );
+  const saveMetadata = useCallback(
+    async (metadata: { name: string; description: string }) => {
+      setView((current) => optimisticMetadataView(current, metadata));
+      const { view: saved } = await editor.saveMetadata(metadata);
       setView(saved);
-      publishBrandGuideUpdated(saved.brandGuide);
-      toast.success("Changes saved");
-    } catch (error) {
-      toast.error("Could not save Presentation Kit", { description: errorMessage(error) });
-    }
+    },
+    [editor],
+  );
+
+  const savePresentationKit = async (presentationKit: BrandGuideView["presentationKit"]) => {
+    setView((current) => optimisticPresentationKitView(current, presentationKit));
+    const { view: saved } = await editor.savePresentationKit(presentationKit);
+    setView(saved);
   };
 
   return (
@@ -164,6 +148,3 @@ const BrandGuideSectionPage = ({
       );
   }
 };
-
-const errorMessage = (error: unknown): string =>
-  error instanceof Error ? error.message : String(error);
