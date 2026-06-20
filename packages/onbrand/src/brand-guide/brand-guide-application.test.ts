@@ -4,7 +4,11 @@ import type { PrismaClient } from "@prisma/client";
 import { describe, expect, it, afterAll, vi } from "vitest";
 import { createPrismaClient } from "../database/prisma-client";
 import { PersistentBrandGuideApplication } from "./brand-guide-application";
-import { DuplicateBrandGuideNameError, UnknownBrandGuideError } from "./application-service";
+import {
+  DuplicateBrandGuideNameError,
+  DuplicateDecorativeAssetNameError,
+  UnknownBrandGuideError,
+} from "./application-service";
 
 const Env = createEnvRegistry({
   ONBRAND_DATABASE_TESTS: optionalString("ONBRAND_DATABASE_TESTS"),
@@ -66,6 +70,64 @@ describe("PersistentBrandGuideApplication duplicate Brand Guide handling", () =>
 
     await expect(result).rejects.toThrow(DuplicateBrandGuideNameError);
     await expect(result).rejects.not.toMatchObject({ code: "P2002" });
+  });
+});
+
+describe("PersistentBrandGuideApplication decorative asset duplicate handling", () => {
+  const owner = {
+    ownerUserId: "test-owner-user",
+  };
+
+  it("rejects renamed decorative assets that normalize to an existing asset id before writing", async () => {
+    const prisma = {
+      brandGuide: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "brand-guide-row",
+          slug: "skyleague",
+          name: "SKYLEAGUE Brand Guide",
+          description: null,
+          brandKit: { id: "brand-kit-row", assets: [], colors: [] },
+          presentationKit: null,
+        }),
+      },
+      brandKitAsset: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValueOnce({ id: "asset-being-renamed", s3Key: "old-key" })
+          .mockResolvedValueOnce({ id: "colliding-asset", s3Key: "other-key" }),
+        update: vi.fn(),
+        upsert: vi.fn(),
+      },
+    } as unknown as PrismaClient;
+    const service = new PersistentBrandGuideApplication(
+      prisma,
+      fakeS3,
+      "brand-kit-assets-test",
+      900,
+    );
+
+    const result = service.upsertDecorativeAsset(owner, {
+      brandGuideId: "skyleague",
+      previousName: "Icon 1",
+      asset: {
+        name: "Icon 2",
+        filename: "icon-1.svg",
+        mimeType: "image/svg+xml",
+        description: null,
+        s3Key: "",
+        byteSize: 123,
+        sha256: "abc123",
+      },
+    });
+
+    await expect(result).rejects.toThrow(DuplicateDecorativeAssetNameError);
+    await expect(result).rejects.not.toMatchObject({ code: "P2002" });
+    expect(prisma.brandKitAsset.findUnique).toHaveBeenNthCalledWith(2, {
+      where: { brandKitId_assetId: { brandKitId: "brand-kit-row", assetId: "icon-2" } },
+      select: { id: true, s3Key: true },
+    });
+    expect(prisma.brandKitAsset.update).not.toHaveBeenCalled();
+    expect(prisma.brandKitAsset.upsert).not.toHaveBeenCalled();
   });
 });
 

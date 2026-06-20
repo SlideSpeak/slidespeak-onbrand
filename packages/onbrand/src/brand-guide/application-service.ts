@@ -39,6 +39,13 @@ export class DuplicateColorTokenNameError extends Error {
   }
 }
 
+export class DuplicateDecorativeAssetNameError extends Error {
+  constructor(readonly name: string) {
+    super(`Duplicate Decorative Asset name: ${name}`);
+    this.name = "DuplicateDecorativeAssetNameError";
+  }
+}
+
 export type BrandGuideView = Readonly<{
   brandGuide: BrandGuideSummary;
   brandKit: BrandKitView;

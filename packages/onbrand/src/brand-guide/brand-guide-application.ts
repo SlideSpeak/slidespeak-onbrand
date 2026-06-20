@@ -15,7 +15,11 @@ import {
   toPresentationKitCreateRecord,
   toPresentationKitWriteRecord,
 } from "./presentation-kit/record";
-import { DuplicateBrandGuideNameError, DuplicateColorTokenNameError } from "./application-service";
+import {
+  DuplicateBrandGuideNameError,
+  DuplicateColorTokenNameError,
+  DuplicateDecorativeAssetNameError,
+} from "./application-service";
 import type {
   BrandGuideApplicationService,
   MaterializeBrandKitAssetsRequest,
@@ -287,12 +291,18 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
           select: { id: true, s3Key: true },
         })
       : null;
-    const existing =
-      existingByPreviousName ??
-      (await this.prisma.brandKitAsset.findUnique({
-        where: { brandKitId_assetId: { brandKitId, assetId } },
-        select: { id: true, s3Key: true },
-      }));
+    const assetWithTargetId = await this.prisma.brandKitAsset.findUnique({
+      where: { brandKitId_assetId: { brandKitId, assetId } },
+      select: { id: true, s3Key: true },
+    });
+    if (
+      existingByPreviousName &&
+      assetWithTargetId &&
+      assetWithTargetId.id !== existingByPreviousName.id
+    ) {
+      throw new DuplicateDecorativeAssetNameError(request.asset.name);
+    }
+    const existing = existingByPreviousName ?? assetWithTargetId;
     if (existing && (request.asset.s3Key === "" || request.asset.s3Key === existing.s3Key)) {
       await this.prisma.brandKitAsset.update({
         where: { id: existing.id },
