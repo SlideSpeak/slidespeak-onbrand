@@ -3,7 +3,9 @@ import type { S3 } from "@onbrand/s3";
 import { describe, expect, it, afterAll } from "vitest";
 import { createPrismaClient } from "../database/prisma-client";
 import { PersistentBrandGuideApplication } from "./brand-guide-application";
-import { UnknownBrandGuideError } from "./application-service";
+import { UnknownBrandGuideError, type BrandGuideView } from "./application-service";
+import type { BrandKitAssetRecord } from "./brand-kit/asset-file/record";
+import type { BrandGuideRegistry } from "./brand-guide-store";
 
 const Env = createEnvRegistry({
   ONBRAND_DATABASE_TESTS: optionalString("ONBRAND_DATABASE_TESTS"),
@@ -15,6 +17,130 @@ const fakeS3: Pick<typeof S3, "getPresigned" | "putPresigned"> = {
   getPresigned: async ({ key }) => `https://s3.example/${key}`,
   putPresigned: async ({ key }) => `https://s3.example/upload/${key}`,
 };
+
+const memoryBrandGuideView: BrandGuideView = {
+  brandGuide: {
+    id: "skyleague",
+    name: "SKYLEAGUE Brand Guide",
+    description: "High-energy SKYLEAGUE identity and presentation rules.",
+  },
+  brandKit: {
+    colors: [
+      {
+        id: "sky-blue",
+        name: "Sky Blue",
+        value: "#00AEEF",
+        description: "Primary action color.",
+      },
+    ],
+    logo: {
+      assetHandle: "LOGO",
+      name: "Primary Logo",
+      filename: "logo.svg",
+      mimeType: "image/svg+xml",
+      description: "Primary Logo for light backgrounds.",
+    },
+    decorativeAssets: [],
+  },
+  presentationKit: {
+    canvas: { width: 1280, height: 720, unit: "px" },
+    designPrompt: "Use energetic, sport-forward slide layouts.",
+  },
+};
+
+const memoryAssets: readonly BrandKitAssetRecord[] = [
+  {
+    assetId: "logo",
+    kind: "LOGO",
+    name: "Primary Logo",
+    filename: "logo.svg",
+    mimeType: "image/svg+xml",
+    description: "Primary Logo for light backgrounds.",
+    s3Key: "brand-kit-assets/test-owner-user/skyleague/logo/logo.svg",
+    sortOrder: 0,
+  },
+];
+
+class InMemoryBrandGuideRegistry implements BrandGuideRegistry {
+  readonly replaceRequests: unknown[] = [];
+
+  list = async () => [memoryBrandGuideView.brandGuide];
+
+  load = async () => memoryBrandGuideView;
+
+  loadBrandKitAssets = async () => memoryAssets;
+
+  replace = async (_owner: unknown, request: unknown) => {
+    this.replaceRequests.push(request);
+    return {
+      brandGuideId: memoryBrandGuideView.brandGuide.id,
+      action: "CREATED" as const,
+      brandGuide: memoryBrandGuideView,
+    };
+  };
+}
+
+describe("PersistentBrandGuideApplication", () => {
+  it("materializes Brand Kit Asset Files through the Brand Guide Registry seam", async () => {
+    const registry = new InMemoryBrandGuideRegistry();
+    const service = new PersistentBrandGuideApplication(
+      {} as never,
+      fakeS3,
+      "brand-kit-assets-test",
+      900,
+      registry,
+    );
+
+    const plan = await service.materializeBrandKitAssets(
+      { ownerUserId: "test-owner-user" },
+      { brandGuideId: "skyleague", outputDirectory: "assets" },
+    );
+
+    expect(plan.assets).toEqual([
+      expect.objectContaining({
+        kind: "LOGO",
+        assetHandle: "LOGO",
+        filename: "logo.svg",
+        downloadUrl: "https://s3.example/brand-kit-assets/test-owner-user/skyleague/logo/logo.svg",
+      }),
+    ]);
+  });
+
+  it("delegates Brand Guide writes to the registry replace interface", async () => {
+    const registry = new InMemoryBrandGuideRegistry();
+    const service = new PersistentBrandGuideApplication(
+      {} as never,
+      fakeS3,
+      "brand-kit-assets-test",
+      900,
+      registry,
+    );
+
+    const result = await service.writeBrandGuide(
+      { ownerUserId: "test-owner-user" },
+      {
+        brandGuide: memoryBrandGuideView.brandGuide,
+        brandKit: {
+          colors: memoryBrandGuideView.brandKit.colors,
+          logo: {
+            assetId: "logo",
+            name: "Primary Logo",
+            filename: "logo.svg",
+            mimeType: "image/svg+xml",
+            description: "Primary Logo for light backgrounds.",
+            s3Key: "brand-kit-assets/test-owner-user/skyleague/logo/logo.svg",
+            byteSize: 128,
+            sha256: "a".repeat(64),
+          },
+        },
+        presentationKit: memoryBrandGuideView.presentationKit,
+      },
+    );
+
+    expect(result.action).toBe("CREATED");
+    expect(registry.replaceRequests).toHaveLength(1);
+  });
+});
 
 describeDatabaseIntegration("PersistentBrandGuideApplication", () => {
   const prisma = createPrismaClient();

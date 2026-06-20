@@ -12,6 +12,11 @@ _Avoid_: Brand MCP, branding tool
 design rules. In this context, each Brand Guide contains one **Brand Kit** and one **Presentation
 Kit**. _Avoid_: Design context, brand, brand definition
 
+**Brand Guide Registry**: The persistence module that lists, loads, and replaces **Brand Guides**,
+including their **Brand Kit**, **Brand Kit Asset File** records, and **Presentation Kit** records.
+Its interface is the seam between Onbrand application workflows and the Prisma Postgres adapter.
+_Avoid_: Brand Guide service, repository when discussing the domain concept
+
 **Brand Kit**: The identity-focused part of a **Brand Guide**, such as colors, logos, typography,
 **Decorative Assets**, imagery, icons, and voice/tone. _Avoid_: Brand, brand assets when referring
 to the whole kit
