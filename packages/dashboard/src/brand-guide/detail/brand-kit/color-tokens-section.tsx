@@ -15,14 +15,14 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { BrandGuideView, ColorToken } from "@onbrand/core/brand-guide/application-service";
-import { createBrandGuideEditor } from "../brand-guide-editor";
+import type { BrandGuideEditor } from "../brand-guide-editor";
 
 export const ColorTokensSection = ({
-  brandGuideId,
+  editor,
   colors,
   onViewChange,
 }: Readonly<{
-  brandGuideId: string;
+  editor: BrandGuideEditor;
   colors: readonly ColorToken[];
   onViewChange: (view: BrandGuideView) => void;
 }>) => {
@@ -43,7 +43,7 @@ export const ColorTokensSection = ({
             </button>
           </DialogTrigger>
           <ColorTokenDialogContent
-            brandGuideId={brandGuideId}
+            editor={editor}
             color={null}
             onViewChange={onViewChange}
             onCreated={onViewChange}
@@ -55,7 +55,7 @@ export const ColorTokensSection = ({
           {sortedColors.map((color) => (
             <ColorSwatchCard
               key={color.id}
-              brandGuideId={brandGuideId}
+              editor={editor}
               color={color}
               onViewChange={onViewChange}
             />
@@ -71,11 +71,11 @@ export const ColorTokensSection = ({
 };
 
 const ColorSwatchCard = ({
-  brandGuideId,
+  editor,
   color,
   onViewChange,
 }: Readonly<{
-  brandGuideId: string;
+  editor: BrandGuideEditor;
   color: ColorToken;
   onViewChange: (view: BrandGuideView) => void;
 }>) => {
@@ -109,7 +109,7 @@ const ColorSwatchCard = ({
       </DialogTrigger>
       <ColorTokenDialogContent
         key={`${color.id}:${color.name}:${color.value}:${color.description ?? ""}`}
-        brandGuideId={brandGuideId}
+        editor={editor}
         color={color}
         onViewChange={(view) => {
           pendingView.current = view;
@@ -125,13 +125,13 @@ const ColorSwatchCard = ({
 };
 
 const ColorTokenDialogContent = ({
-  brandGuideId,
+  editor,
   color,
   onViewChange,
   onCreated,
   onDeleted,
 }: Readonly<{
-  brandGuideId: string;
+  editor: BrandGuideEditor;
   color: ColorToken | null;
   onViewChange: (view: BrandGuideView) => void;
   onCreated?: (view: BrandGuideView) => void;
@@ -176,8 +176,6 @@ const ColorTokenDialogContent = ({
     }),
     [state.description, state.name, state.value],
   );
-  const editor = useMemo(() => createBrandGuideEditor(brandGuideId), [brandGuideId]);
-
   useEffect(() => {
     if (!valid) return;
     if (
@@ -189,16 +187,17 @@ const ColorTokenDialogContent = ({
       return;
     const debounced = editor.debounce(
       async () => {
-        const { view } = await editor.saveColorToken({
+        const saved = await editor.saveColorToken({
           previousName: lastSaved.current?.name ?? color?.name,
           name: normalized.name,
           value: normalized.value,
           description: normalized.description,
         });
+        if (saved.stale) return;
         const wasCreating = !lastSaved.current;
         lastSaved.current = normalized;
-        if (wasCreating && onCreated) onCreated(view);
-        else onViewChange(view);
+        if (wasCreating && onCreated) onCreated(saved.view);
+        else onViewChange(saved.view);
       },
       { errorLabel: "Color Token" },
     );
@@ -209,10 +208,11 @@ const ColorTokenDialogContent = ({
   const remove = async () => {
     if (!color) return;
     try {
-      const { view } = await editor.deleteColorToken(lastSaved.current?.name ?? color.name);
+      const saved = await editor.deleteColorToken(lastSaved.current?.name ?? color.name);
+      if (saved.stale) return;
       setState({ deleteConfirmOpen: false });
-      if (onDeleted) onDeleted(view);
-      else onViewChange(view);
+      if (onDeleted) onDeleted(saved.view);
+      else onViewChange(saved.view);
     } catch {
       // Toast policy lives in the Brand Guide editor.
     }

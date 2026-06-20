@@ -43,6 +43,14 @@ const upload = (
 
 const file = (name: string, type: string): File => ({ name, type }) as File;
 
+const deferred = <T>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((settle) => {
+    resolve = settle;
+  });
+  return { promise, resolve };
+};
+
 const createEditor = (view = baseView()) => {
   const send = vi.fn(async <T>() => view as T);
   const uploadAsset = vi.fn(async () => upload());
@@ -67,6 +75,81 @@ afterEach(() => {
 });
 
 describe("BrandGuideEditor", () => {
+  it("marks slower Brand Guide view replacements as stale when a newer save starts", async () => {
+    const firstSave = deferred<BrandGuideView>();
+    const newerView: BrandGuideView = {
+      ...baseView(),
+      brandKit: {
+        ...baseView().brandKit,
+        colors: [{ id: "primary", name: "Primary", value: "#0050BD", description: "" }],
+      },
+    };
+    const send = vi
+      .fn()
+      .mockImplementationOnce(() => firstSave.promise)
+      .mockResolvedValueOnce(newerView);
+    const notify = { success: vi.fn(), error: vi.fn() };
+    const editor = new BrandGuideEditor("brand guide/1", {
+      sendJson: send as never,
+      uploadAsset: vi.fn(async () => upload()),
+      notify,
+      publishBrandGuide: vi.fn(),
+      scheduler: globalThis,
+    });
+
+    const first = editor.saveColorToken({
+      name: "Primary",
+      value: "#0050BD",
+      description: "First request",
+    });
+    const second = editor.saveColorToken({
+      name: "Accent",
+      value: "#FFAA00",
+      description: "Second request",
+    });
+
+    await expect(second).resolves.toMatchObject({ view: newerView, stale: false });
+    firstSave.resolve(baseView());
+    await expect(first).resolves.toMatchObject({ view: baseView(), stale: true });
+    expect(notify.success).toHaveBeenCalledTimes(1);
+  });
+
+  it("treats asset upload and declaration save as one ordered Brand Guide edit", async () => {
+    const logoUpload = deferred<PreparedBrandGuideAssetUpload>();
+    const send = vi.fn(async <T>() => baseView() as T);
+    const uploadAsset = vi
+      .fn()
+      .mockImplementationOnce(() => logoUpload.promise)
+      .mockResolvedValueOnce(upload({ assetId: "Hero Orb", filename: "orb.webp" }));
+    const notify = { success: vi.fn(), error: vi.fn() };
+    const editor = new BrandGuideEditor("brand guide/1", {
+      sendJson: send as never,
+      uploadAsset,
+      notify,
+      publishBrandGuide: vi.fn(),
+      scheduler: globalThis,
+    });
+
+    const staleLogoSave = editor.saveLogo({
+      filename: "logo.svg",
+      mimeType: "image/svg+xml",
+      description: "Old logo",
+      upload: { file: file("logo.svg", "image/svg+xml") },
+    });
+    const latestAssetSave = editor.saveDecorativeAsset({
+      name: "Hero Orb",
+      filename: "orb.webp",
+      mimeType: "image/webp",
+      description: "Background accent",
+      upload: { file: file("orb.webp", "image/webp") },
+    });
+
+    await expect(latestAssetSave).resolves.toMatchObject({ stale: false });
+    logoUpload.resolve(upload());
+    await expect(staleLogoSave).resolves.toMatchObject({ stale: true });
+    expect(notify.success).toHaveBeenCalledTimes(1);
+  });
+
   it("debounces scheduled saves onto the editor seam", async () => {
     vi.useFakeTimers();
     const { editor } = createEditor();

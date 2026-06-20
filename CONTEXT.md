@@ -61,10 +61,11 @@ It is distinct from the MCP endpoint, which is the agent-facing integration surf
 panel, Brand dashboard, MCP UI
 
 **Brand Guide Editing Module**: The Onbrand Dashboard module that owns granular Brand Guide save
-operations, including optimistic view publication, Brand Kit Asset File upload choreography,
-previous-name handling for renamed Color Tokens and Decorative Assets, and dashboard save/delete
-toast policy. It preserves the granular autosave behaviour from ADR-0005 while keeping UI modules
-focused on local editing state. _Avoid_: Autosave helper, dashboard API wrapper
+operations, including autosave ordering, stale-save handling, optimistic view publication, Brand Kit
+Asset File upload choreography, previous-name handling for renamed Color Tokens and Decorative
+Assets, and dashboard save/delete toast policy. It preserves the granular autosave behaviour from
+ADR-0005 while keeping UI modules focused on local editing state. _Avoid_: Autosave helper,
+dashboard API wrapper
 
 **Slide Canvas**: The optional canonical coordinate space used by a **Presentation Kit** to describe
 slide size and aspect ratio. _Avoid_: Page size, viewport, artboard

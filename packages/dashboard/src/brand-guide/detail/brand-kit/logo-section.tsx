@@ -8,17 +8,19 @@ import type {
 
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { createBrandGuideEditor } from "../brand-guide-editor";
+import type { BrandGuideEditor } from "../brand-guide-editor";
 import { AssetPreview } from "./asset-preview";
 import { assetPreviewUrl } from "./asset-preview-url";
 import { AssetShowcaseCard } from "./asset-showcase-card";
 
 export const LogoSection = ({
   brandGuideId,
+  editor,
   logo,
   onViewChange,
 }: Readonly<{
   brandGuideId: string;
+  editor: BrandGuideEditor;
   logo: BrandKitVisualAsset | null;
   onViewChange: (view: BrandGuideView) => void;
 }>) => {
@@ -49,6 +51,7 @@ export const LogoSection = ({
       {editing ? (
         <LogoEditor
           brandGuideId={brandGuideId}
+          editor={editor}
           logo={logo}
           onClose={() => setEditing(false)}
           onViewChange={onViewChange}
@@ -60,11 +63,13 @@ export const LogoSection = ({
 
 const LogoEditor = ({
   brandGuideId,
+  editor,
   logo,
   onClose,
   onViewChange,
 }: Readonly<{
   brandGuideId: string;
+  editor: BrandGuideEditor;
   logo: BrandKitVisualAsset | null;
   onClose: () => void;
   onViewChange: (view: BrandGuideView) => void;
@@ -79,21 +84,21 @@ const LogoEditor = ({
     onViewChange: (view: BrandGuideView) => void;
   } | null>(null);
   const normalizedDescription = useMemo(() => description.trim(), [description]);
-  const editor = useMemo(() => createBrandGuideEditor(brandGuideId), [brandGuideId]);
   const debouncedDescriptionSave = useMemo(
     () =>
       editor.debounce(
         async () => {
           const pending = pendingDescriptionSave.current;
           if (!pending) return;
-          const { view } = await editor.saveLogo({
+          const saved = await editor.saveLogo({
             filename: pending.logo.filename,
             mimeType: pending.logo.mimeType,
             description: pending.description,
             storedFile: pending.logo,
           });
+          if (saved.stale) return;
           lastSavedDescription.current = pending.description;
-          pending.onViewChange(view);
+          pending.onViewChange(saved.view);
         },
         { errorLabel: "Logo" },
       ),
@@ -128,10 +133,10 @@ const LogoEditor = ({
         description: normalizedDescription,
         upload: { file },
       })
-      .then(({ view }) => {
-        if (cancelled) return;
+      .then((saved) => {
+        if (cancelled || saved.stale) return;
         lastSavedDescription.current = normalizedDescription;
-        onViewChange(view);
+        onViewChange(saved.view);
         setFile(null);
         if (!logo) onClose();
       })
@@ -143,8 +148,9 @@ const LogoEditor = ({
 
   const remove = async () => {
     try {
-      const { view } = await editor.deleteLogo();
-      onViewChange(view);
+      const saved = await editor.deleteLogo();
+      if (saved.stale) return;
+      onViewChange(saved.view);
       setDeleteOpen(false);
       onClose();
     } catch {

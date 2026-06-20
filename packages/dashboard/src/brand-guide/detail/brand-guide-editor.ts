@@ -69,7 +69,7 @@ export type SaveLogoRequest = Readonly<{
   storedFile?: Readonly<Pick<BrandKitVisualAsset, "filename" | "mimeType">>;
 }>;
 
-export type SaveResult = Readonly<{ view: BrandGuideView }>;
+export type OrderedSaveResult = Readonly<{ view: BrandGuideView; stale: boolean }>;
 
 export type DebouncedSave = Readonly<{
   schedule: () => void;
@@ -80,6 +80,8 @@ export class BrandGuideEditor {
   readonly #deps: BrandGuideEditorDependencies;
   readonly #brandGuideId: string;
   readonly #basePath: string;
+  #nextSaveSequence = 0;
+  #latestStartedSaveSequence = 0;
 
   constructor(brandGuideId: string, deps: BrandGuideEditorDependencies = defaultDependencies()) {
     this.#brandGuideId = brandGuideId;
@@ -89,17 +91,26 @@ export class BrandGuideEditor {
 
   async saveMetadata(
     metadata: Readonly<{ name: string; description: string }>,
-  ): Promise<SaveResult> {
-    const view = await this.#save<BrandGuideView>(`${this.#basePath}/metadata`, {
-      method: "PATCH",
-      body: { name: metadata.name, description: nullableText(metadata.description) },
-    });
-    this.#deps.publishBrandGuide(view.brandGuide);
-    return { view };
+  ): Promise<OrderedSaveResult> {
+    const save = this.#startSave();
+    try {
+      const view = await this.#save<BrandGuideView>(`${this.#basePath}/metadata`, {
+        method: "PATCH",
+        body: { name: metadata.name, description: nullableText(metadata.description) },
+      });
+      if (!save.stale()) this.#deps.publishBrandGuide(view.brandGuide);
+      return { view, stale: save.stale() };
+    } catch (error) {
+      if (!save.stale())
+        this.#deps.notify.error("Could not save Brand Guide metadata", {
+          description: errorMessage(error),
+        });
+      throw error;
+    }
   }
 
-  async savePresentationKit(presentationKit: PresentationKitView): Promise<SaveResult> {
-    const view = await this.#saveWithToast(
+  async savePresentationKit(presentationKit: PresentationKitView): Promise<OrderedSaveResult> {
+    const result = await this.#saveWithToast(
       "Presentation Kit",
       `${this.#basePath}/presentation-kit`,
       {
@@ -107,12 +118,12 @@ export class BrandGuideEditor {
         body: presentationKit,
       },
     );
-    this.#deps.publishBrandGuide(view.brandGuide);
-    return { view };
+    if (!result.stale) this.#deps.publishBrandGuide(result.view.brandGuide);
+    return result;
   }
 
-  async saveColorToken(request: SaveColorTokenRequest): Promise<SaveResult> {
-    const view = await this.#saveWithToast("Color Token", `${this.#basePath}/colors`, {
+  async saveColorToken(request: SaveColorTokenRequest): Promise<OrderedSaveResult> {
+    return this.#saveWithToast("Color Token", `${this.#basePath}/colors`, {
       method: "PUT",
       body: {
         previousName: request.previousName,
@@ -121,58 +132,49 @@ export class BrandGuideEditor {
         description: nullableText(request.description),
       },
     });
-    return { view };
   }
 
-  async deleteColorToken(name: string): Promise<SaveResult> {
-    const view = await this.#saveWithToast(
+  async deleteColorToken(name: string): Promise<OrderedSaveResult> {
+    return this.#saveWithToast(
       "Color Token",
       `${this.#basePath}/colors/${encodeURIComponent(name)}`,
       { method: "DELETE" },
       "delete",
     );
-    return { view };
   }
 
-  async saveLogo(request: SaveLogoRequest): Promise<SaveResult> {
-    const file = request.upload
-      ? await this.#deps.uploadAsset(this.#brandGuideId, "logo", request.upload.file)
-      : null;
-    const storedFile = request.storedFile ?? request;
-    const view = await this.#saveWithToast("Logo", `${this.#basePath}/logo`, {
-      method: "PUT",
-      body: {
-        filename: file?.filename ?? storedFile.filename,
-        mimeType: file?.mimeType ?? storedFile.mimeType,
-        description: nullableText(request.description),
-        s3Key: file?.s3Key ?? "",
-        byteSize: file?.byteSize ?? 0,
-        sha256: file?.sha256 ?? "",
-      },
+  async saveLogo(request: SaveLogoRequest): Promise<OrderedSaveResult> {
+    return this.#saveWithToast("Logo", async () => {
+      const file = request.upload
+        ? await this.#deps.uploadAsset(this.#brandGuideId, "logo", request.upload.file)
+        : null;
+      const storedFile = request.storedFile ?? request;
+      return this.#save<BrandGuideView>(`${this.#basePath}/logo`, {
+        method: "PUT",
+        body: {
+          filename: file?.filename ?? storedFile.filename,
+          mimeType: file?.mimeType ?? storedFile.mimeType,
+          description: nullableText(request.description),
+          s3Key: file?.s3Key ?? "",
+          byteSize: file?.byteSize ?? 0,
+          sha256: file?.sha256 ?? "",
+        },
+      });
     });
-    return { view };
   }
 
-  async deleteLogo(): Promise<SaveResult> {
-    const view = await this.#saveWithToast(
-      "Logo",
-      `${this.#basePath}/logo`,
-      { method: "DELETE" },
-      "delete",
-    );
-    return { view };
+  async deleteLogo(): Promise<OrderedSaveResult> {
+    return this.#saveWithToast("Logo", `${this.#basePath}/logo`, { method: "DELETE" }, "delete");
   }
 
-  async saveDecorativeAsset(request: SaveDecorativeAssetRequest): Promise<SaveResult> {
-    const uploadAssetId = request.upload?.assetId ?? request.name;
-    const file = request.upload
-      ? await this.#deps.uploadAsset(this.#brandGuideId, uploadAssetId, request.upload.file)
-      : null;
-    const storedFile = request.storedFile ?? request;
-    const view = await this.#saveWithToast(
-      "Decorative Asset",
-      `${this.#basePath}/decorative-assets`,
-      {
+  async saveDecorativeAsset(request: SaveDecorativeAssetRequest): Promise<OrderedSaveResult> {
+    return this.#saveWithToast("Decorative Asset", async () => {
+      const uploadAssetId = request.upload?.assetId ?? request.name;
+      const file = request.upload
+        ? await this.#deps.uploadAsset(this.#brandGuideId, uploadAssetId, request.upload.file)
+        : null;
+      const storedFile = request.storedFile ?? request;
+      return this.#save<BrandGuideView>(`${this.#basePath}/decorative-assets`, {
         method: "PUT",
         body: {
           previousName: request.previousName,
@@ -186,19 +188,17 @@ export class BrandGuideEditor {
             sha256: file?.sha256 ?? "",
           },
         },
-      },
-    );
-    return { view };
+      });
+    });
   }
 
-  async deleteDecorativeAsset(name: string): Promise<SaveResult> {
-    const view = await this.#saveWithToast(
+  async deleteDecorativeAsset(name: string): Promise<OrderedSaveResult> {
+    return this.#saveWithToast(
       "Decorative Asset",
       `${this.#basePath}/decorative-assets/${encodeURIComponent(name)}`,
       { method: "DELETE" },
       "delete",
     );
-    return { view };
   }
 
   debounce(
@@ -225,18 +225,31 @@ export class BrandGuideEditor {
 
   async #saveWithToast(
     label: string,
-    path: string,
-    options: Readonly<{ method: SaveMethod; body?: unknown }>,
+    pathOrSave: string | (() => Promise<BrandGuideView>),
+    options?: Readonly<{ method: SaveMethod; body?: unknown }>,
     action: "save" | "delete" = "save",
-  ): Promise<BrandGuideView> {
+  ): Promise<OrderedSaveResult> {
+    const save = this.#startSave();
     try {
-      const view = await this.#save<BrandGuideView>(path, options);
-      if (action === "save") this.#deps.notify.success("Changes saved");
-      return view;
+      const view =
+        typeof pathOrSave === "string"
+          ? await this.#save<BrandGuideView>(pathOrSave, options ?? { method: "PATCH" })
+          : await pathOrSave();
+      if (!save.stale() && action === "save") this.#deps.notify.success("Changes saved");
+      return { view, stale: save.stale() };
     } catch (error) {
-      this.#deps.notify.error(`Could not ${action} ${label}`, { description: errorMessage(error) });
+      if (!save.stale())
+        this.#deps.notify.error(`Could not ${action} ${label}`, {
+          description: errorMessage(error),
+        });
       throw error;
     }
+  }
+
+  #startSave(): Readonly<{ stale: () => boolean }> {
+    const sequence = ++this.#nextSaveSequence;
+    this.#latestStartedSaveSequence = sequence;
+    return { stale: () => sequence < this.#latestStartedSaveSequence };
   }
 
   async #save<T>(

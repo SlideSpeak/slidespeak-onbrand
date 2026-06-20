@@ -8,7 +8,7 @@ import type {
 
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { createBrandGuideEditor } from "../brand-guide-editor";
+import type { BrandGuideEditor } from "../brand-guide-editor";
 import type { AssetLayout } from "./asset-layout";
 import { AssetLayoutSwitch } from "./asset-layout-switch";
 import { AssetPreview } from "./asset-preview";
@@ -21,12 +21,14 @@ export const DecorativeAssetsSection = ({
   onAssetLayoutChange,
   decorativeAssets,
   brandGuideId,
+  editor,
   onViewChange,
 }: Readonly<{
   assetLayout: AssetLayout;
   onAssetLayoutChange?: (assetLayout: AssetLayout) => void;
   decorativeAssets: readonly BrandKitDecorativeAsset[];
   brandGuideId: string;
+  editor: BrandGuideEditor;
   onViewChange: (view: BrandGuideView) => void;
 }>) => {
   const [editing, setEditing] = useState<BrandKitDecorativeAsset | null>(null);
@@ -94,6 +96,7 @@ export const DecorativeAssetsSection = ({
         <DecorativeAssetEditor
           key={editing.id || "new"}
           brandGuideId={brandGuideId}
+          editor={editor}
           asset={editing.id ? editing : null}
           onClose={() => setEditing(null)}
           onViewChange={onViewChange}
@@ -105,11 +108,13 @@ export const DecorativeAssetsSection = ({
 
 const DecorativeAssetEditor = ({
   brandGuideId,
+  editor,
   asset,
   onClose,
   onViewChange,
 }: Readonly<{
   brandGuideId: string;
+  editor: BrandGuideEditor;
   asset: BrandKitDecorativeAsset | null;
   onClose: () => void;
   onViewChange: (view: BrandGuideView) => void;
@@ -129,14 +134,13 @@ const DecorativeAssetEditor = ({
     () => ({ name: name.trim(), description: description.trim() }),
     [description, name],
   );
-  const editor = useMemo(() => createBrandGuideEditor(brandGuideId), [brandGuideId]);
   const debouncedMetadataSave = useMemo(
     () =>
       editor.debounce(
         async () => {
           const pending = pendingMetadataSave.current;
           if (!pending) return;
-          const { view } = await editor.saveDecorativeAsset({
+          const saved = await editor.saveDecorativeAsset({
             previousName: previousName.current,
             name: pending.metadata.name,
             filename: pending.asset.filename,
@@ -144,9 +148,10 @@ const DecorativeAssetEditor = ({
             description: pending.metadata.description,
             storedFile: pending.asset,
           });
+          if (saved.stale) return;
           previousName.current = pending.metadata.name;
           lastSaved.current = pending.metadata;
-          pending.onViewChange(view);
+          pending.onViewChange(saved.view);
         },
         { errorLabel: "Decorative Asset" },
       ),
@@ -188,11 +193,11 @@ const DecorativeAssetEditor = ({
         description: normalized.description,
         upload: { file },
       })
-      .then(({ view }) => {
-        if (cancelled) return;
+      .then((saved) => {
+        if (cancelled || saved.stale) return;
         previousName.current = normalized.name;
         lastSaved.current = normalized;
-        onViewChange(view);
+        onViewChange(saved.view);
         setFile(null);
         if (!asset) onClose();
       })
@@ -204,8 +209,9 @@ const DecorativeAssetEditor = ({
   const remove = async () => {
     if (!asset) return;
     try {
-      const { view } = await editor.deleteDecorativeAsset(asset.name);
-      onViewChange(view);
+      const saved = await editor.deleteDecorativeAsset(asset.name);
+      if (saved.stale) return;
+      onViewChange(saved.view);
       setDeleteOpen(false);
       onClose();
     } catch {

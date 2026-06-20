@@ -5,6 +5,7 @@ import { BrandGuideMetadataSection } from "./brand-guide-metadata-section";
 import { BrandKitSections } from "./brand-kit/brand-kit-sections";
 import type { AssetLayout } from "./brand-kit/brand-kit-assets-sections";
 import {
+  type BrandGuideEditor,
   createBrandGuideEditor,
   optimisticMetadataView,
   optimisticPresentationKitView,
@@ -50,16 +51,16 @@ const BrandGuideDetailView = ({
   const saveMetadata = useCallback(
     async (metadata: { name: string; description: string }) => {
       setView((current) => optimisticMetadataView(current, metadata));
-      const { view: saved } = await editor.saveMetadata(metadata);
-      setView(saved);
+      const saved = await editor.saveMetadata(metadata);
+      if (!saved.stale) setView(saved.view);
     },
     [editor],
   );
 
   const savePresentationKit = async (presentationKit: BrandGuideView["presentationKit"]) => {
     setView((current) => optimisticPresentationKitView(current, presentationKit));
-    const { view: saved } = await editor.savePresentationKit(presentationKit);
-    setView(saved);
+    const saved = await editor.savePresentationKit(presentationKit);
+    if (!saved.stale) setView(saved.view);
   };
 
   return (
@@ -77,6 +78,7 @@ const BrandGuideDetailView = ({
         view={view}
         section={section}
         onAssetLayoutChange={setAssetLayout}
+        editor={editor}
         onViewChange={setView}
         onMetadataChange={saveMetadata}
         onPresentationKitChange={savePresentationKit}
@@ -91,12 +93,14 @@ const BrandGuideSectionPage = ({
   section,
   onViewChange,
   onAssetLayoutChange,
+  editor,
   onMetadataChange,
   onPresentationKitChange,
 }: Readonly<{
   assetLayout: AssetLayout;
   view: BrandGuideView;
   section: BrandGuideSection;
+  editor: BrandGuideEditor;
   onViewChange: (view: BrandGuideView) => void;
   onAssetLayoutChange: (assetLayout: AssetLayout) => void;
   onMetadataChange: (metadata: { name: string; description: string }) => Promise<void>;
@@ -115,6 +119,7 @@ const BrandGuideSectionPage = ({
         <BrandKitSections
           brandKit={view.brandKit}
           brandGuideId={view.brandGuide.id}
+          editor={editor}
           section="COLORS"
           onViewChange={onViewChange}
         />
@@ -124,6 +129,7 @@ const BrandGuideSectionPage = ({
         <BrandKitSections
           brandKit={view.brandKit}
           brandGuideId={view.brandGuide.id}
+          editor={editor}
           section="LOGO"
           onViewChange={onViewChange}
         />
@@ -135,6 +141,7 @@ const BrandGuideSectionPage = ({
           onAssetLayoutChange={onAssetLayoutChange}
           brandKit={view.brandKit}
           brandGuideId={view.brandGuide.id}
+          editor={editor}
           section="ASSETS"
           onViewChange={onViewChange}
         />
