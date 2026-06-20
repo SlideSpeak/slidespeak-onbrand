@@ -69,13 +69,11 @@ export const useDashboardTheme = () => {
   const [theme, setThemeState] = useState<ThemeMode>(getCurrentTheme);
 
   useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
-
-  useEffect(() => {
     const onStorage = (event: StorageEvent) => {
       if (event.key !== THEME_STORAGE_KEY) return;
-      setThemeState(getInitialTheme());
+      const nextTheme = getInitialTheme();
+      applyTheme(nextTheme);
+      setThemeState(nextTheme);
     };
 
     window.addEventListener("storage", onStorage);

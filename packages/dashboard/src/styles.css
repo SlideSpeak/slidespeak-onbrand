@@ -240,18 +240,26 @@
   }
 
   .onbrand-asset-preview-surface {
-    background-color: #f8fafc;
+    --onbrand-asset-preview-base: #f8fafc;
+    --onbrand-asset-preview-check: rgba(15, 23, 42, 0.06);
+
+    background-color: var(--onbrand-asset-preview-base);
     background-image:
-      linear-gradient(45deg, rgba(15, 23, 42, 0.06) 25%, transparent 25%),
-      linear-gradient(-45deg, rgba(15, 23, 42, 0.06) 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, rgba(15, 23, 42, 0.06) 75%),
-      linear-gradient(-45deg, transparent 75%, rgba(15, 23, 42, 0.06) 75%);
+      linear-gradient(45deg, var(--onbrand-asset-preview-check) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--onbrand-asset-preview-check) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--onbrand-asset-preview-check) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--onbrand-asset-preview-check) 75%);
     background-position:
       0 0,
       0 10px,
       10px -10px,
       -10px 0;
     background-size: 20px 20px;
+  }
+
+  :root.dark .onbrand-asset-preview-surface {
+    --onbrand-asset-preview-base: #111827;
+    --onbrand-asset-preview-check: rgba(248, 250, 252, 0.08);
   }
 
   @media (prefers-reduced-motion: reduce) {

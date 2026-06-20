@@ -27,7 +27,7 @@ import { ErrorMessage } from "../shared/ui/feedback";
 import onbrandLogoUrl from "../assets/onbrand-logo.svg";
 import { routeFromPathname } from "./route";
 import { ThemeToggle } from "./theme-toggle";
-import { useDashboardTheme } from "./theme";
+import { type ThemeMode, useDashboardTheme } from "./theme";
 
 const NO_BRAND_GUIDE = "NO_BRAND_GUIDE";
 const GRAIN_TEXTURE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
@@ -394,11 +394,11 @@ const DashboardTopBar = ({
   theme,
 }: Readonly<{
   brandGuides: ApiState<readonly BrandGuideSummary[]>;
-  onThemeChange: (theme: "light" | "dark") => void;
+  onThemeChange: (theme: ThemeMode) => void;
   selectedBrandGuideId?: string;
   selectedBrandGuideName?: string;
   selectedBrandGuideSection?: BrandGuideSection;
-  theme: "light" | "dark";
+  theme: ThemeMode;
 }>) => {
   const navigate = useNavigate();
 
