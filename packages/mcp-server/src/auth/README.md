@@ -2,7 +2,7 @@
 
 OnBrand by SlideSpeak is currently supported for local and development deployments. It is designed
 to run as a standalone MCP service when paired with a compatible OAuth provider, Postgres, and S3.
-The examples below are generic and are not tied to SlideSpeak production infrastructure.
+The examples below are generic and are not tied to any production infrastructure.
 
 ## OAuth Provider Contract
 

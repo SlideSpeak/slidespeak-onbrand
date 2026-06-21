@@ -6,9 +6,9 @@ OnBrand by SlideSpeak is an in-development MCP service and dashboard that gives 
 governed brand knowledge: Brand Guides, Brand Kit assets, color tokens, logo guidance, and
 presentation design prompts.
 
-The repository is being prepared for public development as a standalone service. It can run outside
-SlideSpeak infrastructure when you provide a compatible OAuth provider, Postgres database, and S3
-bucket. Production hardening is not complete yet, so treat the current support level as local and
+The repository is being prepared for public development as a standalone service. It can run in any
+environment where you provide a compatible OAuth provider, Postgres database, and S3 bucket.
+Production hardening is not complete yet, so treat the current support level as local and
 development deployments only.
 
 ## Quick Start

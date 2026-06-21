@@ -41,14 +41,14 @@ describe("OnBrand environment", () => {
     );
   });
 
-  it("does not accept legacy SlideSpeak OAuth aliases", () => {
+  it("does not accept provider-specific OAuth aliases", () => {
     expect(() =>
       Env.validate({
         ...validEnv,
         OAUTH_ISSUER: "",
-        SLIDESPEAK_OAUTH_ISSUER: "https://oauth.example",
-        SLIDESPEAK_JWKS_URL: "https://oauth.example/jwks.json",
-        DASHBOARD_OAUTH_CLIENT_ID: "legacy-dashboard",
+        LEGACY_OAUTH_ISSUER: "https://oauth.example",
+        LEGACY_JWKS_URL: "https://oauth.example/jwks.json",
+        LEGACY_DASHBOARD_CLIENT_ID: "legacy-dashboard",
       }),
     ).toThrow(/OAUTH_ISSUER/);
   });
