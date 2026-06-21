@@ -2,6 +2,16 @@
   "name": "@onbrand/core",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SlideSpeak/slidespeak-onbrand.git",
+    "directory": "packages/onbrand"
+  },
+  "bugs": {
+    "url": "https://github.com/SlideSpeak/slidespeak-onbrand/issues"
+  },
+  "homepage": "https://github.com/SlideSpeak/slidespeak-onbrand#readme",
   "type": "module",
   "exports": {
     "./brand-guide/owner": "./src/brand-guide/owner.ts",

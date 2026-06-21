@@ -1,6 +1,16 @@
 {
   "name": "@onbrand/dashboard",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SlideSpeak/slidespeak-onbrand.git",
+    "directory": "packages/dashboard"
+  },
+  "bugs": {
+    "url": "https://github.com/SlideSpeak/slidespeak-onbrand/issues"
+  },
+  "homepage": "https://github.com/SlideSpeak/slidespeak-onbrand#readme",
   "type": "module",
   "dependencies": {
     "@onbrand/core": "workspace:*",
