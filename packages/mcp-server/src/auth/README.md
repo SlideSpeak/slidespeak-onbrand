@@ -89,20 +89,22 @@ codex mcp login onbrand
 
 ## Required Environment
 
-| Variable                         | Required | Default                                                                            | Notes                                                              |
-| -------------------------------- | -------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `DATABASE_URL`                   | Yes      | `postgresql://onbrand:onbrand@localhost:5433/onbrand?schema=public` outside Docker | Use the Docker host `postgres` when running with `docker compose`. |
-| `BASE_URL`                       | Yes      | `http://localhost:8080`                                                            | Public origin. The MCP resource is `${BASE_URL}/mcp`.              |
-| `OAUTH_ISSUER`                   | Yes      | None                                                                               | Expected access-token issuer.                                      |
-| `OAUTH_AUTHORIZATION_ENDPOINT`   | Yes      | None                                                                               | Browser authorization URL.                                         |
-| `OAUTH_TOKEN_ENDPOINT`           | Yes      | None                                                                               | Token exchange URL.                                                |
-| `OAUTH_JWKS_URL`                 | Yes      | None                                                                               | JWKS URL used for token verification.                              |
-| `OAUTH_DASHBOARD_CLIENT_ID`      | Yes      | None                                                                               | Static OAuth client ID for the bundled dashboard.                  |
-| `DASHBOARD_SESSION_SECRET`       | Yes      | None                                                                               | Long random value used to sign dashboard cookies.                  |
-| `AWS_S3_BUCKET_BRAND_KIT_ASSETS` | Yes      | None                                                                               | S3 bucket that stores uploaded Brand Kit assets.                   |
-| `AWS_REGION`                     | Yes      | `us-east-1`                                                                        | AWS region for the S3 client.                                      |
-| `AWS_ACCESS_KEY_ID`              | Yes      | None                                                                               | AWS credential with Brand Kit asset bucket access.                 |
-| `AWS_SECRET_ACCESS_KEY`          | Yes      | None                                                                               | Matching AWS secret credential.                                    |
+| Variable                         | Required | Default                                                                            | Notes                                                                   |
+| -------------------------------- | -------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `DATABASE_URL`                   | Yes      | `postgresql://onbrand:onbrand@localhost:5433/onbrand?schema=public` outside Docker | Use the Docker host `postgres` when running with `docker compose`.      |
+| `BASE_URL`                       | Yes      | `http://localhost:8080`                                                            | Public origin. Derives dashboard social metadata and `${BASE_URL}/mcp`. |
+| `OAUTH_ISSUER`                   | Yes      | None                                                                               | Expected access-token issuer.                                           |
+| `OAUTH_AUTHORIZATION_ENDPOINT`   | Yes      | None                                                                               | Browser authorization URL.                                              |
+| `OAUTH_TOKEN_ENDPOINT`           | Yes      | None                                                                               | Token exchange URL.                                                     |
+| `OAUTH_JWKS_URL`                 | Yes      | None                                                                               | JWKS URL used for token verification.                                   |
+| `OAUTH_DASHBOARD_CLIENT_ID`      | Yes      | None                                                                               | Static OAuth client ID for the bundled dashboard.                       |
+| `OAUTH_REQUIRED_READ_SCOPE`      | Yes      | `onbrand:read`                                                                     | Required scope for read-only MCP tools.                                 |
+| `OAUTH_REQUIRED_WRITE_SCOPE`     | Yes      | `onbrand:write`                                                                    | Required scope for mutating MCP tools.                                  |
+| `DASHBOARD_SESSION_SECRET`       | Yes      | None                                                                               | Long random value used to sign dashboard cookies.                       |
+| `AWS_S3_BUCKET_BRAND_KIT_ASSETS` | Yes      | None                                                                               | S3 bucket that stores uploaded Brand Kit assets.                        |
+| `AWS_REGION`                     | Yes      | `us-east-1`                                                                        | AWS region for the S3 client.                                           |
+| `AWS_ACCESS_KEY_ID`              | Yes      | None                                                                               | AWS credential with Brand Kit asset bucket access.                      |
+| `AWS_SECRET_ACCESS_KEY`          | Yes      | None                                                                               | Matching AWS secret credential.                                         |
 
 Optional variables:
 
