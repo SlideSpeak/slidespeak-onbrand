@@ -165,7 +165,7 @@ const main = async (): Promise<void> => {
     dashboardClientId: runtimeConfig.dashboardClientId,
     mcpUrl: runtimeConfig.mcpUrl,
     requiredScopes: runtimeConfig.requiredScopes,
-    tokenEndpoint: runtimeConfig.tokenEndpoint,
+    tokenEndpoint: runtimeConfig.backchannelTokenEndpoint,
     verifier,
     verifyBearerAuth,
   });
@@ -178,7 +178,7 @@ const main = async (): Promise<void> => {
       baseUrl: runtimeConfig.baseUrl,
       clientId: runtimeConfig.dashboardClientId,
       mcpUrl: runtimeConfig.mcpUrl,
-      tokenEndpoint: runtimeConfig.tokenEndpoint,
+      tokenEndpoint: runtimeConfig.backchannelTokenEndpoint,
       verifier,
       verifyBearerAuth,
     },

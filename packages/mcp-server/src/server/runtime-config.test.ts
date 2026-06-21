@@ -7,6 +7,7 @@ const env = {
   OAUTH_ISSUER: "https://oauth.example/",
   OAUTH_AUTHORIZATION_ENDPOINT: "https://oauth.example/authorize",
   OAUTH_TOKEN_ENDPOINT: "https://oauth.example/token",
+  OAUTH_BACKCHANNEL_TOKEN_ENDPOINT: "http://oauth.internal/token",
   OAUTH_REGISTRATION_ENDPOINT: "https://oauth.example/register",
   OAUTH_JWKS_URL: "https://oauth.example/jwks.json",
   OAUTH_DASHBOARD_CLIENT_ID: "onbrand-dashboard",
@@ -30,6 +31,7 @@ describe("OAuth runtime config", () => {
     expect(config.issuer).toBe("https://oauth.example");
     expect(config.authorizationEndpoint).toBe(env.OAUTH_AUTHORIZATION_ENDPOINT);
     expect(config.tokenEndpoint).toBe(env.OAUTH_TOKEN_ENDPOINT);
+    expect(config.backchannelTokenEndpoint).toBe(env.OAUTH_BACKCHANNEL_TOKEN_ENDPOINT);
     expect(config.registrationEndpoint).toBe(env.OAUTH_REGISTRATION_ENDPOINT);
     expect(config.jwksUrl).toBe(env.OAUTH_JWKS_URL);
     expect(config.dashboardClientId).toBe(env.OAUTH_DASHBOARD_CLIENT_ID);
@@ -41,5 +43,19 @@ describe("OAuth runtime config", () => {
     expect(
       buildOAuthRuntimeConfig({ ...env, OAUTH_REGISTRATION_ENDPOINT: "" }).registrationEndpoint,
     ).toBeUndefined();
+  });
+
+  it("defaults the backchannel token endpoint to the public token endpoint", () => {
+    const publicOnlyEnv = { ...env, OAUTH_BACKCHANNEL_TOKEN_ENDPOINT: undefined };
+
+    expect(buildOAuthRuntimeConfig(publicOnlyEnv).backchannelTokenEndpoint).toBe(
+      publicOnlyEnv.OAUTH_TOKEN_ENDPOINT,
+    );
+    expect(
+      buildOAuthRuntimeConfig({
+        ...env,
+        OAUTH_BACKCHANNEL_TOKEN_ENDPOINT: "",
+      }).backchannelTokenEndpoint,
+    ).toBe(env.OAUTH_TOKEN_ENDPOINT);
   });
 });

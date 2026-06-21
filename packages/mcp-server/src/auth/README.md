@@ -23,7 +23,8 @@ DATABASE_URL=postgresql://onbrand:onbrand@postgres:5432/onbrand?schema=public
 BASE_URL=http://localhost:8080
 OAUTH_ISSUER=http://localhost:3000
 OAUTH_AUTHORIZATION_ENDPOINT=http://localhost:3000/oauth/authorize
-OAUTH_TOKEN_ENDPOINT=http://host.docker.internal:3000/oauth/token
+OAUTH_TOKEN_ENDPOINT=http://localhost:3000/oauth/token
+OAUTH_BACKCHANNEL_TOKEN_ENDPOINT=http://host.docker.internal:3000/oauth/token
 OAUTH_REGISTRATION_ENDPOINT=http://localhost:3000/oauth/register
 OAUTH_JWKS_URL=http://host.docker.internal:3000/oauth/jwks.json
 OAUTH_DASHBOARD_CLIENT_ID=onbrand-dashboard
@@ -37,9 +38,11 @@ AWS_ACCESS_KEY_ID=your-real-access-key
 AWS_SECRET_ACCESS_KEY=your-real-secret-key
 ```
 
-The endpoint variables are explicit so browser redirects can use `localhost` while server-to-server
-token and JWKS calls from the OnBrand container can use `host.docker.internal`. The token issuer
-remains `http://localhost:3000`.
+The public endpoint variables are explicit so browser redirects and OAuth metadata can use
+`localhost`, while server-to-server token and JWKS calls from the OnBrand container can use
+`host.docker.internal`. `OAUTH_BACKCHANNEL_TOKEN_ENDPOINT` defaults to `OAUTH_TOKEN_ENDPOINT`, so
+set it only when the OnBrand server needs a different network route. The token issuer remains
+`http://localhost:3000`.
 
 Connect Codex:
 
@@ -64,6 +67,8 @@ BASE_URL=https://onbrand-mcp.slidespeak.co
 OAUTH_ISSUER=https://app.slidespeak.co
 OAUTH_AUTHORIZATION_ENDPOINT=https://app.slidespeak.co/oauth/authorize
 OAUTH_TOKEN_ENDPOINT=https://app.slidespeak.co/oauth/token
+# Optional; defaults to OAUTH_TOKEN_ENDPOINT unless the server needs a private network route.
+OAUTH_BACKCHANNEL_TOKEN_ENDPOINT=https://app.slidespeak.co/oauth/token
 OAUTH_REGISTRATION_ENDPOINT=https://app.slidespeak.co/oauth/register
 OAUTH_JWKS_URL=https://app.slidespeak.co/oauth/jwks.json
 OAUTH_DASHBOARD_CLIENT_ID=onbrand-dashboard
