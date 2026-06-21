@@ -81,8 +81,6 @@ Required environment variables for a real deployment:
 | `OAUTH_TOKEN_ENDPOINT`           | Token exchange endpoint.                                                 |
 | `OAUTH_JWKS_URL`                 | JWKS endpoint used to verify access token signatures.                    |
 | `OAUTH_DASHBOARD_CLIENT_ID`      | Static dashboard OAuth client ID.                                        |
-| `OAUTH_REQUIRED_READ_SCOPE`      | Read scope required by read-only MCP tools.                              |
-| `OAUTH_REQUIRED_WRITE_SCOPE`     | Write scope required by mutating MCP tools.                              |
 | `DASHBOARD_SESSION_SECRET`       | Secret used to sign dashboard session cookies.                           |
 | `AWS_S3_BUCKET_BRAND_KIT_ASSETS` | Bucket for uploaded Brand Kit assets.                                    |
 | `AWS_REGION`                     | AWS region for the Brand Kit asset bucket.                               |
@@ -91,12 +89,14 @@ Required environment variables for a real deployment:
 
 Optional environment variables:
 
-| Variable                            | Purpose                                                                 |
-| ----------------------------------- | ----------------------------------------------------------------------- |
-| `OAUTH_REGISTRATION_ENDPOINT`       | Dynamic client registration endpoint advertised to MCP clients.         |
-| `OAUTH_OWNER_ID_CLAIM`              | JWT claim used as the OnBrand owner identifier. Defaults to `sub`.      |
-| `ASSET_DOWNLOAD_EXPIRES_IN_SECONDS` | Presigned S3 URL lifetime. Defaults to `900`.                           |
-| `DASHBOARD_DEV_SERVER_URL`          | Development-only dashboard Vite proxy URL used by `docker-compose.yml`. |
+| Variable                            | Purpose                                                                  |
+| ----------------------------------- | ------------------------------------------------------------------------ |
+| `OAUTH_REGISTRATION_ENDPOINT`       | Dynamic client registration endpoint advertised to MCP clients.          |
+| `OAUTH_REQUIRED_READ_SCOPE`         | Read scope required by read-only MCP tools. Defaults to `onbrand:read`.  |
+| `OAUTH_REQUIRED_WRITE_SCOPE`        | Write scope required by mutating MCP tools. Defaults to `onbrand:write`. |
+| `OAUTH_OWNER_ID_CLAIM`              | JWT claim used as the OnBrand owner identifier. Defaults to `sub`.       |
+| `ASSET_DOWNLOAD_EXPIRES_IN_SECONDS` | Presigned S3 URL lifetime. Defaults to `900`.                            |
+| `DASHBOARD_DEV_SERVER_URL`          | Development-only dashboard Vite proxy URL used by `docker-compose.yml`.  |
 
 ## Available Tools
 

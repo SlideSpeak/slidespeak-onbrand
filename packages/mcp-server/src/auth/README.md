@@ -70,8 +70,6 @@ codex mcp login onbrand
 | `OAUTH_TOKEN_ENDPOINT`           | Yes      | None                                                                               | Token exchange URL.                                                |
 | `OAUTH_JWKS_URL`                 | Yes      | None                                                                               | JWKS URL used for token verification.                              |
 | `OAUTH_DASHBOARD_CLIENT_ID`      | Yes      | None                                                                               | Static OAuth client ID for the bundled dashboard.                  |
-| `OAUTH_REQUIRED_READ_SCOPE`      | Yes      | `onbrand:read`                                                                     | Required scope for read-only MCP tools.                            |
-| `OAUTH_REQUIRED_WRITE_SCOPE`     | Yes      | `onbrand:write`                                                                    | Required scope for mutating MCP tools.                             |
 | `DASHBOARD_SESSION_SECRET`       | Yes      | None                                                                               | Long random value used to sign dashboard cookies.                  |
 | `AWS_S3_BUCKET_BRAND_KIT_ASSETS` | Yes      | None                                                                               | S3 bucket that stores uploaded Brand Kit assets.                   |
 | `AWS_REGION`                     | Yes      | `us-east-1`                                                                        | AWS region for the S3 client.                                      |
@@ -80,12 +78,14 @@ codex mcp login onbrand
 
 Optional variables:
 
-| Variable                            | Default | Notes                                                                |
-| ----------------------------------- | ------- | -------------------------------------------------------------------- |
-| `OAUTH_REGISTRATION_ENDPOINT`       | None    | Advertised when your provider supports dynamic client registration.  |
-| `OAUTH_OWNER_ID_CLAIM`              | `sub`   | Claim that maps OAuth identities to OnBrand owners.                  |
-| `ASSET_DOWNLOAD_EXPIRES_IN_SECONDS` | `900`   | Lifetime for presigned asset download URLs.                          |
-| `DASHBOARD_DEV_SERVER_URL`          | None    | Used by local Docker Compose to proxy the Vite dashboard dev server. |
+| Variable                            | Default         | Notes                                                                |
+| ----------------------------------- | --------------- | -------------------------------------------------------------------- |
+| `OAUTH_REGISTRATION_ENDPOINT`       | None            | Advertised when your provider supports dynamic client registration.  |
+| `OAUTH_REQUIRED_READ_SCOPE`         | `onbrand:read`  | Scope required by read-only MCP tools.                               |
+| `OAUTH_REQUIRED_WRITE_SCOPE`        | `onbrand:write` | Scope required by mutating MCP tools.                                |
+| `OAUTH_OWNER_ID_CLAIM`              | `sub`           | Claim that maps OAuth identities to OnBrand owners.                  |
+| `ASSET_DOWNLOAD_EXPIRES_IN_SECONDS` | `900`           | Lifetime for presigned asset download URLs.                          |
+| `DASHBOARD_DEV_SERVER_URL`          | None            | Used by local Docker Compose to proxy the Vite dashboard dev server. |
 
 ## Generic Local `.env`
 
@@ -99,8 +99,8 @@ BASE_URL=http://localhost:8080
 OAUTH_ISSUER=http://localhost:3000
 OAUTH_AUTHORIZATION_ENDPOINT=http://localhost:3000/oauth/authorize
 OAUTH_TOKEN_ENDPOINT=http://host.docker.internal:3000/oauth/token
-OAUTH_REGISTRATION_ENDPOINT=http://localhost:3000/oauth/register
 OAUTH_JWKS_URL=http://host.docker.internal:3000/oauth/jwks.json
+OAUTH_REGISTRATION_ENDPOINT=http://localhost:3000/oauth/register
 OAUTH_DASHBOARD_CLIENT_ID=onbrand-dashboard
 OAUTH_REQUIRED_READ_SCOPE=onbrand:read
 OAUTH_REQUIRED_WRITE_SCOPE=onbrand:write
