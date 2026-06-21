@@ -31,6 +31,7 @@ import type { ApiState } from "../shared/api/api-state";
 import { ErrorMessage } from "../shared/ui/feedback";
 import onbrandLogoUrl from "../assets/onbrand-logo.svg";
 import { routeFromPathname } from "./route";
+import { onboardingConnections } from "./runtime-config";
 import { ThemeToggle } from "./theme-toggle";
 import { type ThemeMode, useDashboardTheme } from "./theme";
 
@@ -400,30 +401,7 @@ const CreateBrandGuideButton = () => {
 const OnboardingInstructions = ({
   variant = "light",
 }: Readonly<{ variant?: "light" | "dark" }>) => {
-  const mcpUrl = "https://onbrand.slidespeak.co/mcp";
-  const connections = [
-    {
-      name: "Codex",
-      icon: "codex",
-      value: `codex mcp add onbrand --url ${mcpUrl}`,
-    },
-    {
-      name: "Claude Code",
-      icon: "claude",
-      value: `claude mcp add --transport http onbrand ${mcpUrl}`,
-    },
-    {
-      name: "Cursor",
-      icon: "cursor",
-      value: `{
-  "mcpServers": {
-    "onbrand": {
-      "url": "${mcpUrl}"
-    }
-  }
-}`,
-    },
-  ] as const satisfies readonly { name: string; value: string; icon: McpClientIconName }[];
+  const connections = onboardingConnections();
 
   return (
     <section className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center">

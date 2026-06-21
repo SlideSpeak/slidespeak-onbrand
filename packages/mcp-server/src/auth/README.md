@@ -2,7 +2,7 @@
 
 ## Local
 
-Run the SlideSpeak web app on `localhost:3000`, then start OnBrand from the repository root:
+Run a compatible OAuth provider on `localhost:3000`, then start OnBrand from the repository root:
 
 ```sh
 docker compose up -d
@@ -21,8 +21,15 @@ Local `.env`:
 ```env
 DATABASE_URL=postgresql://onbrand:onbrand@postgres:5432/onbrand?schema=public
 BASE_URL=http://localhost:8080
-SLIDESPEAK_OAUTH_ISSUER=http://localhost:3000
-SLIDESPEAK_JWKS_URL=http://host.docker.internal:3000/oauth/jwks.json
+OAUTH_ISSUER=http://localhost:3000
+OAUTH_AUTHORIZATION_ENDPOINT=http://localhost:3000/oauth/authorize
+OAUTH_TOKEN_ENDPOINT=http://host.docker.internal:3000/oauth/token
+OAUTH_REGISTRATION_ENDPOINT=http://localhost:3000/oauth/register
+OAUTH_JWKS_URL=http://host.docker.internal:3000/oauth/jwks.json
+OAUTH_DASHBOARD_CLIENT_ID=onbrand-dashboard
+OAUTH_REQUIRED_READ_SCOPE=onbrand:read
+OAUTH_REQUIRED_WRITE_SCOPE=onbrand:write
+OAUTH_OWNER_ID_CLAIM=sub
 ASSET_DOWNLOAD_EXPIRES_IN_SECONDS=900
 AWS_S3_BUCKET_BRAND_KIT_ASSETS=onbrand-brand-kit-assets
 AWS_REGION=us-east-2
@@ -30,8 +37,9 @@ AWS_ACCESS_KEY_ID=your-real-access-key
 AWS_SECRET_ACCESS_KEY=your-real-secret-key
 ```
 
-`SLIDESPEAK_JWKS_URL` is only needed locally because the OnBrand container must reach the SlideSpeak
-app running on the host machine. The token issuer remains `http://localhost:3000`.
+The endpoint variables are explicit so browser redirects can use `localhost` while server-to-server
+token and JWKS calls from the OnBrand container can use `host.docker.internal`. The token issuer
+remains `http://localhost:3000`.
 
 Connect Codex:
 
@@ -53,18 +61,20 @@ Required prod `.env`:
 ```env
 DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/onbrand?schema=public
 BASE_URL=https://onbrand-mcp.slidespeak.co
-SLIDESPEAK_OAUTH_ISSUER=https://app.slidespeak.co
+OAUTH_ISSUER=https://app.slidespeak.co
+OAUTH_AUTHORIZATION_ENDPOINT=https://app.slidespeak.co/oauth/authorize
+OAUTH_TOKEN_ENDPOINT=https://app.slidespeak.co/oauth/token
+OAUTH_REGISTRATION_ENDPOINT=https://app.slidespeak.co/oauth/register
+OAUTH_JWKS_URL=https://app.slidespeak.co/oauth/jwks.json
+OAUTH_DASHBOARD_CLIENT_ID=onbrand-dashboard
+OAUTH_REQUIRED_READ_SCOPE=onbrand:read
+OAUTH_REQUIRED_WRITE_SCOPE=onbrand:write
+OAUTH_OWNER_ID_CLAIM=sub
 ASSET_DOWNLOAD_EXPIRES_IN_SECONDS=900
 AWS_S3_BUCKET_BRAND_KIT_ASSETS=onbrand-brand-kit-assets
 AWS_REGION=us-east-2
 AWS_ACCESS_KEY_ID=your-real-access-key
 AWS_SECRET_ACCESS_KEY=your-real-secret-key
-```
-
-`SLIDESPEAK_JWKS_URL` is normally omitted in prod. OnBrand defaults it to:
-
-```txt
-${SLIDESPEAK_OAUTH_ISSUER}/oauth/jwks.json
 ```
 
 `BASE_URL` must match the public MCP URL clients use. Tokens are accepted only when their

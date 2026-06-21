@@ -5,7 +5,7 @@ const defaultDatabaseUrl = "postgresql://test:test@localhost:5432/test";
 
 const requiredTestEnv = {
   BASE_URL: "https://onbrand.example",
-  SLIDESPEAK_OAUTH_ISSUER: "https://slidespeak.example",
+  OAUTH_ISSUER: "https://oauth.example",
   AWS_S3_BUCKET_BRAND_KIT_ASSETS: "brand-kit-assets",
   AWS_ACCESS_KEY_ID: "test-access-key",
   AWS_SECRET_ACCESS_KEY: "test-secret-key",
@@ -13,8 +13,8 @@ const requiredTestEnv = {
 
 const Env = createEnvRegistry({
   BASE_URL: requiredString("BASE_URL"),
-  SLIDESPEAK_OAUTH_ISSUER: requiredString("SLIDESPEAK_OAUTH_ISSUER"),
-  SLIDESPEAK_JWKS_URL: optionalString("SLIDESPEAK_JWKS_URL"),
+  OAUTH_ISSUER: requiredString("OAUTH_ISSUER"),
+  OAUTH_REGISTRATION_ENDPOINT: optionalString("OAUTH_REGISTRATION_ENDPOINT"),
   ASSET_DOWNLOAD_EXPIRES_IN_SECONDS: requiredPositiveInteger(
     "ASSET_DOWNLOAD_EXPIRES_IN_SECONDS",
     900,
