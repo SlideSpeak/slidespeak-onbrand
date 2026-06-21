@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Env } from "./env";
 
 const validEnv = {
+  BASE_URL: "https://onbrand.example",
   OAUTH_ISSUER: "https://oauth.example",
   OAUTH_AUTHORIZATION_ENDPOINT: "https://oauth.example/authorize",
   OAUTH_TOKEN_ENDPOINT: "https://oauth.example/token",
@@ -28,6 +29,7 @@ describe("OnBrand environment", () => {
   });
 
   it.each([
+    "BASE_URL",
     "OAUTH_ISSUER",
     "OAUTH_AUTHORIZATION_ENDPOINT",
     "OAUTH_TOKEN_ENDPOINT",

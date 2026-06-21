@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { exportJWK, generateKeyPair, SignJWT, type JWTPayload } from "jose";
-import { InvalidTokenError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
+import {
+  InsufficientScopeError,
+  InvalidTokenError,
+} from "@modelcontextprotocol/sdk/server/auth/errors.js";
 
 import { OAuthAccessTokenVerifier } from "./oauth-token-verifier";
 
@@ -56,14 +59,21 @@ describe("OAuthAccessTokenVerifier", () => {
     ["wrong issuer", () => signToken({ issuer: "https://wrong.example" })],
     ["missing audience", () => signToken({ audience: null })],
     ["wrong audience", () => signToken({ audience: "https://wrong.example/mcp" })],
-    ["missing scopes", () => signToken({ scope: null })],
-    ["incomplete scopes", () => signToken({ scope: "onbrand:read" })],
     ["missing owner identity", () => signToken({ subject: null })],
     ["expired token", () => signToken({ expiresAt: Math.floor(Date.now() / 1000) - 60 })],
     ["bad signature", signTokenWithUntrustedKey],
   ])("rejects a token with %s", async (_name, buildToken) => {
     await expect(verifier().verifyAccessToken(await buildToken())).rejects.toBeInstanceOf(
       InvalidTokenError,
+    );
+  });
+
+  it.each([
+    ["missing scopes", () => signToken({ scope: null })],
+    ["incomplete scopes", () => signToken({ scope: "onbrand:read" })],
+  ])("rejects a token with %s as insufficient scope", async (_name, buildToken) => {
+    await expect(verifier().verifyAccessToken(await buildToken())).rejects.toBeInstanceOf(
+      InsufficientScopeError,
     );
   });
 

@@ -1,7 +1,10 @@
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
 import type { OAuthTokenVerifier } from "@modelcontextprotocol/sdk/server/auth/provider.js";
 import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
-import { InvalidTokenError } from "@modelcontextprotocol/sdk/server/auth/errors.js";
+import {
+  InsufficientScopeError,
+  InvalidTokenError,
+} from "@modelcontextprotocol/sdk/server/auth/errors.js";
 
 export type OAuthAccessTokenVerifierOptions = Readonly<{
   issuer: string;
@@ -45,7 +48,7 @@ export class OAuthAccessTokenVerifier implements OAuthTokenVerifier {
     const scopes =
       typeof payload.scope === "string" ? payload.scope.split(/\s+/).filter(Boolean) : [];
     if (!this.options.requiredScopes.every((scope) => scopes.includes(scope))) {
-      throw new InvalidTokenError("OAuth access token is missing required scope");
+      throw new InsufficientScopeError("OAuth access token is missing required scope");
     }
 
     return {
