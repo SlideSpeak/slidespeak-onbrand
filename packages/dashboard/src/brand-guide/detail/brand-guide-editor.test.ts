@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type {
   BrandGuideView,
   PreparedBrandGuideAssetUpload,
+  PresentationKitView,
 } from "@onbrand/core/brand-guide/application-service";
 
 import { BrandGuideEditor, optimisticMetadataView } from "./brand-guide-editor";
@@ -42,6 +43,8 @@ const upload = (
 });
 
 const file = (name: string, type: string): File => ({ name, type }) as File;
+
+const presentationKitView = (value: unknown): PresentationKitView => value as PresentationKitView;
 
 const createEditor = (view = baseView()) => {
   const send = vi.fn(async <T>() => view as T);
@@ -155,6 +158,28 @@ describe("BrandGuideEditor", () => {
     });
   });
 
+  it("does not save equivalent trimmed Logo description drafts from a whitespace-padded server value", async () => {
+    vi.useFakeTimers();
+    const { editor, send } = createEditor();
+    const onSaved = vi.fn();
+    const draftSave = editor.createLogoDescriptionDraftSave(
+      {
+        name: "Logo",
+        assetHandle: "asset:logo",
+        filename: "logo.svg",
+        mimeType: "image/svg+xml",
+        description: "  Use on light backgrounds  ",
+      },
+      { onSaved },
+    );
+
+    draftSave.update({ description: "Use on light backgrounds" });
+    await vi.advanceTimersByTimeAsync(650);
+
+    expect(send).not.toHaveBeenCalled();
+    expect(onSaved).not.toHaveBeenCalled();
+  });
+
   it("debounces Presentation Kit drafts behind the editor interface", async () => {
     vi.useFakeTimers();
     const { editor, send, publishBrandGuide } = createEditor();
@@ -186,6 +211,33 @@ describe("BrandGuideEditor", () => {
     });
     expect(onSaved).toHaveBeenCalledTimes(1);
     expect(publishBrandGuide).toHaveBeenCalledWith(baseView().brandGuide);
+  });
+
+  it("saves Presentation Kit drafts when only the canvas unit changes", async () => {
+    vi.useFakeTimers();
+    const { editor, send } = createEditor();
+    const onSaved = vi.fn();
+    const draftSave = editor.createPresentationKitDraftSave(
+      presentationKitView({
+        canvas: { width: 1280, height: 720, unit: "px" },
+        designPrompt: "Use minimal layouts.",
+      }),
+      { onSaved },
+    );
+    const updated = presentationKitView({
+      canvas: { width: 1280, height: 720, unit: "em" },
+      designPrompt: "Use minimal layouts.",
+    });
+
+    draftSave.update(updated);
+    await vi.advanceTimersByTimeAsync(650);
+
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send).toHaveBeenCalledWith("/api/brand-guides/brand%20guide%2F1/presentation-kit", {
+      method: "PATCH",
+      body: updated,
+    });
+    expect(onSaved).toHaveBeenCalledTimes(1);
   });
 
   it("uploads a Logo file before saving the Logo declaration", async () => {

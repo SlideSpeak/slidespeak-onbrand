@@ -289,7 +289,7 @@ export class BrandGuideEditor {
       delayMs?: number;
     }>,
   ): DraftSaveSession<LogoDescriptionDraft> {
-    let lastSaved = logo?.description ?? "";
+    let lastSaved = (logo?.description ?? "").trim();
     let pending: string | null = null;
     const debounced = this.debounce(
       async () => {
@@ -454,4 +454,5 @@ const sameColorTokenDraft = (left: ColorTokenDraft, right: ColorTokenDraft): boo
 const samePresentationKitDraft = (left: PresentationKitView, right: PresentationKitView): boolean =>
   (left.designPrompt ?? "") === (right.designPrompt ?? "") &&
   (left.canvas?.width ?? null) === (right.canvas?.width ?? null) &&
-  (left.canvas?.height ?? null) === (right.canvas?.height ?? null);
+  (left.canvas?.height ?? null) === (right.canvas?.height ?? null) &&
+  (left.canvas?.unit ?? null) === (right.canvas?.unit ?? null);
