@@ -62,8 +62,7 @@ bitmap/vector public artwork were found by that audit.
 ## Reference Sources
 
 - OpenAI brand guidance: https://openai.com/brand/
-- Anthropic brand guidelines skill:
-  https://github.com/anthropics/skills/tree/main/skills/brand-guidelines
+- Anthropic brand guidelines: https://www.anthropic.com/brand
 - Cursor marketplace publisher terms: https://cursor.com/marketplace-publisher-terms
 - Google Fonts Figtree specimen: https://fonts.google.com/specimen/Figtree
 - Google Fonts Figtree metadata: https://fonts.google.com/metadata/fonts/Figtree
