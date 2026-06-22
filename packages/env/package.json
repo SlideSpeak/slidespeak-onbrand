@@ -2,6 +2,16 @@
   "name": "@onbrand/env",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SlideSpeak/slidespeak-onbrand.git",
+    "directory": "packages/env"
+  },
+  "bugs": {
+    "url": "https://github.com/SlideSpeak/slidespeak-onbrand/issues"
+  },
+  "homepage": "https://github.com/SlideSpeak/slidespeak-onbrand#readme",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
