@@ -6,9 +6,9 @@ OnBrand by SlideSpeak is an in-development MCP service and dashboard that gives 
 governed brand knowledge: Brand Guides, Brand Kit assets, color tokens, logo guidance, and
 presentation design prompts.
 
-The repository is being prepared for public development as a standalone service. It can run outside
-SlideSpeak infrastructure when you provide a compatible OAuth provider, Postgres database, and S3
-bucket. Production hardening is not complete yet, so treat the current support level as local and
+The repository is being prepared for public development as a standalone service. It can run in any
+environment where you provide a compatible OAuth provider, Postgres database, and S3 bucket.
+Production hardening is not complete yet, so treat the current support level as local and
 development deployments only.
 
 ## Quick Start
@@ -75,20 +75,22 @@ notes, and production checklist.
 
 Required environment variables for a real deployment:
 
-| Variable                         | Purpose                                                                  |
-| -------------------------------- | ------------------------------------------------------------------------ |
-| `DATABASE_URL`                   | Postgres connection string.                                              |
-| `BASE_URL`                       | Public OnBrand origin; the MCP resource is derived as `${BASE_URL}/mcp`. |
-| `OAUTH_ISSUER`                   | Expected JWT issuer.                                                     |
-| `OAUTH_AUTHORIZATION_ENDPOINT`   | Browser authorization endpoint.                                          |
-| `OAUTH_TOKEN_ENDPOINT`           | Token exchange endpoint.                                                 |
-| `OAUTH_JWKS_URL`                 | JWKS endpoint used to verify access token signatures.                    |
-| `OAUTH_DASHBOARD_CLIENT_ID`      | Static dashboard OAuth client ID.                                        |
-| `DASHBOARD_SESSION_SECRET`       | Secret used to sign dashboard session cookies.                           |
-| `AWS_S3_BUCKET_BRAND_KIT_ASSETS` | Bucket for uploaded Brand Kit assets.                                    |
-| `AWS_REGION`                     | AWS region for the Brand Kit asset bucket.                               |
-| `AWS_ACCESS_KEY_ID`              | AWS access key for S3 operations.                                        |
-| `AWS_SECRET_ACCESS_KEY`          | AWS secret access key for S3 operations.                                 |
+| Variable                         | Purpose                                                                         |
+| -------------------------------- | ------------------------------------------------------------------------------- |
+| `DATABASE_URL`                   | Postgres connection string.                                                     |
+| `BASE_URL`                       | Public OnBrand origin; derives dashboard social metadata and `${BASE_URL}/mcp`. |
+| `OAUTH_ISSUER`                   | Expected JWT issuer.                                                            |
+| `OAUTH_AUTHORIZATION_ENDPOINT`   | Browser authorization endpoint.                                                 |
+| `OAUTH_TOKEN_ENDPOINT`           | Token exchange endpoint.                                                        |
+| `OAUTH_JWKS_URL`                 | JWKS endpoint used to verify access token signatures.                           |
+| `OAUTH_DASHBOARD_CLIENT_ID`      | Static dashboard OAuth client ID.                                               |
+| `OAUTH_REQUIRED_READ_SCOPE`      | Read scope required by read-only MCP tools.                                     |
+| `OAUTH_REQUIRED_WRITE_SCOPE`     | Write scope required by mutating MCP tools.                                     |
+| `DASHBOARD_SESSION_SECRET`       | Secret used to sign dashboard session cookies.                                  |
+| `AWS_S3_BUCKET_BRAND_KIT_ASSETS` | Bucket for uploaded Brand Kit assets.                                           |
+| `AWS_REGION`                     | AWS region for the Brand Kit asset bucket.                                      |
+| `AWS_ACCESS_KEY_ID`              | AWS access key for S3 operations.                                               |
+| `AWS_SECRET_ACCESS_KEY`          | AWS secret access key for S3 operations.                                        |
 
 Optional environment variables:
 
