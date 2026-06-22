@@ -734,7 +734,7 @@ const DashboardRail = ({
   selectedBrandGuideId?: string;
   selectedBrandGuideSection?: BrandGuideSection;
 }>) => (
-  <aside className="hidden w-16 shrink-0 flex-col items-center bg-onbrand-panel px-2 py-5 text-onbrand-charcoal lg:flex">
+  <aside className="hidden w-16 shrink-0 flex-col items-center border-r border-onbrand-charcoal/8 bg-onbrand-panel px-2 py-5 text-onbrand-charcoal lg:flex">
     <Link
       to="/home"
       aria-label="Onbrand home"

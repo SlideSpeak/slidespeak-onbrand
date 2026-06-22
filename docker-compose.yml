@@ -93,7 +93,7 @@ services:
       - --host
       - 0.0.0.0
     volumes:
-      - ./packages/dashboard:/app/packages/dashboard
+      - ./packages:/app/packages
     develop:
       watch:
         # Dashboard source is bind-mounted into the Vite container. Do not also sync it with
