@@ -7,6 +7,10 @@ export type ApiState<T> =
 
 export type OptionalApiState<T> = ApiState<T> | Readonly<{ status: "UNAUTHENTICATED" }>;
 
+type OptionalApiResponse<T> =
+  | Readonly<{ status: "UNAUTHENTICATED" }>
+  | Readonly<{ status: "READY"; data: T }>;
+
 const fetchJson = async <T>(path: string): Promise<T> => {
   const response = await fetch(path, { credentials: "include" });
   if (response.status === 401) {
@@ -15,6 +19,13 @@ const fetchJson = async <T>(path: string): Promise<T> => {
   }
   if (!response.ok) throw new Error(await response.text());
   return (await response.json()) as T;
+};
+
+const fetchOptionalJson = async <T>(path: string): Promise<OptionalApiResponse<T>> => {
+  const response = await fetch(path, { credentials: "include" });
+  if (response.status === 401) return { status: "UNAUTHENTICATED" };
+  if (!response.ok) throw new Error(await response.text());
+  return { status: "READY", data: (await response.json()) as T };
 };
 
 export const sendJson = async <T>(
@@ -74,15 +85,14 @@ export const useOptionalApi = <T>(path: string): OptionalApiState<T> => {
 
   React.useEffect(() => {
     let cancelled = false;
-    fetch(path, { credentials: "include" })
-      .then(async (response) => {
+    fetchOptionalJson<T>(path)
+      .then((response) => {
         if (cancelled) return;
-        if (response.status === 401) {
-          setState({ path, status: "UNAUTHENTICATED" });
-          return;
-        }
-        if (!response.ok) throw new Error(await response.text());
-        setState({ path, status: "READY", data: (await response.json()) as T });
+        setState(
+          response.status === "UNAUTHENTICATED"
+            ? { path, status: "UNAUTHENTICATED" }
+            : { path, status: "READY", data: response.data },
+        );
       })
       .catch((error: unknown) => {
         if (!cancelled) {

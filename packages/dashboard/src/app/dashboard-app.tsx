@@ -39,7 +39,7 @@ const NO_BRAND_GUIDE = "NO_BRAND_GUIDE";
 
 type DashboardSessionView = Readonly<{ ownerUserId: string; scopes: readonly string[] }>;
 
-export const OnboardingPage = () => {
+const OnboardingPage = () => {
   const { setTheme, theme } = useDashboardTheme();
 
   return (
