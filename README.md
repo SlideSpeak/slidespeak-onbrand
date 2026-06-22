@@ -2,12 +2,12 @@
 
 # OnBrand by SlideSpeak
 
-OnBrand by SlideSpeak is an MCP service and dashboard that gives AI agents access to
-governed brand knowledge: Brand Guides, Brand Kit assets, color tokens, logo guidance, and
-presentation design prompts.
+OnBrand by SlideSpeak is an MCP service and dashboard that gives AI agents access to governed brand
+knowledge: Brand Guides, Brand Kit assets, color tokens, logo guidance, and presentation design
+prompts.
 
-The repository is a standalone service. It can run in any environment where you provide
-a compatible OAuth provider, Postgres database, and S3 bucket.
+The repository is a standalone service. It can run in any environment where you provide a compatible
+OAuth provider, Postgres database, and S3 bucket.
 
 ## Quick Start
 
