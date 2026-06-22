@@ -7,6 +7,7 @@ export type OAuthRuntimeConfig = Readonly<{
   issuer: string;
   authorizationEndpoint: string;
   tokenEndpoint: string;
+  backchannelTokenEndpoint: string;
   registrationEndpoint?: string;
   jwksUrl: string;
   dashboardClientId: string;
@@ -19,6 +20,7 @@ export type OAuthRuntimeEnv = Readonly<{
   OAUTH_ISSUER: string;
   OAUTH_AUTHORIZATION_ENDPOINT: string;
   OAUTH_TOKEN_ENDPOINT: string;
+  OAUTH_BACKCHANNEL_TOKEN_ENDPOINT?: string;
   OAUTH_REGISTRATION_ENDPOINT?: string;
   OAUTH_JWKS_URL: string;
   OAUTH_DASHBOARD_CLIENT_ID: string;
@@ -36,6 +38,8 @@ export const buildOAuthRuntimeConfig = (env: OAuthRuntimeEnv = Env): OAuthRuntim
     issuer: stripTrailingSlashes(env.OAUTH_ISSUER),
     authorizationEndpoint: env.OAUTH_AUTHORIZATION_ENDPOINT,
     tokenEndpoint: env.OAUTH_TOKEN_ENDPOINT,
+    backchannelTokenEndpoint:
+      emptyToUndefined(env.OAUTH_BACKCHANNEL_TOKEN_ENDPOINT) ?? env.OAUTH_TOKEN_ENDPOINT,
     registrationEndpoint: emptyToUndefined(env.OAUTH_REGISTRATION_ENDPOINT),
     jwksUrl: env.OAUTH_JWKS_URL,
     dashboardClientId: env.OAUTH_DASHBOARD_CLIENT_ID,

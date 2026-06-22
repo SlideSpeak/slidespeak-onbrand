@@ -8,10 +8,11 @@ import {
 export const DEFAULT_DATABASE_URL =
   "postgresql://onbrand:onbrand@localhost:5433/onbrand?schema=public";
 export const Env = createEnvRegistry({
-  BASE_URL: requiredString("BASE_URL", "http://localhost:8080"),
+  BASE_URL: requiredString("BASE_URL"),
   OAUTH_ISSUER: requiredString("OAUTH_ISSUER"),
   OAUTH_AUTHORIZATION_ENDPOINT: requiredString("OAUTH_AUTHORIZATION_ENDPOINT"),
   OAUTH_TOKEN_ENDPOINT: requiredString("OAUTH_TOKEN_ENDPOINT"),
+  OAUTH_BACKCHANNEL_TOKEN_ENDPOINT: optionalString("OAUTH_BACKCHANNEL_TOKEN_ENDPOINT"),
   OAUTH_REGISTRATION_ENDPOINT: optionalString("OAUTH_REGISTRATION_ENDPOINT"),
   OAUTH_JWKS_URL: requiredString("OAUTH_JWKS_URL"),
   OAUTH_DASHBOARD_CLIENT_ID: requiredString("OAUTH_DASHBOARD_CLIENT_ID"),
