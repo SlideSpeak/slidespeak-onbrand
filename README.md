@@ -51,6 +51,9 @@ http://localhost:8080/.well-known/oauth-protected-resource/mcp
 
 Connect an MCP client:
 
+Third-party product names and marks in these examples identify compatible MCP clients only. See
+[NOTICE.md](NOTICE.md) for asset and trademark provenance.
+
 #### <img src="assets/codex_icon.svg" alt="Codex" width="24" height="24" />
 
 ```sh
