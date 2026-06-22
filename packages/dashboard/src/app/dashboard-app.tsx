@@ -222,13 +222,13 @@ const PublicDashboardTopBar = ({
   theme: ThemeMode;
 }>) => (
   <header className="flex h-16 items-center gap-3 border-b border-onbrand-charcoal/8 bg-onbrand-white px-4 sm:gap-4 sm:px-6 lg:px-7">
-    <button
-      type="button"
+    <Link
+      to="/"
       aria-label="Onbrand dashboard home"
       className="grid h-9 w-9 shrink-0 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5 lg:hidden"
     >
       <img alt="Onbrand" className="onbrand-dashboard-logo h-6 w-6" src={onbrandLogoUrl} />
-    </button>
+    </Link>
     <div className="flex min-w-0 flex-1 items-center gap-3 text-sm">
       <span className="truncate font-normal text-onbrand-charcoal">Welcome</span>
       <span className="text-onbrand-charcoal/25">/</span>
