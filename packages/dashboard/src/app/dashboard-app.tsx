@@ -248,10 +248,16 @@ const HomeTopBar = () => (
   </header>
 );
 
-const HomeDashboard = ({
+export const HomeDashboard = ({
   brandGuides,
 }: Readonly<{ brandGuides: readonly BrandGuideSummary[] }>) => {
-  if (brandGuides.length === 0) return <NoBrandGuidesPrompt />;
+  if (brandGuides.length === 0)
+    return (
+      <OnboardingInstructions
+        promptValue="Generate brand guidelines based on: slidespeak.co"
+        showSignInStep={false}
+      />
+    );
 
   return (
     <section className="grid gap-3">
@@ -457,9 +463,10 @@ const CreateBrandGuideButton = () => {
 };
 
 const OnboardingInstructions = ({
+  showSignInStep = true,
   variant = "light",
   promptValue = "Tell me about OnBrand",
-}: Readonly<{ variant?: "light" | "dark"; promptValue?: string }>) => {
+}: Readonly<{ showSignInStep?: boolean; variant?: "light" | "dark"; promptValue?: string }>) => {
   const connections = onboardingConnections();
 
   return (
@@ -475,13 +482,15 @@ const OnboardingInstructions = ({
             value={promptValue}
             variant={variant}
           />
-          <OnboardingStep
-            number="03"
-            title="Sign in to see your dashboard and brands"
-            href="/login?returnTo=/"
-            value="Sign in"
-            variant={variant}
-          />
+          {showSignInStep ? (
+            <OnboardingStep
+              number="03"
+              title="Sign in to see your dashboard and brands"
+              href="/login?returnTo=/"
+              value="Sign in"
+              variant={variant}
+            />
+          ) : null}
         </div>
       </div>
     </section>
