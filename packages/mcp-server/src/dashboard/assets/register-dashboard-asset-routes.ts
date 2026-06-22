@@ -22,6 +22,8 @@ const DASHBOARD_DEV_SERVER_PATHS = [
 ] as const;
 const DASHBOARD_SPA_PATHS = [
   "/",
+  "/dashboard",
+  "/dashboard/*",
   "/brand-guides",
   "/brand-guides/:id",
   "/brand-guides/:id/:section",
