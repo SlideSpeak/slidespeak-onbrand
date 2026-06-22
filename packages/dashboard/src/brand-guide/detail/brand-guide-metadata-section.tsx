@@ -123,7 +123,7 @@ const BrandGuideDangerZone = ({
       });
       publishBrandGuideDeleted(brandGuide.id);
       setOpen(false);
-      await navigate({ to: "/home" });
+      await navigate({ to: "/" });
     } catch (error) {
       toast.error("Could not delete Brand Guide", {
         description: error instanceof Error ? error.message : String(error),
