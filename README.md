@@ -2,14 +2,12 @@
 
 # OnBrand by SlideSpeak
 
-OnBrand by SlideSpeak is an in-development MCP service and dashboard that gives AI agents access to
+OnBrand by SlideSpeak is an MCP service and dashboard that gives AI agents access to
 governed brand knowledge: Brand Guides, Brand Kit assets, color tokens, logo guidance, and
 presentation design prompts.
 
-The repository is being prepared for public development as a standalone service. It can run in any
-environment where you provide a compatible OAuth provider, Postgres database, and S3 bucket.
-Production hardening is not complete yet, so treat the current support level as local and
-development deployments only.
+The repository is a standalone service. It can run in any environment where you provide
+a compatible OAuth provider, Postgres database, and S3 bucket.
 
 ## Quick Start
 
@@ -129,15 +127,3 @@ bun run test
 bun run build
 bun run react-doctor:check
 ```
-
-This repository is not publishing packages to npm yet. The workspace packages are intended for this
-service first.
-
-## Contributing And Governance
-
-This project is in development, and contributions should start with a GitHub Discussion or issue so
-the maintainers can align on product direction and support level before code is written.
-
-For this public-readiness pass, `SECURITY.md`, `CONTRIBUTING.md`, pull request and issue templates,
-and a Code of Conduct are intentionally out of scope. Please avoid treating their absence as a
-signal that those policies are finalized.
