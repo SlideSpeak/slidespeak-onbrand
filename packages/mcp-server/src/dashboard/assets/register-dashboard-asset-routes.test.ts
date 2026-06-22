@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { renderDashboardIndex } from "./register-dashboard-asset-routes";
+import { DASHBOARD_SPA_PATHS, renderDashboardIndex } from "./register-dashboard-asset-routes";
 
 describe("dashboard asset routes", () => {
   it("injects absolute public social URLs from BASE_URL", () => {
@@ -27,5 +27,11 @@ describe("dashboard asset routes", () => {
     expect(renderDashboardIndex(html, "https://onbrand.example/")).toBe(
       "https://onbrand.example/ https://onbrand.example/onbrand-banner.webp",
     );
+  });
+
+  it("serves direct visits for dashboard routes", () => {
+    expect(DASHBOARD_SPA_PATHS).toEqual(expect.arrayContaining(["/", "/brand-guides"]));
+    expect(DASHBOARD_SPA_PATHS).not.toContain("/home");
+    expect(DASHBOARD_SPA_PATHS).not.toContain("/onboard");
   });
 });

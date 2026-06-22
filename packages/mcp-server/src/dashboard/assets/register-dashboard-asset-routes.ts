@@ -20,7 +20,7 @@ const DASHBOARD_DEV_SERVER_PATHS = [
   "/@id/*",
   "/node_modules/*",
 ] as const;
-const DASHBOARD_SPA_PATHS = [
+export const DASHBOARD_SPA_PATHS = [
   "/",
   "/dashboard",
   "/dashboard/*",

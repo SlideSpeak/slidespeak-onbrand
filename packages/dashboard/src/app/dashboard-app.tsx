@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogTitle } from "../components/ui/dialog";
 import { Toaster } from "../components/ui/sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/tooltip";
 import { toast } from "sonner";
-import { sendJson, useApi } from "../shared/api/api-state";
+import { sendJson, useApi, useOptionalApi } from "../shared/api/api-state";
 import { publishBrandGuideUpdated, useSyncedBrandGuides } from "../shared/brand-guide-sync";
 import { BrandGuideDetail } from "../brand-guide/detail/brand-guide-detail";
 import type {
@@ -36,91 +36,69 @@ import { ThemeToggle } from "./theme-toggle";
 import { type ThemeMode, useDashboardTheme } from "./theme";
 
 const NO_BRAND_GUIDE = "NO_BRAND_GUIDE";
-const GRAIN_TEXTURE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
 
-export const OnboardingPage = () => (
-  <main className="onbrand-static-light-tokens relative min-h-screen overflow-hidden bg-[#020617] px-4 py-10 text-onbrand-charcoal sm:px-6 lg:px-8">
-    <div
-      aria-hidden
-      className="animate-onbrand-gradient-drift absolute -inset-10"
-      style={{
-        background: `
-          radial-gradient(90% 85% at 28% 68%, rgba(1, 8, 33, 0.96) 0%, rgba(2, 13, 49, 0.78) 34%, rgba(3, 21, 76, 0.3) 58%, transparent 76%),
-          radial-gradient(95% 90% at 58% 58%, rgba(1, 22, 77, 0.74) 0%, rgba(3, 36, 128, 0.45) 32%, transparent 66%),
-          radial-gradient(70% 80% at 88% 25%, rgba(22, 155, 255, 0.84) 0%, rgba(0, 102, 255, 0.55) 34%, transparent 72%),
-          radial-gradient(85% 70% at 54% 0%, rgba(29, 172, 255, 0.78) 0%, rgba(11, 112, 255, 0.62) 38%, transparent 78%),
-          radial-gradient(54% 70% at 4% 8%, rgba(0, 42, 132, 0.9) 0%, rgba(2, 20, 70, 0.72) 48%, transparent 80%),
-          linear-gradient(112deg, #02091f 0%, #06276f 26%, #055cf4 50%, #0787ff 72%, #0525b7 100%),
-          linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 22%, rgba(0, 0, 0, 0.38) 100%)
-        `,
-      }}
+type DashboardSessionView = Readonly<{ ownerUserId: string; scopes: readonly string[] }>;
+
+export const OnboardingPage = () => {
+  const { setTheme, theme } = useDashboardTheme();
+
+  return (
+    <PublicDashboardHome
+      onThemeChange={setTheme}
+      promptValue="Generate brand guidelines based on: slidespeak.co"
+      theme={theme}
     />
-    <div
-      aria-hidden
-      className="animate-onbrand-light-breathe absolute inset-0"
-      style={{
-        background: `
-          radial-gradient(140% 110% at 52% 44%, transparent 40%, rgba(1, 4, 16, 0.34) 72%, rgba(0, 2, 12, 0.82) 100%),
-          linear-gradient(90deg, rgba(0, 0, 0, 0.58) 0%, transparent 20%, transparent 76%, rgba(0, 2, 18, 0.42) 100%),
-          linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 16%, transparent 68%, rgba(0, 0, 0, 0.58) 100%)
-        `,
-      }}
-    />
-    <div
-      aria-hidden
-      className="animate-onbrand-aurora-sweep absolute -inset-24 mix-blend-screen blur-3xl"
-      style={{
-        background: `
-          radial-gradient(42% 48% at 22% 52%, rgba(0, 24, 120, 0.92) 0%, transparent 72%),
-          radial-gradient(44% 42% at 76% 24%, rgba(40, 188, 255, 0.88) 0%, transparent 70%),
-          radial-gradient(38% 46% at 58% 78%, rgba(0, 84, 255, 0.7) 0%, transparent 74%)
-        `,
-      }}
-    />
-    <div
-      aria-hidden
-      className="absolute inset-0 opacity-100 mix-blend-soft-light"
-      style={{ backgroundImage: GRAIN_TEXTURE, backgroundSize: "88px 88px" }}
-    />
-    <div
-      aria-hidden
-      className="animate-onbrand-texture-drift absolute inset-0 opacity-20 mix-blend-overlay"
-      style={{
-        backgroundImage: `
-          linear-gradient(100deg, transparent 0 23%, rgba(255,255,255,0.18) 23.08%, transparent 23.18% 100%),
-          linear-gradient(74deg, transparent 0 61%, rgba(255,255,255,0.12) 61.08%, transparent 61.18% 100%),
-          linear-gradient(166deg, transparent 0 39%, rgba(0,0,0,0.26) 39.08%, transparent 39.18% 100%)
-        `,
-        backgroundSize: "420px 280px, 520px 360px, 460px 320px",
-      }}
-    />
-    <div className="relative z-10">
-      <OnboardingInstructions variant="dark" />
+  );
+};
+
+const PublicDashboardHome = ({
+  onThemeChange,
+  promptValue,
+  theme,
+}: Readonly<{
+  onThemeChange: (theme: ThemeMode) => void;
+  promptValue: string;
+  theme: ThemeMode;
+}>) => {
+  const [selectedPreviewSection, setSelectedPreviewSection] = useState<BrandGuideSection>(
+    DEFAULT_BRAND_GUIDE_SECTION,
+  );
+
+  return (
+    <div className="min-h-screen bg-onbrand-canvas text-onbrand-charcoal">
+      <div className="flex min-h-screen overflow-hidden border border-onbrand-charcoal/10 bg-onbrand-panel shadow-[0_32px_120px_rgba(10,10,10,0.16)]">
+        <DashboardRail
+          inertPreview
+          selectedBrandGuideSection={selectedPreviewSection}
+          onPreviewSectionChange={setSelectedPreviewSection}
+        />
+        <div className="min-w-0 flex-1 bg-onbrand-white">
+          <PublicDashboardTopBar
+            onThemeChange={onThemeChange}
+            selectedBrandGuideSection={selectedPreviewSection}
+            theme={theme}
+          />
+          <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
+            <OnboardingInstructions promptValue={promptValue} variant={theme} />
+          </main>
+        </div>
+      </div>
+      <Toaster variant="dark" position="bottom-right" visibleToasts={4} />
     </div>
-    <div className="absolute bottom-6 left-6 z-10 flex items-center gap-2 text-base font-semibold text-white">
-      <img alt="" className="h-[1em] w-[1em] invert" src={onbrandLogoUrl} />
-      <span>OnBrand</span>
-    </div>
-    <Toaster position="bottom-right" visibleToasts={4} />
-  </main>
-);
+  );
+};
 
 export const DashboardApp = () => {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const route = routeFromPathname(pathname);
-  const loadedBrandGuides = useApi<readonly BrandGuideSummary[]>("/api/brand-guides");
-  const brandGuides = useSyncedBrandGuides(loadedBrandGuides);
-  const { setTheme, theme } = useDashboardTheme();
-  const isHome = pathname === "/home";
-  const selectedBrandGuideId =
-    route.selectedBrandGuideId ??
-    (!isHome && brandGuides.status === "READY" ? brandGuides.data[0]?.id : undefined);
-  const selectedBrandGuide =
-    brandGuides.status === "READY"
-      ? brandGuides.data.find((brandGuide) => brandGuide.id === selectedBrandGuideId)
-      : undefined;
+  if (pathname === "/") return <DashboardRoot />;
+  return <AuthenticatedDashboardApp pathname={pathname} />;
+};
 
-  if (isHome) {
+const DashboardRoot = () => {
+  const session = useOptionalApi<DashboardSessionView>("/api/me");
+
+  if (session.status === "UNAUTHENTICATED") return <OnboardingPage />;
+  if (session.status === "ERROR") {
     return (
       <div className="min-h-screen bg-onbrand-white text-onbrand-charcoal">
         <div className="flex min-h-screen overflow-hidden bg-onbrand-white">
@@ -128,13 +106,7 @@ export const DashboardApp = () => {
           <div className="min-w-0 flex-1 bg-onbrand-white">
             <HomeTopBar />
             <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
-              {brandGuides.status === "ERROR" ? (
-                <ErrorMessage message={brandGuides.message} />
-              ) : brandGuides.status === "READY" ? (
-                <HomeDashboard brandGuides={brandGuides.data} />
-              ) : (
-                <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
-              )}
+              <ErrorMessage message={session.message} />
             </main>
           </div>
         </div>
@@ -142,6 +114,64 @@ export const DashboardApp = () => {
       </div>
     );
   }
+  if (session.status === "LOADING") {
+    return (
+      <div className="min-h-screen bg-onbrand-white text-onbrand-charcoal">
+        <div className="flex min-h-screen overflow-hidden bg-onbrand-white">
+          <DashboardRail />
+          <div className="min-w-0 flex-1 bg-onbrand-white">
+            <HomeTopBar />
+            <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
+              <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
+            </main>
+          </div>
+        </div>
+        <Toaster variant="dark" position="bottom-right" visibleToasts={4} />
+      </div>
+    );
+  }
+
+  return <DashboardOverview />;
+};
+
+const DashboardOverview = () => {
+  const loadedBrandGuides = useApi<readonly BrandGuideSummary[]>("/api/brand-guides");
+  const brandGuides = useSyncedBrandGuides(loadedBrandGuides);
+
+  return (
+    <div className="min-h-screen bg-onbrand-white text-onbrand-charcoal">
+      <div className="flex min-h-screen overflow-hidden bg-onbrand-white">
+        <DashboardRail />
+        <div className="min-w-0 flex-1 bg-onbrand-white">
+          <HomeTopBar />
+          <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
+            {brandGuides.status === "ERROR" ? (
+              <ErrorMessage message={brandGuides.message} />
+            ) : brandGuides.status === "READY" ? (
+              <HomeDashboard brandGuides={brandGuides.data} />
+            ) : (
+              <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
+            )}
+          </main>
+        </div>
+      </div>
+      <Toaster variant="dark" position="bottom-right" visibleToasts={4} />
+    </div>
+  );
+};
+
+const AuthenticatedDashboardApp = ({ pathname }: Readonly<{ pathname: string }>) => {
+  const route = routeFromPathname(pathname);
+  const loadedBrandGuides = useApi<readonly BrandGuideSummary[]>("/api/brand-guides");
+  const brandGuides = useSyncedBrandGuides(loadedBrandGuides);
+  const { setTheme, theme } = useDashboardTheme();
+  const selectedBrandGuideId =
+    route.selectedBrandGuideId ??
+    (brandGuides.status === "READY" ? brandGuides.data[0]?.id : undefined);
+  const selectedBrandGuide =
+    brandGuides.status === "READY"
+      ? brandGuides.data.find((brandGuide) => brandGuide.id === selectedBrandGuideId)
+      : undefined;
 
   return (
     <div className="min-h-screen bg-onbrand-canvas text-onbrand-charcoal">
@@ -181,6 +211,34 @@ export const DashboardApp = () => {
     </div>
   );
 };
+
+const PublicDashboardTopBar = ({
+  onThemeChange,
+  selectedBrandGuideSection,
+  theme,
+}: Readonly<{
+  onThemeChange: (theme: ThemeMode) => void;
+  selectedBrandGuideSection: BrandGuideSection;
+  theme: ThemeMode;
+}>) => (
+  <header className="flex h-16 items-center gap-3 border-b border-onbrand-charcoal/8 bg-onbrand-white px-4 sm:gap-4 sm:px-6 lg:px-7">
+    <button
+      type="button"
+      aria-label="Onbrand dashboard home"
+      className="grid h-9 w-9 shrink-0 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5 lg:hidden"
+    >
+      <img alt="Onbrand" className="onbrand-dashboard-logo h-6 w-6" src={onbrandLogoUrl} />
+    </button>
+    <div className="flex min-w-0 flex-1 items-center gap-3 text-sm">
+      <span className="truncate font-normal text-onbrand-charcoal">Welcome</span>
+      <span className="text-onbrand-charcoal/25">/</span>
+      <span className="truncate text-onbrand-charcoal/55">
+        {brandGuideSectionLabel(selectedBrandGuideSection)}
+      </span>
+    </div>
+    <ThemeToggle onThemeChange={onThemeChange} theme={theme} />
+  </header>
+);
 
 const HomeTopBar = () => (
   <header className="flex h-16 items-center border-b border-onbrand-charcoal/8 px-4 sm:px-6 lg:px-7">
@@ -400,26 +458,28 @@ const CreateBrandGuideButton = () => {
 
 const OnboardingInstructions = ({
   variant = "light",
-}: Readonly<{ variant?: "light" | "dark" }>) => {
+  promptValue = "Tell me about OnBrand",
+}: Readonly<{ variant?: "light" | "dark"; promptValue?: string }>) => {
   const connections = onboardingConnections();
 
   return (
     <section className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center">
       <div className="w-full -translate-y-10 p-2 text-center sm:p-4">
-        <div className="grid gap-12">
+        <div className="grid gap-10">
           <OnboardingStep number="01" title="Connect to the OnBrand MCP" variant={variant}>
             <ConnectionOptions connections={connections} variant={variant} />
           </OnboardingStep>
           <OnboardingStep
             number="02"
-            title="Restart your agent. Then prompt:"
-            value="Tell me about OnBrand"
+            title="Prompt your agent"
+            value={promptValue}
             variant={variant}
           />
           <OnboardingStep
             number="03"
-            value="Start Creating"
-            href="/brand-guides"
+            title="Sign in to see your dashboard and brands"
+            href="/login?returnTo=/"
+            value="Sign in"
             variant={variant}
           />
         </div>
@@ -468,7 +528,18 @@ const OnboardingStep = ({
         </h2>
       ) : null}
       {children ??
-        (href ? (
+        (href?.startsWith("/") ? (
+          <a
+            href={href}
+            className={
+              isDark
+                ? "mt-2 inline-flex h-12 cursor-pointer items-center justify-center rounded-md border-[0.5px] border-white bg-white px-6 text-base font-medium text-[#111111] transition hover:bg-[#111111] hover:text-white"
+                : "mt-2 inline-flex h-12 cursor-pointer items-center justify-center rounded-md border-[0.5px] border-[#111111] bg-[#111111] px-6 text-base font-medium text-white transition hover:bg-white hover:text-[#111111]"
+            }
+          >
+            {value}
+          </a>
+        ) : href ? (
           <Link
             to={href}
             className="mt-2 inline-flex h-14 cursor-pointer items-center justify-center rounded-md border-[0.5px] border-onbrand-charcoal bg-white px-6 text-lg text-onbrand-charcoal transition hover:bg-onbrand-charcoal hover:text-white"
@@ -500,6 +571,22 @@ const ConnectionOptions = ({
       <div className="flex flex-wrap justify-center gap-2">
         {connections.map((connection) => {
           const isSelected = connection.name === selectedConnection.name;
+          const buttonClass =
+            variant === "dark"
+              ? isSelected
+                ? "grid cursor-pointer place-items-center rounded-md border-[0.5px] border-white bg-white p-2 text-[#111111]"
+                : "grid cursor-pointer place-items-center rounded-md border-[0.5px] border-white bg-[#111111] p-2 text-white"
+              : isSelected
+                ? "grid cursor-pointer place-items-center rounded-md border-[0.5px] border-onbrand-charcoal bg-onbrand-charcoal p-2 text-white"
+                : "grid cursor-pointer place-items-center rounded-md border-[0.5px] border-onbrand-charcoal bg-white p-2 text-onbrand-charcoal";
+          const iconClass =
+            variant === "dark"
+              ? isSelected
+                ? "h-8 w-8 text-[#111111]"
+                : "h-8 w-8 text-white"
+              : isSelected
+                ? "h-8 w-8 text-white"
+                : "h-8 w-8 text-onbrand-charcoal";
 
           return (
             <button
@@ -509,16 +596,9 @@ const ConnectionOptions = ({
               aria-label={connection.name}
               title={connection.name}
               onClick={() => setSelectedConnectionName(connection.name)}
-              className={
-                isSelected
-                  ? "grid cursor-pointer place-items-center rounded-md bg-onbrand-charcoal p-2 text-white"
-                  : "grid cursor-pointer place-items-center rounded-md bg-white p-2 text-onbrand-charcoal"
-              }
+              className={buttonClass}
             >
-              <McpClientIcon
-                className={isSelected ? "h-8 w-8 text-white" : "h-8 w-8 text-onbrand-charcoal"}
-                name={connection.icon}
-              />
+              <McpClientIcon className={iconClass} name={connection.icon} />
             </button>
           );
         })}
@@ -550,16 +630,16 @@ const CopyableValue = ({
 
   const variantClasses =
     variant === "dark"
-      ? "border-white bg-onbrand-charcoal text-white hover:bg-white hover:text-onbrand-charcoal"
-      : "border-onbrand-inverse bg-onbrand-inverse text-onbrand-inverse-foreground hover:bg-onbrand-blue-600 hover:text-white";
+      ? "border-white bg-white text-[#111111] hover:bg-[#111111] hover:text-white active:bg-[#111111] active:text-white"
+      : "border-onbrand-inverse bg-onbrand-inverse text-onbrand-inverse-foreground hover:bg-white hover:text-[#111111] active:bg-[#111111] active:text-white";
 
   return (
     <button
       type="button"
       onClick={() => void copy()}
-      className={`group inline-grid min-h-12 max-w-full cursor-pointer grid-cols-[minmax(0,max-content)_auto] items-center gap-3 rounded-md border-[0.5px] px-4 py-3 text-left transition ${variantClasses} ${className}`}
+      className={`group inline-grid min-h-12 max-w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md border-[0.5px] px-4 py-3 text-left transition ${variantClasses} ${className}`}
     >
-      <code className="max-w-[min(42rem,calc(100vw-3rem))] overflow-hidden font-mono text-base leading-6 text-ellipsis whitespace-nowrap">
+      <code className="max-w-[min(42rem,calc(100vw-3rem))] overflow-hidden font-mono text-base leading-6 break-words whitespace-normal">
         {value}
       </code>
       <span className="flex items-center gap-2 text-xs">
@@ -666,7 +746,7 @@ const DashboardTopBar = ({
   return (
     <header className="flex h-16 items-center gap-3 border-b border-onbrand-charcoal/8 bg-onbrand-white px-4 sm:gap-4 sm:px-6 lg:px-7">
       <Link
-        to="/home"
+        to="/"
         aria-label="Onbrand dashboard home"
         className="grid h-9 w-9 shrink-0 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5 lg:hidden"
       >
@@ -728,42 +808,68 @@ const DashboardTopBar = ({
 };
 
 const DashboardRail = ({
+  inertPreview = false,
+  onPreviewSectionChange,
   selectedBrandGuideId,
   selectedBrandGuideSection,
 }: Readonly<{
+  inertPreview?: boolean;
+  onPreviewSectionChange?: (section: BrandGuideSection) => void;
   selectedBrandGuideId?: string;
   selectedBrandGuideSection?: BrandGuideSection;
 }>) => (
   <aside className="hidden w-16 shrink-0 flex-col items-center border-r border-onbrand-charcoal/8 bg-onbrand-panel px-2 py-5 text-onbrand-charcoal lg:flex">
-    <Link
-      to="/home"
-      aria-label="Onbrand home"
-      className="mb-6 grid h-9 w-9 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5"
-    >
-      <img alt="Onbrand" className="onbrand-dashboard-logo h-6 w-6" src={onbrandLogoUrl} />
-    </Link>
-    {selectedBrandGuideId ? (
+    {inertPreview ? (
+      <button
+        type="button"
+        aria-label="Onbrand home"
+        className="mb-6 grid h-9 w-9 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5"
+        onClick={() => onPreviewSectionChange?.(DEFAULT_BRAND_GUIDE_SECTION)}
+      >
+        <img alt="Onbrand" className="onbrand-dashboard-logo h-6 w-6" src={onbrandLogoUrl} />
+      </button>
+    ) : (
+      <Link
+        to="/"
+        aria-label="Onbrand home"
+        className="mb-6 grid h-9 w-9 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5"
+      >
+        <img alt="Onbrand" className="onbrand-dashboard-logo h-6 w-6" src={onbrandLogoUrl} />
+      </Link>
+    )}
+    {inertPreview || selectedBrandGuideId ? (
       <TooltipProvider delayDuration={150}>
         <nav className="flex flex-1 flex-col items-center gap-2" aria-label="Brand Guide sections">
           {BRAND_GUIDE_SECTION_LINKS.map(({ section, pathSegment, label, icon }) => {
             if (section === "METADATA") return null;
             const isActive = (selectedBrandGuideSection ?? DEFAULT_BRAND_GUIDE_SECTION) === section;
+            const className = isActive
+              ? "grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
+              : "grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600";
             return (
               <Tooltip key={section}>
                 <TooltipTrigger asChild>
-                  <Link
-                    to="/brand-guides/$brandGuideId/$section"
-                    params={{ brandGuideId: selectedBrandGuideId, section: pathSegment }}
-                    aria-label={label}
-                    aria-current={isActive ? "page" : undefined}
-                    className={
-                      isActive
-                        ? "grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
-                        : "grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600"
-                    }
-                  >
-                    <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
-                  </Link>
+                  {inertPreview ? (
+                    <button
+                      type="button"
+                      aria-label={label}
+                      aria-current={isActive ? "page" : undefined}
+                      className={className}
+                      onClick={() => onPreviewSectionChange?.(section)}
+                    >
+                      <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
+                    </button>
+                  ) : (
+                    <Link
+                      to="/brand-guides/$brandGuideId/$section"
+                      params={{ brandGuideId: selectedBrandGuideId ?? "", section: pathSegment }}
+                      aria-label={label}
+                      aria-current={isActive ? "page" : undefined}
+                      className={className}
+                    >
+                      <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
+                    </Link>
+                  )}
                 </TooltipTrigger>
                 <TooltipContent side="right">{label}</TooltipContent>
               </Tooltip>
@@ -776,22 +882,33 @@ const DashboardRail = ({
             if (!metadataLink) return null;
             const { section, pathSegment, label, icon } = metadataLink;
             const isActive = selectedBrandGuideSection === section;
+            const className = isActive
+              ? "mt-auto grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
+              : "mt-auto grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600";
             return (
               <Tooltip key={section}>
                 <TooltipTrigger asChild>
-                  <Link
-                    to="/brand-guides/$brandGuideId/$section"
-                    params={{ brandGuideId: selectedBrandGuideId, section: pathSegment }}
-                    aria-label={label}
-                    aria-current={isActive ? "page" : undefined}
-                    className={
-                      isActive
-                        ? "mt-auto grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
-                        : "mt-auto grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600"
-                    }
-                  >
-                    <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
-                  </Link>
+                  {inertPreview ? (
+                    <button
+                      type="button"
+                      aria-label={label}
+                      aria-current={isActive ? "page" : undefined}
+                      className={className}
+                      onClick={() => onPreviewSectionChange?.(section)}
+                    >
+                      <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
+                    </button>
+                  ) : (
+                    <Link
+                      to="/brand-guides/$brandGuideId/$section"
+                      params={{ brandGuideId: selectedBrandGuideId ?? "", section: pathSegment }}
+                      aria-label={label}
+                      aria-current={isActive ? "page" : undefined}
+                      className={className}
+                    >
+                      <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
+                    </Link>
+                  )}
                 </TooltipTrigger>
                 <TooltipContent side="right">{label}</TooltipContent>
               </Tooltip>
