@@ -12,7 +12,6 @@ export default defineConfig({
       "@onbrand/env": fileURLToPath(new URL("../env/src/index.ts", import.meta.url)),
       "@onbrand/file": fileURLToPath(new URL("../file/src/index.ts", import.meta.url)),
       "@onbrand/number": fileURLToPath(new URL("../number/src/index.ts", import.meta.url)),
-      "@onbrand/s3": fileURLToPath(new URL("../s3/src/index.ts", import.meta.url)),
       "@onbrand/string": fileURLToPath(new URL("../string/src/index.ts", import.meta.url)),
     },
   },
