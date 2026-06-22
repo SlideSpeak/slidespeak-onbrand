@@ -5,8 +5,8 @@ import type { AuthInfo } from "@modelcontextprotocol/sdk/server/auth/types.js";
 import type { Context } from "hono";
 import {
   ownerUserIdFromAuthInfo,
-  type SlideSpeakTokenVerifier,
-} from "../auth/slidespeak-token-verifier";
+  type OAuthAccessTokenVerifier,
+} from "../auth/oauth-token-verifier";
 import { getCookie, setCookie } from "hono/cookie";
 import { EncryptJWT, jwtDecrypt, jwtVerify, SignJWT, type JWTPayload } from "jose";
 
@@ -30,10 +30,10 @@ export type DashboardSessionRefreshConfig = Readonly<{
   clientId: string;
   mcpUrl: URL;
   tokenEndpoint: string;
-  verifier: SlideSpeakTokenVerifier;
+  verifier: OAuthAccessTokenVerifier;
   verifyBearerAuth: (
     authorizationHeader: string | undefined,
-    verifier: SlideSpeakTokenVerifier,
+    verifier: OAuthAccessTokenVerifier,
   ) => Promise<AuthInfo>;
 }>;
 
