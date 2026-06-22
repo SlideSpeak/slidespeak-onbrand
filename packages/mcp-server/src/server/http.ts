@@ -12,24 +12,21 @@ import {
 } from "@modelcontextprotocol/sdk/server/auth/errors.js";
 import { createPrismaClient } from "@onbrand/core/database/prisma-client";
 import { PersistentBrandGuideApplication } from "@onbrand/core/brand-guide/application";
-import {
-  ownerUserIdFromAuthInfo,
-  SlideSpeakTokenVerifier,
-} from "../auth/slidespeak-token-verifier";
+import { OAuthAccessTokenVerifier, ownerUserIdFromAuthInfo } from "../auth/oauth-token-verifier";
 import { Env } from "@onbrand/core/env";
 import { registerDashboardApiRoutes } from "../dashboard/api/register-dashboard-api-routes";
 import { registerDashboardAssetRoutes } from "../dashboard/assets/register-dashboard-asset-routes";
 import { registerDashboardOAuthRoutes } from "../dashboard/oauth/register-dashboard-oauth-routes";
+import { buildOAuthRuntimeConfig } from "./runtime-config";
 import { createOnbrandMcpServer } from "./server";
 
 const HTTP_PORT = 8080;
-const REQUIRED_SCOPES = ["onbrand:read"];
 
 type OAuthMetadata = Readonly<{
   issuer: string;
   authorization_endpoint: string;
   token_endpoint: string;
-  registration_endpoint: string;
+  registration_endpoint?: string;
   jwks_uri: string;
   response_types_supported: string[];
   grant_types_supported: string[];
@@ -38,20 +35,21 @@ type OAuthMetadata = Readonly<{
   scopes_supported: string[];
 }>;
 
-type VerifiedBearerAuth = Awaited<ReturnType<SlideSpeakTokenVerifier["verifyAccessToken"]>>;
+type VerifiedBearerAuth = Awaited<ReturnType<OAuthAccessTokenVerifier["verifyAccessToken"]>>;
 
 const buildWwwAuthenticateHeader = (
   errorCode: string,
   message: string,
   resourceMetadataUrl: string,
+  requiredScopes: readonly string[],
 ): string =>
-  `Bearer error="${errorCode}", error_description="${message}", scope="${REQUIRED_SCOPES.join(
+  `Bearer error="${errorCode}", error_description="${message}", scope="${requiredScopes.join(
     " ",
   )}", resource_metadata="${resourceMetadataUrl}"`;
 
 const verifyBearerAuth = async (
   authorizationHeader: string | undefined,
-  verifier: SlideSpeakTokenVerifier,
+  verifier: OAuthAccessTokenVerifier,
 ): Promise<VerifiedBearerAuth> => {
   if (!authorizationHeader) throw new InvalidTokenError("Missing Authorization header");
 
@@ -61,9 +59,6 @@ const verifyBearerAuth = async (
   }
 
   const authInfo = await verifier.verifyAccessToken(token);
-  if (!REQUIRED_SCOPES.every((scope) => authInfo.scopes.includes(scope))) {
-    throw new InsufficientScopeError("Insufficient scope");
-  }
   if (typeof authInfo.expiresAt !== "number" || Number.isNaN(authInfo.expiresAt)) {
     throw new InvalidTokenError("Token has no expiration time");
   }
@@ -78,18 +73,29 @@ const handleOAuthError = (
   context: Context,
   error: unknown,
   protectedResourceMetadataUrl: string,
+  requiredScopes: readonly string[],
 ): Response => {
   if (error instanceof InvalidTokenError) {
     context.header(
       "WWW-Authenticate",
-      buildWwwAuthenticateHeader(error.errorCode, error.message, protectedResourceMetadataUrl),
+      buildWwwAuthenticateHeader(
+        error.errorCode,
+        error.message,
+        protectedResourceMetadataUrl,
+        requiredScopes,
+      ),
     );
     return context.json(error.toResponseObject(), 401);
   }
   if (error instanceof InsufficientScopeError) {
     context.header(
       "WWW-Authenticate",
-      buildWwwAuthenticateHeader(error.errorCode, error.message, protectedResourceMetadataUrl),
+      buildWwwAuthenticateHeader(
+        error.errorCode,
+        error.message,
+        protectedResourceMetadataUrl,
+        requiredScopes,
+      ),
     );
     return context.json(error.toResponseObject(), 403);
   }
@@ -104,38 +110,29 @@ const main = async (): Promise<void> => {
   Env.validate();
 
   const port = HTTP_PORT;
-  const baseUrl = Env.BASE_URL.replace(/\/+$/, "");
-  const mcpUrl = new URL("/mcp", baseUrl);
-  const issuer = Env.SLIDESPEAK_OAUTH_ISSUER.replace(/\/+$/, "");
-  const backchannelBaseUrl = (Env.SLIDESPEAK_OAUTH_BACKCHANNEL_BASE_URL ?? issuer).replace(
-    /\/+$/,
-    "",
-  );
-  const jwksUrl = Env.SLIDESPEAK_JWKS_URL ?? `${backchannelBaseUrl}/oauth/jwks.json`;
-  const authorizationEndpoint = `${issuer}/oauth/authorize`;
-  const tokenEndpoint = `${backchannelBaseUrl}/oauth/token`;
-  const publicTokenEndpoint = `${issuer}/oauth/token`;
-  const registrationEndpoint = `${issuer}/oauth/register`;
+  const runtimeConfig = buildOAuthRuntimeConfig();
   const assetDownloadExpiresInSeconds = Env.ASSET_DOWNLOAD_EXPIRES_IN_SECONDS;
 
   const oauthMetadata: OAuthMetadata = {
-    issuer,
-    authorization_endpoint: authorizationEndpoint,
-    token_endpoint: publicTokenEndpoint,
-    registration_endpoint: registrationEndpoint,
-    jwks_uri: jwksUrl,
+    issuer: runtimeConfig.issuer,
+    authorization_endpoint: runtimeConfig.authorizationEndpoint,
+    token_endpoint: runtimeConfig.tokenEndpoint,
+    ...(runtimeConfig.registrationEndpoint
+      ? { registration_endpoint: runtimeConfig.registrationEndpoint }
+      : {}),
+    jwks_uri: runtimeConfig.jwksUrl,
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code", "refresh_token"],
     token_endpoint_auth_methods_supported: ["none"],
     code_challenge_methods_supported: ["S256"],
-    scopes_supported: ["onbrand:read", "onbrand:write"],
+    scopes_supported: [...runtimeConfig.requiredScopes],
   };
-  const protectedResourceMetadataUrl = getOAuthProtectedResourceMetadataUrl(mcpUrl);
+  const protectedResourceMetadataUrl = getOAuthProtectedResourceMetadataUrl(runtimeConfig.mcpUrl);
   const protectedResourceMetadata = {
-    resource: mcpUrl.href,
-    authorization_servers: [issuer],
-    scopes_supported: ["onbrand:read", "onbrand:write"],
-    resource_name: "SlideSpeak OnBrand MCP",
+    resource: runtimeConfig.mcpUrl.href,
+    authorization_servers: [runtimeConfig.issuer],
+    scopes_supported: [...runtimeConfig.requiredScopes],
+    resource_name: "OnBrand MCP",
   };
 
   const prisma = createPrismaClient();
@@ -145,7 +142,13 @@ const main = async (): Promise<void> => {
     Env.AWS_S3_BUCKET_BRAND_KIT_ASSETS,
     assetDownloadExpiresInSeconds,
   );
-  const verifier = new SlideSpeakTokenVerifier({ issuer, audience: mcpUrl.toString(), jwksUrl });
+  const verifier = new OAuthAccessTokenVerifier({
+    issuer: runtimeConfig.issuer,
+    audience: runtimeConfig.mcpUrl.toString(),
+    jwksUrl: runtimeConfig.jwksUrl,
+    requiredScopes: runtimeConfig.requiredScopes,
+    ownerIdClaim: runtimeConfig.ownerIdClaim,
+  });
   const app = new Hono();
 
   app.get("/health", (context) => context.json({ ok: true }));
@@ -156,11 +159,13 @@ const main = async (): Promise<void> => {
 
   registerDashboardOAuthRoutes({
     app,
-    authorizationEndpoint,
-    baseUrl,
-    mcpUrl,
-    requiredScopes: REQUIRED_SCOPES,
-    tokenEndpoint,
+    authorizationEndpoint: runtimeConfig.authorizationEndpoint,
+    baseUrl: runtimeConfig.baseUrl,
+    callbackUrl: runtimeConfig.callbackUrl,
+    dashboardClientId: runtimeConfig.dashboardClientId,
+    mcpUrl: runtimeConfig.mcpUrl,
+    requiredScopes: runtimeConfig.requiredScopes,
+    tokenEndpoint: runtimeConfig.backchannelTokenEndpoint,
     verifier,
     verifyBearerAuth,
   });
@@ -168,12 +173,12 @@ const main = async (): Promise<void> => {
     app,
     brandGuides,
     handleAuthError: (context, error) =>
-      handleOAuthError(context, error, protectedResourceMetadataUrl),
+      handleOAuthError(context, error, protectedResourceMetadataUrl, runtimeConfig.requiredScopes),
     refreshConfig: {
-      baseUrl,
-      clientId: Env.DASHBOARD_OAUTH_CLIENT_ID,
-      mcpUrl,
-      tokenEndpoint,
+      baseUrl: runtimeConfig.baseUrl,
+      clientId: runtimeConfig.dashboardClientId,
+      mcpUrl: runtimeConfig.mcpUrl,
+      tokenEndpoint: runtimeConfig.backchannelTokenEndpoint,
       verifier,
       verifyBearerAuth,
     },
@@ -194,7 +199,12 @@ const main = async (): Promise<void> => {
       await server.connect(transport);
       return await transport.handleRequest(context.req.raw, { authInfo });
     } catch (error) {
-      return handleOAuthError(context, error, protectedResourceMetadataUrl);
+      return handleOAuthError(
+        context,
+        error,
+        protectedResourceMetadataUrl,
+        runtimeConfig.requiredScopes,
+      );
     }
   });
 
@@ -203,12 +213,17 @@ const main = async (): Promise<void> => {
       await verifyBearerAuth(context.req.header("authorization"), verifier);
       return context.body(null, 200);
     } catch (error) {
-      return handleOAuthError(context, error, protectedResourceMetadataUrl);
+      return handleOAuthError(
+        context,
+        error,
+        protectedResourceMetadataUrl,
+        runtimeConfig.requiredScopes,
+      );
     }
   });
 
   serve({ fetch: app.fetch, port }, () => {
-    console.error(`OnBrand remote MCP listening on ${baseUrl}/mcp`);
+    console.error(`OnBrand remote MCP listening on ${runtimeConfig.mcpUrl.toString()}`);
   });
 };
 
