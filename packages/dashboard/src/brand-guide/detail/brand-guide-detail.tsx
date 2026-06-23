@@ -1,8 +1,14 @@
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { useApi } from "../../shared/api/api-state";
+import { BrandGuideMetadataSection } from "./brand-guide-metadata-section";
 import { BrandKitSections } from "./brand-kit/brand-kit-sections";
-import { AssetLayoutSwitch, type AssetLayout } from "./brand-kit/brand-kit-assets-sections";
+import type { AssetLayout } from "./brand-kit/brand-kit-assets-sections";
+import {
+  createBrandGuideEditor,
+  optimisticMetadataView,
+  optimisticPresentationKitView,
+} from "./brand-guide-editor";
 import { PresentationKitSection } from "./presentation-kit/presentation-kit-sections";
 import { ErrorMessage } from "../../shared/ui/feedback";
 import { PageHeader } from "../../shared/ui/page-header";
@@ -21,30 +27,60 @@ export const BrandGuideDetail = ({
   if (state.status === "LOADING")
     return <p className="text-onbrand-charcoal/55">Loading Brand Guide…</p>;
   if (state.status === "ERROR") return <ErrorMessage message={state.message} />;
-  return <BrandGuideDetailView view={state.data} section={section} />;
+  return (
+    <BrandGuideDetailView
+      key={state.data.brandGuide.id}
+      initialView={state.data}
+      section={section}
+    />
+  );
 };
 
-const PRESENTATION_SECTION_DESCRIPTION =
-  "Plain language instructions to guide AI agents on how to use this brand guide";
-
 const BrandGuideDetailView = ({
-  view,
+  initialView,
   section,
-}: Readonly<{ view: BrandGuideView; section: BrandGuideSection }>) => {
+}: Readonly<{ initialView: BrandGuideView; section: BrandGuideSection }>) => {
+  const [view, setView] = useState(initialView);
   const [assetLayout, setAssetLayout] = useState<AssetLayout>("MASONRY");
+  const editor = useMemo(
+    () => createBrandGuideEditor(initialView.brandGuide.id),
+    [initialView.brandGuide.id],
+  );
+
+  const saveMetadata = useCallback(
+    async (metadata: { name: string; description: string }) => {
+      setView((current) => optimisticMetadataView(current, metadata));
+      const { view: saved } = await editor.saveMetadata(metadata);
+      setView(saved);
+    },
+    [editor],
+  );
+
+  const savePresentationKit = async (presentationKit: BrandGuideView["presentationKit"]) => {
+    setView((current) => optimisticPresentationKitView(current, presentationKit));
+    const { view: saved } = await editor.savePresentationKit(presentationKit);
+    setView(saved);
+  };
 
   return (
-    <section className="grid gap-3">
-      <PageHeader
-        action={
-          section === "ASSETS" ? (
-            <AssetLayoutSwitch assetLayout={assetLayout} onAssetLayoutChange={setAssetLayout} />
-          ) : undefined
-        }
-        description={section === "PRESENTATION" ? PRESENTATION_SECTION_DESCRIPTION : undefined}
-        title={brandGuideSectionLabel(section)}
+    <section
+      className={`grid gap-3 ${section === "PRESENTATION" ? "h-full min-h-0 grid-rows-[auto_minmax(0,1fr)]" : "content-start"}`}
+    >
+      {section === "COLORS" ||
+      section === "ASSETS" ||
+      section === "LOGO" ||
+      section === "PRESENTATION" ? null : (
+        <PageHeader title={brandGuideSectionLabel(section)} />
+      )}
+      <BrandGuideSectionPage
+        assetLayout={assetLayout}
+        view={view}
+        section={section}
+        onAssetLayoutChange={setAssetLayout}
+        onViewChange={setView}
+        onMetadataChange={saveMetadata}
+        onPresentationKitChange={savePresentationKit}
       />
-      <BrandGuideSectionPage assetLayout={assetLayout} view={view} section={section} />
     </section>
   );
 };
@@ -53,18 +89,34 @@ const BrandGuideSectionPage = ({
   assetLayout,
   view,
   section,
+  onViewChange,
+  onAssetLayoutChange,
+  onMetadataChange,
+  onPresentationKitChange,
 }: Readonly<{
   assetLayout: AssetLayout;
   view: BrandGuideView;
   section: BrandGuideSection;
+  onViewChange: (view: BrandGuideView) => void;
+  onAssetLayoutChange: (assetLayout: AssetLayout) => void;
+  onMetadataChange: (metadata: { name: string; description: string }) => Promise<void>;
+  onPresentationKitChange: (presentationKit: BrandGuideView["presentationKit"]) => Promise<void>;
 }>) => {
   switch (section) {
+    case "METADATA":
+      return (
+        <BrandGuideMetadataSection
+          brandGuide={view.brandGuide}
+          onMetadataChange={onMetadataChange}
+        />
+      );
     case "COLORS":
       return (
         <BrandKitSections
           brandKit={view.brandKit}
           brandGuideId={view.brandGuide.id}
           section="COLORS"
+          onViewChange={onViewChange}
         />
       );
     case "LOGO":
@@ -73,18 +125,26 @@ const BrandGuideSectionPage = ({
           brandKit={view.brandKit}
           brandGuideId={view.brandGuide.id}
           section="LOGO"
+          onViewChange={onViewChange}
         />
       );
     case "ASSETS":
       return (
         <BrandKitSections
           assetLayout={assetLayout}
+          onAssetLayoutChange={onAssetLayoutChange}
           brandKit={view.brandKit}
           brandGuideId={view.brandGuide.id}
           section="ASSETS"
+          onViewChange={onViewChange}
         />
       );
     case "PRESENTATION":
-      return <PresentationKitSection presentationKit={view.presentationKit} />;
+      return (
+        <PresentationKitSection
+          presentationKit={view.presentationKit}
+          onPresentationKitChange={onPresentationKitChange}
+        />
+      );
   }
 };

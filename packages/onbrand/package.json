@@ -2,10 +2,21 @@
   "name": "@onbrand/core",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SlideSpeak/slidespeak-onbrand.git",
+    "directory": "packages/onbrand"
+  },
+  "bugs": {
+    "url": "https://github.com/SlideSpeak/slidespeak-onbrand/issues"
+  },
+  "homepage": "https://github.com/SlideSpeak/slidespeak-onbrand#readme",
   "type": "module",
   "exports": {
     "./brand-guide/owner": "./src/brand-guide/owner.ts",
     "./database/prisma-client": "./src/database/prisma-client.ts",
+    "./brand-guide/brand-kit/asset-file/rules": "./src/brand-guide/brand-kit/asset-file/rules.ts",
     "./brand-guide/application-service": "./src/brand-guide/application-service.ts",
     "./brand-guide/application": "./src/brand-guide/brand-guide-application.ts",
     "./env": "./src/env.ts"

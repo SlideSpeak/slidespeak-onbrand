@@ -1,33 +1,36 @@
 import { createHash, randomBytes } from "node:crypto";
-import { Env } from "@onbrand/core/env";
 import type { Hono } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
-import type { SlideSpeakTokenVerifier } from "../../auth/slidespeak-token-verifier";
+import type { OAuthAccessTokenVerifier } from "../../auth/oauth-token-verifier";
 import { dashboardSessionFromAuthInfo, setDashboardAuthCookies } from "../dashboard-session";
 
 const OAUTH_STATE_COOKIE = "onbrand_oauth_state";
 const OAUTH_VERIFIER_COOKIE = "onbrand_oauth_verifier";
 const OAUTH_RETURN_TO_COOKIE = "onbrand_oauth_return_to";
-const DEFAULT_DASHBOARD_RETURN_TO = "/brand-guides";
+const DEFAULT_DASHBOARD_RETURN_TO = "/";
 
 export type DashboardOAuthRoutesConfig = Readonly<{
   app: Hono;
   authorizationEndpoint: string;
   baseUrl: string;
+  callbackUrl: URL;
+  dashboardClientId: string;
   mcpUrl: URL;
   requiredScopes: readonly string[];
   tokenEndpoint: string;
-  verifier: SlideSpeakTokenVerifier;
+  verifier: OAuthAccessTokenVerifier;
   verifyBearerAuth: (
     authorizationHeader: string | undefined,
-    verifier: SlideSpeakTokenVerifier,
-  ) => Promise<Awaited<ReturnType<SlideSpeakTokenVerifier["verifyAccessToken"]>>>;
+    verifier: OAuthAccessTokenVerifier,
+  ) => Promise<Awaited<ReturnType<OAuthAccessTokenVerifier["verifyAccessToken"]>>>;
 }>;
 
 export const registerDashboardOAuthRoutes = ({
   app,
   authorizationEndpoint,
   baseUrl,
+  callbackUrl,
+  dashboardClientId,
   mcpUrl,
   requiredScopes,
   tokenEndpoint,
@@ -37,10 +40,10 @@ export const registerDashboardOAuthRoutes = ({
   app.get("/login", (context) => {
     const state = randomBytes(24).toString("base64url");
     const codeVerifier = randomBytes(32).toString("base64url");
-    const redirectUri = new URL("/oauth/callback", baseUrl).toString();
+    const redirectUri = callbackUrl.toString();
     const authorizeUrl = new URL(authorizationEndpoint);
     authorizeUrl.searchParams.set("response_type", "code");
-    authorizeUrl.searchParams.set("client_id", Env.DASHBOARD_OAUTH_CLIENT_ID);
+    authorizeUrl.searchParams.set("client_id", dashboardClientId);
     authorizeUrl.searchParams.set("redirect_uri", redirectUri);
     authorizeUrl.searchParams.set("resource", mcpUrl.toString());
     authorizeUrl.searchParams.set("scope", requiredScopes.join(" "));
@@ -78,9 +81,9 @@ export const registerDashboardOAuthRoutes = ({
     const tokenBody = new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      redirect_uri: new URL("/oauth/callback", baseUrl).toString(),
+      redirect_uri: callbackUrl.toString(),
       code_verifier: codeVerifier,
-      client_id: Env.DASHBOARD_OAUTH_CLIENT_ID,
+      client_id: dashboardClientId,
       resource: mcpUrl.toString(),
     });
     const tokenResponse = await fetch(tokenEndpoint, {
@@ -118,7 +121,8 @@ const codeChallengeForVerifier = (verifier: string): string =>
 
 const safeDashboardReturnTo = (returnTo: string | undefined): string => {
   if (!returnTo) return DEFAULT_DASHBOARD_RETURN_TO;
-  if (returnTo === "/brand-guides" || returnTo.startsWith("/brand-guides/")) return returnTo;
+  if (returnTo === "/" || returnTo === "/brand-guides" || returnTo.startsWith("/brand-guides/"))
+    return returnTo;
   return DEFAULT_DASHBOARD_RETURN_TO;
 };
 

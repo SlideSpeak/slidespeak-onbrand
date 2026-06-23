@@ -34,6 +34,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-onbrand}
       POSTGRES_USER: ${POSTGRES_USER:-onbrand}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5433:5432"
     volumes:
       - onbrand-postgres-data:/var/lib/postgresql
     healthcheck:

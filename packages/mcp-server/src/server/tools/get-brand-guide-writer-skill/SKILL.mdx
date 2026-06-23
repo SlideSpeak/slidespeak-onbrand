@@ -98,8 +98,9 @@ typography, color, spacing, motif, asset, and surface logic; discard interaction
 
 ## Core CSS Tokens
 
-Provide CSS custom properties for color tokens, typography stack, slide size, margins, gutters, and
-recurring measurements.
+Provide CSS custom properties for color tokens, typography stack, margins, gutters, and recurring
+measurements. Do not define slide width or slide height CSS variables in the Design Prompt; canvas
+size belongs only in `presentationKit.canvas`.
 
 ## Typography
 
@@ -108,9 +109,11 @@ styles with sizes, weights, line heights, casing, and contrast rules.
 
 ## Layout Grammar
 
-Define canvas, grids, spacing, composition patterns, panel geometry, border/radius/shadow rules,
-density, alignment, and what not to use. Include numeric placement guidance for covers and key slide
-archetypes.
+Define grids, spacing, composition patterns, panel geometry, border/radius/shadow rules, density,
+alignment, and what not to use. Do not restate fixed canvas dimensions in the Design Prompt; use
+relative/full-bleed placement and margins that apply to the separate `presentationKit.canvas` value.
+Include numeric placement guidance for covers and key slide archetypes only when it is not a canvas
+width/height declaration.
 
 ## Asset Usage
 

@@ -10,11 +10,18 @@ _Avoid_: Brand MCP, branding tool
 
 **Brand Guide**: The canonical source of truth for an organization's reusable design assets and
 design rules. In this context, each Brand Guide contains one **Brand Kit** and one **Presentation
-Kit**. _Avoid_: Design context, brand, brand definition
+Kit**; either kit may be empty while the Brand Guide is being assembled. A Brand Guide always has a
+name and may have a description. _Avoid_: Design context, brand, brand definition
+
+**Brand Guide Registry**: The persistence module that lists, loads, and replaces **Brand Guides**,
+including their **Brand Kit**, **Brand Kit Asset File** records, and **Presentation Kit** records.
+Its interface is the seam between Onbrand application workflows and the Prisma Postgres adapter.
+_Avoid_: Brand Guide service, repository when discussing the domain concept
 
 **Brand Kit**: The identity-focused part of a **Brand Guide**, such as colors, logos, typography,
-**Decorative Assets**, imagery, icons, and voice/tone. _Avoid_: Brand, brand assets when referring
-to the whole kit
+**Decorative Assets**, imagery, icons, and voice/tone. A Brand Kit may be empty; nothing inside it
+is required before the Brand Guide can exist. _Avoid_: Brand, brand assets when referring to the
+whole kit
 
 **Logo**: The governed brand logo in a **Brand Kit**. Presentation-specific logo uses reference the
 Brand Kit logo rather than redefining logo source details in the Presentation Kit. _Avoid_: Logo
@@ -32,12 +39,13 @@ format. _Avoid_: Brand image, icon, illustration
 **Brand Kit Asset File**: The exact downloadable file and metadata for a declared visual from a
 **Brand Kit** that an MCP client can write into its own workspace. Current downloadable visuals are
 the **Logo** and **Decorative Assets**. The file lives in S3 object storage and is exposed to
-clients through short-lived presigned URLs. _Avoid_: server-local path, source asset path, inline
-binary payload
+clients through short-lived presigned URLs. Its module owns storage-key validation, asset handles,
+supported MIME types, materialization commands, and dashboard preview paths. _Avoid_: server-local
+path, source asset path, inline binary payload
 
-**Presentation Kit**: The slide-focused part of a **Brand Guide**. It defines the **Slide Canvas**
-and may include a **Design Prompt** for generated presentations. _Avoid_: Slide Kit, Template Kit,
-Deck Kit
+**Presentation Kit**: The slide-focused part of a **Brand Guide**. It may define the **Slide
+Canvas** and may include a **Design Prompt** for generated presentations, but neither is required
+before the Brand Guide can exist. _Avoid_: Slide Kit, Template Kit, Deck Kit
 
 **Design Prompt**: Narrative presentation guidance that captures brand-specific slide design rules,
 layout grammar, copy style, and quality checks for AI agents. _Avoid_: Master prompt, system prompt
@@ -47,11 +55,19 @@ should use its tools. It is distinct from a **Design Prompt**, which is specific
 Guide**. _Avoid_: Onbrand Orientation, onboarding prompt, discovery prompt, help prompt
 
 **Onbrand Dashboard**: The browser-based Onbrand product surface where authenticated users view and
-manage their **Brand Guides**. It is distinct from the MCP endpoint, which is the agent-facing
-integration surface. _Avoid_: Admin panel, Brand dashboard, MCP UI
+manage **Brand Guides** as the top-level editable resource. Users may edit the **Brand Kit** and
+**Presentation Kit** inside a Brand Guide, but those kits are not independently managed resources.
+It is distinct from the MCP endpoint, which is the agent-facing integration surface. _Avoid_: Admin
+panel, Brand dashboard, MCP UI
 
-**Slide Canvas**: The canonical coordinate space used by a **Presentation Kit** to describe slide
-size and aspect ratio. _Avoid_: Page size, viewport, artboard
+**Brand Guide Editing Module**: The Onbrand Dashboard module that owns granular Brand Guide save
+operations, including optimistic view publication, Brand Kit Asset File upload choreography,
+previous-name handling for renamed Color Tokens and Decorative Assets, and dashboard save/delete
+toast policy. It preserves the granular autosave behaviour from ADR-0005 while keeping UI modules
+focused on local editing state. _Avoid_: Autosave helper, dashboard API wrapper
+
+**Slide Canvas**: The optional canonical coordinate space used by a **Presentation Kit** to describe
+slide size and aspect ratio. _Avoid_: Page size, viewport, artboard
 
 **Color Token**: A named color in a **Brand Kit** that includes both a precise color value and
 descriptive guidance about its role. Color Token IDs are unique within a Brand Kit, not globally.

@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from "react";
+import { type FormEvent, type ReactNode, useEffect, useReducer, useRef, useState } from "react";
 import { Copy01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
@@ -9,12 +9,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../components/ui/select";
+import { Dialog, DialogContent, DialogTitle } from "../components/ui/dialog";
 import { Toaster } from "../components/ui/sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../components/ui/tooltip";
 import { toast } from "sonner";
-import { useApi } from "../shared/api/api-state";
+import { sendJson, useApi, useOptionalApi } from "../shared/api/api-state";
+import { publishBrandGuideUpdated, useSyncedBrandGuides } from "../shared/brand-guide-sync";
 import { BrandGuideDetail } from "../brand-guide/detail/brand-guide-detail";
-import type { BrandGuideSummary } from "@onbrand/core/brand-guide/application-service";
+import type {
+  BrandGuideSummary,
+  BrandGuideView,
+} from "@onbrand/core/brand-guide/application-service";
 import {
   DEFAULT_BRAND_GUIDE_SECTION,
   BRAND_GUIDE_SECTION_LINKS,
@@ -26,105 +31,175 @@ import type { ApiState } from "../shared/api/api-state";
 import { ErrorMessage } from "../shared/ui/feedback";
 import onbrandLogoUrl from "../assets/onbrand-logo.svg";
 import { routeFromPathname } from "./route";
+import { onboardingConnections } from "./runtime-config";
+import { ThemeToggle } from "./theme-toggle";
+import { type ThemeMode, useDashboardTheme } from "./theme";
 
 const NO_BRAND_GUIDE = "NO_BRAND_GUIDE";
-const GRAIN_TEXTURE = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`;
 
-export const OnboardingPage = () => (
-  <main className="relative min-h-screen overflow-hidden bg-[#020617] px-4 py-10 text-onbrand-charcoal sm:px-6 lg:px-8">
-    <div
-      aria-hidden
-      className="animate-onbrand-gradient-drift absolute -inset-10"
-      style={{
-        background: `
-          radial-gradient(90% 85% at 28% 68%, rgba(1, 8, 33, 0.96) 0%, rgba(2, 13, 49, 0.78) 34%, rgba(3, 21, 76, 0.3) 58%, transparent 76%),
-          radial-gradient(95% 90% at 58% 58%, rgba(1, 22, 77, 0.74) 0%, rgba(3, 36, 128, 0.45) 32%, transparent 66%),
-          radial-gradient(70% 80% at 88% 25%, rgba(22, 155, 255, 0.84) 0%, rgba(0, 102, 255, 0.55) 34%, transparent 72%),
-          radial-gradient(85% 70% at 54% 0%, rgba(29, 172, 255, 0.78) 0%, rgba(11, 112, 255, 0.62) 38%, transparent 78%),
-          radial-gradient(54% 70% at 4% 8%, rgba(0, 42, 132, 0.9) 0%, rgba(2, 20, 70, 0.72) 48%, transparent 80%),
-          linear-gradient(112deg, #02091f 0%, #06276f 26%, #055cf4 50%, #0787ff 72%, #0525b7 100%),
-          linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 22%, rgba(0, 0, 0, 0.38) 100%)
-        `,
-      }}
+type DashboardSessionView = Readonly<{ ownerUserId: string; scopes: readonly string[] }>;
+
+const OnboardingPage = () => {
+  const { setTheme, theme } = useDashboardTheme();
+
+  return (
+    <PublicDashboardHome
+      onThemeChange={setTheme}
+      promptValue="Generate brand guidelines based on: slidespeak.co"
+      theme={theme}
     />
-    <div
-      aria-hidden
-      className="animate-onbrand-light-breathe absolute inset-0"
-      style={{
-        background: `
-          radial-gradient(140% 110% at 52% 44%, transparent 40%, rgba(1, 4, 16, 0.34) 72%, rgba(0, 2, 12, 0.82) 100%),
-          linear-gradient(90deg, rgba(0, 0, 0, 0.58) 0%, transparent 20%, transparent 76%, rgba(0, 2, 18, 0.42) 100%),
-          linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, transparent 16%, transparent 68%, rgba(0, 0, 0, 0.58) 100%)
-        `,
-      }}
-    />
-    <div
-      aria-hidden
-      className="animate-onbrand-aurora-sweep absolute -inset-24 mix-blend-screen blur-3xl"
-      style={{
-        background: `
-          radial-gradient(42% 48% at 22% 52%, rgba(0, 24, 120, 0.92) 0%, transparent 72%),
-          radial-gradient(44% 42% at 76% 24%, rgba(40, 188, 255, 0.88) 0%, transparent 70%),
-          radial-gradient(38% 46% at 58% 78%, rgba(0, 84, 255, 0.7) 0%, transparent 74%)
-        `,
-      }}
-    />
-    <div
-      aria-hidden
-      className="absolute inset-0 opacity-100 mix-blend-soft-light"
-      style={{ backgroundImage: GRAIN_TEXTURE, backgroundSize: "88px 88px" }}
-    />
-    <div
-      aria-hidden
-      className="animate-onbrand-texture-drift absolute inset-0 opacity-20 mix-blend-overlay"
-      style={{
-        backgroundImage: `
-          linear-gradient(100deg, transparent 0 23%, rgba(255,255,255,0.18) 23.08%, transparent 23.18% 100%),
-          linear-gradient(74deg, transparent 0 61%, rgba(255,255,255,0.12) 61.08%, transparent 61.18% 100%),
-          linear-gradient(166deg, transparent 0 39%, rgba(0,0,0,0.26) 39.08%, transparent 39.18% 100%)
-        `,
-        backgroundSize: "420px 280px, 520px 360px, 460px 320px",
-      }}
-    />
-    <div className="relative z-10">
-      <OnboardingInstructions variant="dark" />
+  );
+};
+
+const PublicDashboardHome = ({
+  onThemeChange,
+  promptValue,
+  theme,
+}: Readonly<{
+  onThemeChange: (theme: ThemeMode) => void;
+  promptValue: string;
+  theme: ThemeMode;
+}>) => {
+  const [selectedPreviewSection, setSelectedPreviewSection] = useState<BrandGuideSection>(
+    DEFAULT_BRAND_GUIDE_SECTION,
+  );
+
+  return (
+    <div className="min-h-screen bg-onbrand-canvas text-onbrand-charcoal">
+      <div className="flex min-h-screen overflow-hidden border border-onbrand-charcoal/10 bg-onbrand-panel shadow-[0_32px_120px_rgba(10,10,10,0.16)]">
+        <DashboardRail
+          inertPreview
+          selectedBrandGuideSection={selectedPreviewSection}
+          onPreviewSectionChange={setSelectedPreviewSection}
+        />
+        <div className="min-w-0 flex-1 bg-onbrand-white">
+          <PublicDashboardTopBar
+            onThemeChange={onThemeChange}
+            selectedBrandGuideSection={selectedPreviewSection}
+            theme={theme}
+          />
+          <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
+            <OnboardingInstructions promptValue={promptValue} variant={theme} />
+          </main>
+        </div>
+      </div>
+      <Toaster variant="dark" position="bottom-right" visibleToasts={4} />
     </div>
-    <div className="absolute bottom-6 left-6 z-10 flex items-center gap-2 text-base font-semibold text-white">
-      <img alt="" className="h-[1em] w-[1em] invert" src={onbrandLogoUrl} />
-      <span>OnBrand</span>
-    </div>
-    <Toaster position="bottom-right" visibleToasts={4} />
-  </main>
-);
+  );
+};
 
 export const DashboardApp = () => {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  if (pathname === "/") return <DashboardRoot />;
+  return <AuthenticatedDashboardApp pathname={pathname} />;
+};
+
+const DashboardRoot = () => {
+  const session = useOptionalApi<DashboardSessionView>("/api/me");
+
+  if (session.status === "UNAUTHENTICATED") return <OnboardingPage />;
+  if (session.status === "ERROR") {
+    return (
+      <div className="min-h-screen bg-onbrand-white text-onbrand-charcoal">
+        <div className="flex min-h-screen overflow-hidden bg-onbrand-white">
+          <DashboardRail />
+          <div className="min-w-0 flex-1 bg-onbrand-white">
+            <HomeTopBar />
+            <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
+              <ErrorMessage message={session.message} />
+            </main>
+          </div>
+        </div>
+        <Toaster variant="dark" position="bottom-right" visibleToasts={4} />
+      </div>
+    );
+  }
+  if (session.status === "LOADING") {
+    return (
+      <div className="min-h-screen bg-onbrand-white text-onbrand-charcoal">
+        <div className="flex min-h-screen overflow-hidden bg-onbrand-white">
+          <DashboardRail />
+          <div className="min-w-0 flex-1 bg-onbrand-white">
+            <HomeTopBar />
+            <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
+              <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
+            </main>
+          </div>
+        </div>
+        <Toaster variant="dark" position="bottom-right" visibleToasts={4} />
+      </div>
+    );
+  }
+
+  return <DashboardOverview />;
+};
+
+const DashboardOverview = () => {
+  const loadedBrandGuides = useApi<readonly BrandGuideSummary[]>("/api/brand-guides");
+  const brandGuides = useSyncedBrandGuides(loadedBrandGuides);
+  const [selectedPreviewSection, setSelectedPreviewSection] = useState<BrandGuideSection>(
+    DEFAULT_BRAND_GUIDE_SECTION,
+  );
+  const showsEmptyDashboard = brandGuides.status === "READY" && brandGuides.data.length === 0;
+
+  return (
+    <div className="min-h-screen bg-onbrand-white text-onbrand-charcoal">
+      <div className="flex min-h-screen overflow-hidden bg-onbrand-white">
+        <DashboardRail
+          inertPreview={showsEmptyDashboard}
+          selectedBrandGuideSection={selectedPreviewSection}
+          onPreviewSectionChange={setSelectedPreviewSection}
+        />
+        <div className="min-w-0 flex-1 bg-onbrand-white">
+          <HomeTopBar />
+          <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
+            {brandGuides.status === "ERROR" ? (
+              <ErrorMessage message={brandGuides.message} />
+            ) : brandGuides.status === "READY" ? (
+              <HomeDashboard brandGuides={brandGuides.data} />
+            ) : (
+              <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
+            )}
+          </main>
+        </div>
+      </div>
+      <Toaster variant="dark" position="bottom-right" visibleToasts={4} />
+    </div>
+  );
+};
+
+const AuthenticatedDashboardApp = ({ pathname }: Readonly<{ pathname: string }>) => {
   const route = routeFromPathname(pathname);
-  const brandGuides = useApi<readonly BrandGuideSummary[]>("/api/brand-guides");
-  const isHome = pathname === "/";
+  const loadedBrandGuides = useApi<readonly BrandGuideSummary[]>("/api/brand-guides");
+  const brandGuides = useSyncedBrandGuides(loadedBrandGuides);
+  const { setTheme, theme } = useDashboardTheme();
   const selectedBrandGuideId =
     route.selectedBrandGuideId ??
-    (!isHome && brandGuides.status === "READY" ? brandGuides.data[0]?.id : undefined);
+    (brandGuides.status === "READY" ? brandGuides.data[0]?.id : undefined);
   const selectedBrandGuide =
     brandGuides.status === "READY"
       ? brandGuides.data.find((brandGuide) => brandGuide.id === selectedBrandGuideId)
       : undefined;
 
   return (
-    <div className="min-h-screen bg-onbrand-white text-onbrand-charcoal">
-      <div className="flex min-h-screen overflow-hidden border border-onbrand-charcoal/10 bg-onbrand-white shadow-[0_32px_120px_rgba(10,10,10,0.16)]">
+    <div className="min-h-screen bg-onbrand-canvas text-onbrand-charcoal">
+      <div className="flex min-h-screen overflow-hidden border border-onbrand-charcoal/10 bg-onbrand-panel shadow-[0_32px_120px_rgba(10,10,10,0.16)]">
         <DashboardRail
           selectedBrandGuideId={selectedBrandGuideId}
           selectedBrandGuideSection={route.selectedBrandGuideSection}
         />
-        <div className="min-w-0 flex-1 border-l border-onbrand-charcoal/8 bg-onbrand-white">
+        <div className="min-w-0 flex-1 bg-onbrand-white">
           <DashboardTopBar
             brandGuides={brandGuides}
             selectedBrandGuideId={selectedBrandGuideId}
-            selectedBrandGuideName={selectedBrandGuide?.name}
+            selectedBrandGuide={selectedBrandGuide}
             selectedBrandGuideSection={route.selectedBrandGuideSection}
+            onThemeChange={setTheme}
+            theme={theme}
           />
-          <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:max-h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
+          <main
+            className={`min-w-0 px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5 ${route.selectedBrandGuideSection === "PRESENTATION" ? "overflow-hidden" : "overflow-y-auto"}`}
+          >
             {selectedBrandGuideId ? (
               <BrandGuideDetail
                 id={selectedBrandGuideId}
@@ -140,7 +215,157 @@ export const DashboardApp = () => {
           </main>
         </div>
       </div>
-      <Toaster position="bottom-right" visibleToasts={4} />
+      <Toaster variant="dark" position="bottom-right" visibleToasts={4} />
+    </div>
+  );
+};
+
+const PublicDashboardTopBar = ({
+  onThemeChange,
+  selectedBrandGuideSection,
+  theme,
+}: Readonly<{
+  onThemeChange: (theme: ThemeMode) => void;
+  selectedBrandGuideSection: BrandGuideSection;
+  theme: ThemeMode;
+}>) => (
+  <header className="flex h-16 items-center gap-3 border-b border-onbrand-charcoal/8 bg-onbrand-white px-4 sm:gap-4 sm:px-6 lg:px-7">
+    <Link
+      to="/"
+      aria-label="Onbrand dashboard home"
+      className="grid h-9 w-9 shrink-0 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5 lg:hidden"
+    >
+      <img alt="Onbrand" className="onbrand-dashboard-logo h-6 w-6" src={onbrandLogoUrl} />
+    </Link>
+    <div className="flex min-w-0 flex-1 items-center gap-3 text-sm">
+      <span className="truncate font-normal text-onbrand-charcoal">Welcome</span>
+      <span className="text-onbrand-charcoal/25">/</span>
+      <span className="truncate text-onbrand-charcoal/55">
+        {brandGuideSectionLabel(selectedBrandGuideSection)}
+      </span>
+    </div>
+    <ThemeToggle onThemeChange={onThemeChange} theme={theme} />
+  </header>
+);
+
+const HomeTopBar = () => (
+  <header className="flex h-16 items-center border-b border-onbrand-charcoal/8 px-4 sm:px-6 lg:px-7">
+    <h1 className="text-sm font-medium tracking-[-0.02em] text-onbrand-charcoal">
+      Welcome to OnBrand by SlideSpeak
+    </h1>
+  </header>
+);
+
+export const HomeDashboard = ({
+  brandGuides,
+}: Readonly<{ brandGuides: readonly BrandGuideSummary[] }>) => {
+  if (brandGuides.length === 0)
+    return (
+      <OnboardingInstructions
+        promptValue="Generate brand guidelines based on: slidespeak.co"
+        showSignInStep={false}
+      />
+    );
+
+  return (
+    <section className="grid gap-3">
+      <div className="flex min-h-10 items-center justify-between gap-4">
+        <h1 className="m-0 text-xl leading-none font-normal tracking-[-0.035em] text-onbrand-charcoal">
+          Brand Guides
+        </h1>
+        <CreateBrandGuideButton />
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
+        {brandGuides.map((brandGuide) => (
+          <HomeBrandGuideTile key={brandGuide.id} brandGuide={brandGuide} />
+        ))}
+      </div>
+    </section>
+  );
+};
+
+const HomeBrandGuideTile = ({ brandGuide }: Readonly<{ brandGuide: BrandGuideSummary }>) => {
+  const detail = useApi<BrandGuideView>(`/api/brand-guides/${encodeURIComponent(brandGuide.id)}`);
+  const colors = detail.status === "READY" ? detail.data.brandKit.colors.slice(0, 9) : [];
+  const logo = detail.status === "READY" ? detail.data.brandKit.logo : null;
+
+  return (
+    <div className="group relative overflow-hidden rounded-md border border-onbrand-charcoal/10 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-onbrand-blue-200 hover:shadow-md">
+      <Link
+        to="/brand-guides/$brandGuideId/$section"
+        params={{ brandGuideId: brandGuide.id, section: "colors" }}
+        className="grid"
+      >
+        <div className="aspect-square overflow-hidden">
+          {logo ? (
+            <HomeLogoPreview
+              src={`/api/brand-guides/${encodeURIComponent(brandGuide.id)}/assets/${encodeURIComponent(logo.assetHandle)}/preview-proxy`}
+            />
+          ) : (
+            <div className="grid h-full place-items-center bg-onbrand-charcoal/[0.035] text-xs text-onbrand-charcoal/35">
+              No logo
+            </div>
+          )}
+        </div>
+        <h2 className="truncate px-2 py-1.5 text-xs font-medium tracking-[-0.02em] text-onbrand-charcoal">
+          {brandGuide.name}
+        </h2>
+        <div className="grid grid-cols-9 border-t border-onbrand-charcoal/10">
+          {Array.from({ length: 9 }, (_, index) => {
+            const color = colors[index];
+            return (
+              <span
+                key={color?.id ?? index}
+                className="aspect-square bg-onbrand-charcoal/[0.04]"
+                style={color ? { backgroundColor: color.value } : undefined}
+              />
+            );
+          })}
+        </div>
+      </Link>
+    </div>
+  );
+};
+
+const HomeLogoPreview = ({ src }: Readonly<{ src: string }>) => {
+  const [background, setBackground] = useState<"white" | "charcoal">("white");
+
+  const chooseBackground = (image: HTMLImageElement) => {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 48;
+      canvas.height = 48;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context) return;
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      let weightedLuminance = 0;
+      let alphaTotal = 0;
+      for (let index = 0; index < pixels.length; index += 4) {
+        const alpha = pixels[index + 3] / 255;
+        if (alpha < 0.08) continue;
+        weightedLuminance +=
+          (0.2126 * (pixels[index] / 255) +
+            0.7152 * (pixels[index + 1] / 255) +
+            0.0722 * (pixels[index + 2] / 255)) *
+          alpha;
+        alphaTotal += alpha;
+      }
+      if (alphaTotal > 0)
+        setBackground(weightedLuminance / alphaTotal > 0.58 ? "charcoal" : "white");
+    } catch {
+      setBackground("white");
+    }
+  };
+
+  return (
+    <div className={background === "charcoal" ? "h-full bg-onbrand-charcoal" : "h-full bg-white"}>
+      <img
+        alt=""
+        className="h-full w-full object-contain p-3"
+        src={src}
+        onLoad={(event) => chooseBackground(event.currentTarget)}
+      />
     </div>
   );
 };
@@ -148,59 +373,132 @@ export const DashboardApp = () => {
 const NoBrandGuidesPrompt = () => (
   <section className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center justify-center">
     <div className="-translate-y-10 text-center">
+      <CreateBrandGuideButton />
+      <div className="my-5 text-xs tracking-[0.22em] text-onbrand-charcoal/35 uppercase">Or</div>
       <h2 className="text-base font-normal text-onbrand-charcoal">Prompt your agent</h2>
       <CopyableValue value="How can I create a brand guide?" className="mx-auto mt-2" />
     </div>
   </section>
 );
 
-const OnboardingInstructions = ({
-  variant = "light",
-}: Readonly<{ variant?: "light" | "dark" }>) => {
-  const mcpUrl = "https://onbrand.slidespeak.co/mcp";
-  const connections = [
-    {
-      name: "Codex",
-      icon: "codex",
-      value: `codex mcp add onbrand --url ${mcpUrl}`,
-    },
-    {
-      name: "Claude Code",
-      icon: "claude",
-      value: `claude mcp add --transport http onbrand ${mcpUrl}`,
-    },
-    {
-      name: "Cursor",
-      icon: "cursor",
-      value: `{
-  "mcpServers": {
-    "onbrand": {
-      "url": "${mcpUrl}"
+type CreateBrandGuideState = {
+  open: boolean;
+  name: string;
+  error?: string;
+  submitting: boolean;
+};
+
+const createBrandGuideInitialState: CreateBrandGuideState = {
+  open: false,
+  name: "",
+  submitting: false,
+};
+
+const CreateBrandGuideButton = () => {
+  const [state, setState] = useReducer(
+    (current: CreateBrandGuideState, patch: Partial<CreateBrandGuideState>) => ({
+      ...current,
+      ...patch,
+    }),
+    createBrandGuideInitialState,
+  );
+
+  const create = async (event: FormEvent) => {
+    event.preventDefault();
+    setState({ error: undefined, submitting: true });
+    try {
+      const view = await sendJson<{ brandGuide: BrandGuideSummary }>("/api/brand-guides", {
+        method: "POST",
+        body: { name: state.name, description: null },
+      });
+      publishBrandGuideUpdated(view.brandGuide);
+      window.location.href = `/brand-guides/${encodeURIComponent(view.brandGuide.id)}/colors`;
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : String(caught);
+      setState({ error: message, submitting: false });
+      toast.error("Could not create Brand Guide", { description: message });
+      return;
     }
-  }
-}`,
-    },
-  ] as const satisfies readonly { name: string; value: string; icon: McpClientIconName }[];
+    setState({ submitting: false });
+  };
+
+  return (
+    <Dialog open={state.open} onOpenChange={(open) => setState({ open })}>
+      <button
+        className="rounded-md bg-onbrand-charcoal px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-black disabled:opacity-50"
+        type="button"
+        onClick={() => setState({ open: true })}
+      >
+        Create Brand Guide
+      </button>
+      <DialogContent>
+        <form className="grid gap-5 p-6" onSubmit={create}>
+          <div>
+            <DialogTitle className="text-lg font-medium text-onbrand-charcoal">
+              Create Brand Guide
+            </DialogTitle>
+          </div>
+          <label className="grid gap-2 text-sm text-onbrand-charcoal">
+            Name
+            <input
+              required
+              className="rounded-md border border-onbrand-charcoal/15 px-3 py-2 outline-none"
+              value={state.name}
+              onChange={(event) => setState({ name: event.target.value })}
+            />
+          </label>
+          {state.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
+          <div className="flex justify-end gap-2">
+            <button
+              className="rounded-md px-4 py-2 text-sm text-onbrand-charcoal/65"
+              type="button"
+              onClick={() => setState({ open: false })}
+            >
+              Cancel
+            </button>
+            <button
+              className="rounded-md bg-onbrand-charcoal px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+              disabled={state.submitting || !state.name.trim()}
+              type="submit"
+            >
+              {state.submitting ? "Creating…" : "Create"}
+            </button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const OnboardingInstructions = ({
+  showSignInStep = true,
+  variant = "light",
+  promptValue = "Tell me about OnBrand",
+}: Readonly<{ showSignInStep?: boolean; variant?: "light" | "dark"; promptValue?: string }>) => {
+  const connections = onboardingConnections();
 
   return (
     <section className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center">
       <div className="w-full -translate-y-10 p-2 text-center sm:p-4">
-        <div className="grid gap-12">
+        <div className="grid gap-10">
           <OnboardingStep number="01" title="Connect to the OnBrand MCP" variant={variant}>
             <ConnectionOptions connections={connections} variant={variant} />
           </OnboardingStep>
           <OnboardingStep
             number="02"
-            title="Restart your agent. Then prompt:"
-            value="Tell me about OnBrand"
+            title="Prompt your agent"
+            value={promptValue}
             variant={variant}
           />
-          <OnboardingStep
-            number="03"
-            value="Start Creating"
-            href="/brand-guides"
-            variant={variant}
-          />
+          {showSignInStep ? (
+            <OnboardingStep
+              number="03"
+              title="Sign in to see your dashboard and brands"
+              href="/login?returnTo=/"
+              value="Sign in"
+              variant={variant}
+            />
+          ) : null}
         </div>
       </div>
     </section>
@@ -247,7 +545,18 @@ const OnboardingStep = ({
         </h2>
       ) : null}
       {children ??
-        (href ? (
+        (href?.startsWith("/") ? (
+          <a
+            href={href}
+            className={
+              isDark
+                ? "mt-2 inline-flex h-12 cursor-pointer items-center justify-center rounded-md border-[0.5px] border-white bg-white px-6 text-base font-medium text-[#111111] transition hover:bg-[#111111] hover:text-white"
+                : "mt-2 inline-flex h-12 cursor-pointer items-center justify-center rounded-md border-[0.5px] border-[#111111] bg-[#111111] px-6 text-base font-medium text-white transition hover:bg-white hover:text-[#111111]"
+            }
+          >
+            {value}
+          </a>
+        ) : href ? (
           <Link
             to={href}
             className="mt-2 inline-flex h-14 cursor-pointer items-center justify-center rounded-md border-[0.5px] border-onbrand-charcoal bg-white px-6 text-lg text-onbrand-charcoal transition hover:bg-onbrand-charcoal hover:text-white"
@@ -279,6 +588,22 @@ const ConnectionOptions = ({
       <div className="flex flex-wrap justify-center gap-2">
         {connections.map((connection) => {
           const isSelected = connection.name === selectedConnection.name;
+          const buttonClass =
+            variant === "dark"
+              ? isSelected
+                ? "grid cursor-pointer place-items-center rounded-md border-[0.5px] border-white bg-white p-2 text-[#111111]"
+                : "grid cursor-pointer place-items-center rounded-md border-[0.5px] border-white bg-[#111111] p-2 text-white"
+              : isSelected
+                ? "grid cursor-pointer place-items-center rounded-md border-[0.5px] border-onbrand-charcoal bg-onbrand-charcoal p-2 text-white"
+                : "grid cursor-pointer place-items-center rounded-md border-[0.5px] border-onbrand-charcoal bg-white p-2 text-onbrand-charcoal";
+          const iconClass =
+            variant === "dark"
+              ? isSelected
+                ? "h-8 w-8 text-[#111111]"
+                : "h-8 w-8 text-white"
+              : isSelected
+                ? "h-8 w-8 text-white"
+                : "h-8 w-8 text-onbrand-charcoal";
 
           return (
             <button
@@ -288,16 +613,9 @@ const ConnectionOptions = ({
               aria-label={connection.name}
               title={connection.name}
               onClick={() => setSelectedConnectionName(connection.name)}
-              className={
-                isSelected
-                  ? "grid cursor-pointer place-items-center rounded-md bg-onbrand-charcoal p-2 text-white"
-                  : "grid cursor-pointer place-items-center rounded-md bg-white p-2 text-onbrand-charcoal"
-              }
+              className={buttonClass}
             >
-              <McpClientIcon
-                className={isSelected ? "h-8 w-8 text-white" : "h-8 w-8 text-onbrand-charcoal"}
-                name={connection.icon}
-              />
+              <McpClientIcon className={iconClass} name={connection.icon} />
             </button>
           );
         })}
@@ -329,16 +647,16 @@ const CopyableValue = ({
 
   const variantClasses =
     variant === "dark"
-      ? "border-white bg-onbrand-charcoal text-white hover:bg-white hover:text-onbrand-charcoal"
-      : "border-onbrand-charcoal bg-onbrand-charcoal text-white hover:bg-black hover:text-white";
+      ? "border-white bg-white text-[#111111] hover:bg-[#111111] hover:text-white active:bg-[#111111] active:text-white"
+      : "border-onbrand-inverse bg-onbrand-inverse text-onbrand-inverse-foreground hover:bg-white hover:text-[#111111] active:bg-[#111111] active:text-white";
 
   return (
     <button
       type="button"
       onClick={() => void copy()}
-      className={`group inline-grid min-h-12 max-w-full cursor-pointer grid-cols-[minmax(0,max-content)_auto] items-center gap-3 rounded-md border-[0.5px] px-4 py-3 text-left transition ${variantClasses} ${className}`}
+      className={`group inline-grid min-h-12 max-w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md border-[0.5px] px-4 py-3 text-left transition ${variantClasses} ${className}`}
     >
-      <code className="max-w-[min(42rem,calc(100vw-3rem))] overflow-hidden font-mono text-base leading-6 text-ellipsis whitespace-nowrap">
+      <code className="max-w-[min(42rem,calc(100vw-3rem))] overflow-hidden font-mono text-base leading-6 whitespace-nowrap">
         {value}
       </code>
       <span className="flex items-center gap-2 text-xs">
@@ -380,26 +698,83 @@ const CursorIcon = ({ className }: Readonly<{ className?: string }>) => (
   </svg>
 );
 
+const EditableBrandGuideName = ({ brandGuide }: Readonly<{ brandGuide?: BrandGuideSummary }>) => {
+  const [name, setName] = useState(brandGuide?.name ?? "");
+  const editedByUser = useRef(false);
+
+  useEffect(() => {
+    if (!brandGuide || !editedByUser.current || !name.trim() || name === brandGuide.name) return;
+    const timeout = window.setTimeout(() => {
+      sendJson<BrandGuideView>(`/api/brand-guides/${encodeURIComponent(brandGuide.id)}/metadata`, {
+        method: "PATCH",
+        body: { name },
+      })
+        .then((saved) => {
+          editedByUser.current = false;
+          publishBrandGuideUpdated(saved.brandGuide);
+          toast.success("Changes saved");
+        })
+        .catch((error: unknown) =>
+          toast.error("Could not rename Brand Guide", {
+            description: error instanceof Error ? error.message : String(error),
+          }),
+        );
+    }, 650);
+    return () => window.clearTimeout(timeout);
+  }, [brandGuide, name]);
+  if (!brandGuide)
+    return <span className="truncate font-normal text-onbrand-charcoal">Getting started</span>;
+  return (
+    <label className="relative inline-grid max-w-[min(42rem,45vw)] flex-none items-center overflow-hidden">
+      <span className="invisible font-normal whitespace-pre" aria-hidden>
+        {name || brandGuide.name || "Brand Guide"}
+      </span>
+      <input
+        aria-label="Brand Guide name"
+        className="absolute inset-0 w-full bg-transparent font-normal text-onbrand-charcoal transition outline-none"
+        spellCheck={false}
+        value={name}
+        onChange={(e) => {
+          editedByUser.current = true;
+          setName(e.target.value);
+        }}
+      />
+    </label>
+  );
+};
+
 const DashboardTopBar = ({
   brandGuides,
+  onThemeChange,
   selectedBrandGuideId,
-  selectedBrandGuideName,
+  selectedBrandGuide,
   selectedBrandGuideSection = DEFAULT_BRAND_GUIDE_SECTION,
+  theme,
 }: Readonly<{
   brandGuides: ApiState<readonly BrandGuideSummary[]>;
+  onThemeChange: (theme: ThemeMode) => void;
   selectedBrandGuideId?: string;
-  selectedBrandGuideName?: string;
+  selectedBrandGuide?: BrandGuideSummary;
   selectedBrandGuideSection?: BrandGuideSection;
+  theme: ThemeMode;
 }>) => {
   const navigate = useNavigate();
 
   return (
-    <header className="flex h-16 items-center gap-4 border-b border-onbrand-charcoal/8 px-4 sm:px-6 lg:px-7">
+    <header className="flex h-16 items-center gap-3 border-b border-onbrand-charcoal/8 bg-onbrand-white px-4 sm:gap-4 sm:px-6 lg:px-7">
+      <Link
+        to="/"
+        aria-label="Onbrand dashboard home"
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5 lg:hidden"
+      >
+        <img alt="Onbrand" className="onbrand-dashboard-logo h-6 w-6" src={onbrandLogoUrl} />
+      </Link>
       <div className="flex min-w-0 flex-1 items-center gap-3 text-sm">
-        <span className="truncate font-normal text-onbrand-charcoal">
-          {selectedBrandGuideName ?? "Getting started"}
-        </span>
-        {selectedBrandGuideName ? (
+        <EditableBrandGuideName
+          key={selectedBrandGuide ? `${selectedBrandGuide.id}:${selectedBrandGuide.name}` : "empty"}
+          brandGuide={selectedBrandGuide}
+        />
+        {selectedBrandGuide ? (
           <>
             <span className="text-onbrand-charcoal/25">/</span>
             <span className="truncate text-onbrand-charcoal/55">
@@ -422,7 +797,10 @@ const DashboardTopBar = ({
               });
           }}
         >
-          <SelectTrigger aria-label="Select Brand Guide" className="w-[320px] [&>span]:text-center">
+          <SelectTrigger
+            aria-label="Select Brand Guide"
+            className="w-[min(320px,38vw)] min-w-32 [&>span]:text-center"
+          >
             <SelectValue placeholder="Select" />
           </SelectTrigger>
           <SelectContent>
@@ -439,58 +817,122 @@ const DashboardTopBar = ({
           </SelectContent>
         </Select>
       ) : (
-        <div className="h-10 w-[320px] animate-pulse rounded-md bg-onbrand-charcoal/5" />
+        <div className="h-10 w-[min(320px,38vw)] min-w-32 animate-pulse rounded-md bg-onbrand-charcoal/5" />
       )}
+      <ThemeToggle onThemeChange={onThemeChange} theme={theme} />
     </header>
   );
 };
 
-const DashboardRail = ({
+export const DashboardRail = ({
+  inertPreview = false,
+  onPreviewSectionChange,
   selectedBrandGuideId,
   selectedBrandGuideSection,
 }: Readonly<{
+  inertPreview?: boolean;
+  onPreviewSectionChange?: (section: BrandGuideSection) => void;
   selectedBrandGuideId?: string;
   selectedBrandGuideSection?: BrandGuideSection;
 }>) => (
-  <aside className="hidden w-16 shrink-0 flex-col items-center bg-onbrand-white px-2 py-5 text-onbrand-charcoal lg:flex">
-    <Link
-      to="/"
-      aria-label="Onbrand home"
-      className="mb-6 grid h-9 w-9 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5"
-    >
-      <img alt="Onbrand" className="h-6 w-6" src={onbrandLogoUrl} />
-    </Link>
-    <TooltipProvider delayDuration={150}>
-      <nav className="flex flex-1 flex-col items-center gap-2" aria-label="Onbrand sections">
-        {BRAND_GUIDE_SECTION_LINKS.map(({ section, pathSegment, label, icon }) => {
-          const isActive =
-            Boolean(selectedBrandGuideId) &&
-            (selectedBrandGuideSection ?? DEFAULT_BRAND_GUIDE_SECTION) === section;
-          const href = selectedBrandGuideId
-            ? `/brand-guides/${encodeURIComponent(selectedBrandGuideId)}/${pathSegment}`
-            : "/brand-guides";
-
-          return (
-            <Tooltip key={section}>
-              <TooltipTrigger asChild>
-                <Link
-                  to={href}
-                  aria-label={label}
-                  aria-current={isActive ? "page" : undefined}
-                  className={
-                    isActive
-                      ? "grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
-                      : "grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600"
-                  }
-                >
-                  <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right">{label}</TooltipContent>
-            </Tooltip>
-          );
-        })}
-      </nav>
-    </TooltipProvider>
+  <aside className="hidden w-16 shrink-0 flex-col items-center border-r border-onbrand-charcoal/8 bg-onbrand-panel px-2 py-5 text-onbrand-charcoal lg:flex">
+    {inertPreview ? (
+      <button
+        type="button"
+        aria-label="Onbrand home"
+        className="mb-6 grid h-9 w-9 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5"
+        onClick={() => onPreviewSectionChange?.(DEFAULT_BRAND_GUIDE_SECTION)}
+      >
+        <img alt="Onbrand" className="onbrand-dashboard-logo h-6 w-6" src={onbrandLogoUrl} />
+      </button>
+    ) : (
+      <Link
+        to="/"
+        aria-label="Onbrand home"
+        className="mb-6 grid h-9 w-9 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5"
+      >
+        <img alt="Onbrand" className="onbrand-dashboard-logo h-6 w-6" src={onbrandLogoUrl} />
+      </Link>
+    )}
+    {inertPreview || selectedBrandGuideId ? (
+      <TooltipProvider delayDuration={150}>
+        <nav className="flex flex-1 flex-col items-center gap-2" aria-label="Brand Guide sections">
+          {BRAND_GUIDE_SECTION_LINKS.map(({ section, pathSegment, label, icon }) => {
+            if (section === "METADATA") return null;
+            const isActive = (selectedBrandGuideSection ?? DEFAULT_BRAND_GUIDE_SECTION) === section;
+            const className = isActive
+              ? "grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
+              : "grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600";
+            return (
+              <Tooltip key={section}>
+                <TooltipTrigger asChild>
+                  {inertPreview ? (
+                    <button
+                      type="button"
+                      aria-label={label}
+                      aria-current={isActive ? "page" : undefined}
+                      className={className}
+                      onClick={() => onPreviewSectionChange?.(section)}
+                    >
+                      <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
+                    </button>
+                  ) : (
+                    <Link
+                      to="/brand-guides/$brandGuideId/$section"
+                      params={{ brandGuideId: selectedBrandGuideId ?? "", section: pathSegment }}
+                      aria-label={label}
+                      aria-current={isActive ? "page" : undefined}
+                      className={className}
+                    >
+                      <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
+                    </Link>
+                  )}
+                </TooltipTrigger>
+                <TooltipContent side="right">{label}</TooltipContent>
+              </Tooltip>
+            );
+          })}
+          {(() => {
+            const metadataLink = BRAND_GUIDE_SECTION_LINKS.find(
+              ({ section }) => section === "METADATA",
+            );
+            if (!metadataLink) return null;
+            const { section, pathSegment, label, icon } = metadataLink;
+            const isActive = selectedBrandGuideSection === section;
+            const className = isActive
+              ? "mt-auto grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
+              : "mt-auto grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600";
+            return (
+              <Tooltip key={section}>
+                <TooltipTrigger asChild>
+                  {inertPreview ? (
+                    <button
+                      type="button"
+                      aria-label={label}
+                      aria-current={isActive ? "page" : undefined}
+                      className={className}
+                      onClick={() => onPreviewSectionChange?.(section)}
+                    >
+                      <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
+                    </button>
+                  ) : (
+                    <Link
+                      to="/brand-guides/$brandGuideId/$section"
+                      params={{ brandGuideId: selectedBrandGuideId ?? "", section: pathSegment }}
+                      aria-label={label}
+                      aria-current={isActive ? "page" : undefined}
+                      className={className}
+                    >
+                      <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
+                    </Link>
+                  )}
+                </TooltipTrigger>
+                <TooltipContent side="right">{label}</TooltipContent>
+              </Tooltip>
+            );
+          })()}
+        </nav>
+      </TooltipProvider>
+    ) : null}
   </aside>
 );

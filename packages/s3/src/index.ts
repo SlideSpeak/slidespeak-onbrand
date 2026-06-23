@@ -1,5 +1,6 @@
 import { S3Client } from "@aws-sdk/client-s3";
 import { Env } from "./env";
+import { deleteObject, type DeleteObjectInput } from "./delete-object";
 import { getPresigned, type PresignedGetObjectInput } from "./get-presigned";
 import { putPresigned, type PresignedPutObjectInput } from "./put-presigned";
 
@@ -9,4 +10,6 @@ export const S3 = Object.freeze({
   getPresigned: (input: PresignedGetObjectInput): Promise<string> => getPresigned(client, input),
 
   putPresigned: (input: PresignedPutObjectInput): Promise<string> => putPresigned(client, input),
+
+  deleteObject: (input: DeleteObjectInput): Promise<void> => deleteObject(client, input),
 });

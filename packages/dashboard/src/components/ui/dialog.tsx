@@ -17,7 +17,7 @@ const DialogOverlay = ({
 }: React.ComponentProps<typeof DialogPrimitive.Overlay>) => (
   <DialogPrimitive.Overlay
     className={cn(
-      "data-[state=closed]:animate-out data-[state=open]:animate-in fixed inset-0 z-50 bg-onbrand-charcoal/55",
+      "data-[state=closed]:animate-out data-[state=open]:animate-in fixed inset-0 z-50 bg-onbrand-inverse/55",
       className,
     )}
     {...props}
@@ -28,6 +28,7 @@ export const DialogContent = ({
   className,
   children,
   showCloseButton = true,
+  onOpenAutoFocus,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean;
@@ -39,11 +40,15 @@ export const DialogContent = ({
         "data-[state=closed]:animate-out data-[state=open]:animate-in fixed top-1/2 left-1/2 z-50 max-h-[min(720px,calc(100vh-2rem))] w-[min(760px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-md border border-onbrand-charcoal/10 bg-onbrand-white shadow-[0_32px_120px_rgba(10,10,10,0.2)] outline-none",
         className,
       )}
+      onOpenAutoFocus={(event) => {
+        onOpenAutoFocus?.(event);
+        if (!event.defaultPrevented) event.preventDefault();
+      }}
       {...props}
     >
       {children}
       {showCloseButton && (
-        <DialogPrimitive.Close className="absolute top-4 right-4 grid h-8 w-8 place-items-center rounded-md text-onbrand-charcoal/45 transition hover:text-onbrand-blue-600 focus-visible:ring-2 focus-visible:ring-onbrand-blue-200 focus-visible:outline-none">
+        <DialogPrimitive.Close className="absolute top-4 right-4 grid h-8 w-8 place-items-center rounded-md text-onbrand-charcoal/55 transition hover:text-onbrand-blue-600 focus-visible:ring-2 focus-visible:ring-onbrand-blue-200 focus-visible:outline-none">
           <HugeiconsIcon className="h-4 w-4" icon={Cancel01Icon} strokeWidth={2} />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>

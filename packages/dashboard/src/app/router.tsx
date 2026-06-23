@@ -1,12 +1,12 @@
 import { createRootRoute, createRoute, createRouter, Outlet } from "@tanstack/react-router";
-import { DashboardApp, OnboardingPage } from "./dashboard-app";
+import { DashboardApp } from "./dashboard-app";
 
 const ROOT_ROUTE = createRootRoute({ component: Outlet });
 
 const INDEX_ROUTE = createRoute({
   getParentRoute: () => ROOT_ROUTE,
   path: "/",
-  component: OnboardingPage,
+  component: DashboardApp,
 });
 
 const BRAND_GUIDES_ROUTE = createRoute({

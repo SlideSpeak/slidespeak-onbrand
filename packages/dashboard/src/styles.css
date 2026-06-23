@@ -1,28 +1,94 @@
 @import url("https://fonts.googleapis.com/css2?family=Figtree:wght@300..900&display=swap");
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
   --font-sans:
     Figtree, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
-  --color-onbrand-white: #ffffff;
-  --color-onbrand-charcoal: #111111;
+  --color-onbrand-white: var(--onbrand-surface);
+  --color-onbrand-charcoal: var(--onbrand-ink);
+  --color-onbrand-canvas: var(--onbrand-canvas);
+  --color-onbrand-panel: var(--onbrand-panel);
+  --color-onbrand-inverse: var(--onbrand-inverse);
+  --color-onbrand-inverse-foreground: var(--onbrand-inverse-foreground);
 
-  --color-onbrand-blue-25: #f5faff;
-  --color-onbrand-blue-50: #eff8ff;
-  --color-onbrand-blue-100: #d1e9ff;
-  --color-onbrand-blue-200: #b2ddff;
-  --color-onbrand-blue-300: #84caff;
-  --color-onbrand-blue-400: #53b1fd;
-  --color-onbrand-blue-500: #2e90fa;
-  --color-onbrand-blue-600: #1570ef;
-  --color-onbrand-blue-700: #175cd3;
-  --color-onbrand-blue-800: #1849a9;
+  --color-onbrand-blue-25: var(--onbrand-blue-25);
+  --color-onbrand-blue-50: var(--onbrand-blue-50);
+  --color-onbrand-blue-100: var(--onbrand-blue-100);
+  --color-onbrand-blue-200: var(--onbrand-blue-200);
+  --color-onbrand-blue-300: var(--onbrand-blue-300);
+  --color-onbrand-blue-400: var(--onbrand-blue-400);
+  --color-onbrand-blue-500: var(--onbrand-blue-500);
+  --color-onbrand-blue-600: var(--onbrand-blue-600);
+  --color-onbrand-blue-700: var(--onbrand-blue-700);
+  --color-onbrand-blue-800: var(--onbrand-blue-800);
 }
 
 @layer base {
+  :root,
+  .onbrand-static-light-tokens {
+    --onbrand-surface: #ffffff;
+    --onbrand-canvas: #f8fafc;
+    --onbrand-panel: #ffffff;
+    --onbrand-ink: #111111;
+    --onbrand-inverse: #111111;
+    --onbrand-inverse-foreground: #ffffff;
+
+    --onbrand-blue-25: #f5faff;
+    --onbrand-blue-50: #eff8ff;
+    --onbrand-blue-100: #d1e9ff;
+    --onbrand-blue-200: #b2ddff;
+    --onbrand-blue-300: #84caff;
+    --onbrand-blue-400: #53b1fd;
+    --onbrand-blue-500: #2e90fa;
+    --onbrand-blue-600: #1570ef;
+    --onbrand-blue-700: #175cd3;
+    --onbrand-blue-800: #1849a9;
+  }
+
+  .onbrand-static-light-tokens {
+    --color-onbrand-white: #ffffff;
+    --color-onbrand-charcoal: #111111;
+    --color-onbrand-canvas: #f8fafc;
+    --color-onbrand-panel: #ffffff;
+    --color-onbrand-inverse: #111111;
+    --color-onbrand-inverse-foreground: #ffffff;
+
+    --color-onbrand-blue-25: #f5faff;
+    --color-onbrand-blue-50: #eff8ff;
+    --color-onbrand-blue-100: #d1e9ff;
+    --color-onbrand-blue-200: #b2ddff;
+    --color-onbrand-blue-300: #84caff;
+    --color-onbrand-blue-400: #53b1fd;
+    --color-onbrand-blue-500: #2e90fa;
+    --color-onbrand-blue-600: #1570ef;
+    --color-onbrand-blue-700: #175cd3;
+    --color-onbrand-blue-800: #1849a9;
+  }
+
+  :root.dark {
+    --onbrand-surface: #0d1420;
+    --onbrand-canvas: #05070d;
+    --onbrand-panel: #090f19;
+    --onbrand-ink: #f3f7fb;
+    --onbrand-inverse: #f3f7fb;
+    --onbrand-inverse-foreground: #08101a;
+
+    --onbrand-blue-25: #091a2e;
+    --onbrand-blue-50: #102846;
+    --onbrand-blue-100: #173a63;
+    --onbrand-blue-200: #205382;
+    --onbrand-blue-300: #2b6da3;
+    --onbrand-blue-400: #3b8ad0;
+    --onbrand-blue-500: #58a7f5;
+    --onbrand-blue-600: #7ab8ff;
+    --onbrand-blue-700: #a7d2ff;
+    --onbrand-blue-800: #d3e9ff;
+  }
+
   html {
-    @apply bg-onbrand-white font-sans text-onbrand-charcoal;
+    @apply bg-onbrand-canvas font-sans text-onbrand-charcoal;
   }
 
   body {
@@ -31,6 +97,20 @@
 
   a {
     @apply text-inherit no-underline;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input,
+  textarea {
+    caret-color: currentColor;
+  }
+
+  :root.dark .onbrand-dashboard-logo {
+    filter: invert(1);
   }
 }
 
@@ -168,6 +248,102 @@
   .animate-onbrand-texture-drift {
     animation: onbrand-texture-drift 45s linear infinite;
     will-change: background-position;
+  }
+
+  .onbrand-markdown-editor {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  .onbrand-markdown-editor .mdxeditor-toolbar {
+    border: 0 !important;
+    border-radius: 0.375rem !important;
+    background: rgb(17 17 17 / 0.035) !important;
+  }
+
+  .onbrand-markdown-editor .mdxeditor-root-contenteditable {
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 0.75rem;
+  }
+
+  .onbrand-markdown-editor-content {
+    min-height: 100%;
+    padding: 0.75rem 0 1.5rem;
+    outline: none;
+  }
+
+  .onbrand-color-picker,
+  .onbrand-color-picker .react-colorful,
+  .onbrand-color-picker .react-colorful__saturation,
+  .onbrand-color-picker .react-colorful__hue,
+  .onbrand-color-picker .react-colorful__interactive {
+    overflow: visible !important;
+  }
+
+  .onbrand-color-picker .react-colorful {
+    width: 220px !important;
+    height: 220px !important;
+  }
+
+  .onbrand-color-picker .react-colorful__saturation {
+    border-bottom: 0 !important;
+    border-radius: 0.375rem 0.375rem 0 0 !important;
+    box-shadow: none !important;
+  }
+
+  .onbrand-color-picker .react-colorful__hue {
+    height: 28px !important;
+    margin: 0 !important;
+    border-radius: 0 0 0.375rem 0.375rem !important;
+  }
+
+  .onbrand-color-picker .react-colorful__last-control {
+    border-radius: 0 0 0.375rem 0.375rem !important;
+  }
+
+  .onbrand-color-picker .react-colorful__pointer,
+  .onbrand-color-picker .react-colorful__interactive:focus .react-colorful__pointer {
+    width: 13px !important;
+    height: 13px !important;
+    transform: translate(-50%, -50%) !important;
+    border: 2px solid #ffffff !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .onbrand-color-picker .react-colorful__pointer-fill {
+    display: none !important;
+  }
+
+  .onbrand-asset-preview-surface {
+    --onbrand-asset-preview-base: #f8fafc;
+    --onbrand-asset-preview-check: rgba(15, 23, 42, 0.06);
+
+    background-color: var(--onbrand-asset-preview-base);
+    background-image:
+      linear-gradient(45deg, var(--onbrand-asset-preview-check) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--onbrand-asset-preview-check) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--onbrand-asset-preview-check) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--onbrand-asset-preview-check) 75%);
+    background-position:
+      0 0,
+      0 10px,
+      10px -10px,
+      -10px 0;
+    background-size: 20px 20px;
+  }
+
+  :root.dark .onbrand-asset-preview-surface {
+    --onbrand-asset-preview-base: #111827;
+    --onbrand-asset-preview-check: rgba(248, 250, 252, 0.08);
   }
 
   @media (prefers-reduced-motion: reduce) {
