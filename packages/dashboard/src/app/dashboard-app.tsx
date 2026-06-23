@@ -140,8 +140,7 @@ const DashboardOverview = () => {
   const [selectedPreviewSection, setSelectedPreviewSection] = useState<BrandGuideSection>(
     DEFAULT_BRAND_GUIDE_SECTION,
   );
-  const showsEmptyDashboard =
-    brandGuides.status === "READY" && brandGuides.data.length === 0;
+  const showsEmptyDashboard = brandGuides.status === "READY" && brandGuides.data.length === 0;
 
   return (
     <div className="min-h-screen bg-onbrand-white text-onbrand-charcoal">
