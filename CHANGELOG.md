@@ -2,10 +2,10 @@
 
 ## [0.2.1](https://github.com/SlideSpeak/slidespeak-onbrand/compare/v0.2.0...v0.2.1) (2026-06-23)
 
-
 ### Bug Fixes
 
-* **dashboard:** initialize prism before markdown editor ([a92e8ac](https://github.com/SlideSpeak/slidespeak-onbrand/commit/a92e8ace95d4ffbf46baa2d4a2188681623dfa79))
+- **dashboard:** initialize prism before markdown editor
+  ([a92e8ac](https://github.com/SlideSpeak/slidespeak-onbrand/commit/a92e8ace95d4ffbf46baa2d4a2188681623dfa79))
 
 ## [0.2.0](https://github.com/SlideSpeak/slidespeak-onbrand/compare/v0.1.0...v0.2.0) (2026-06-23)
 
