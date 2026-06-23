@@ -22,7 +22,7 @@ describe("dashboard runtime config", () => {
     expect(connections.map((connection) => connection.value)).toEqual([
       "codex mcp add onbrand --url https://oauth-provider.example/mcp",
       "claude mcp add --transport http onbrand https://oauth-provider.example/mcp",
-      `{\n  "mcpServers": {\n    "onbrand": {\n      "url": "https://oauth-provider.example/mcp"\n    }\n  }\n}`,
+      `{"mcpServers":{"onbrand":{"url":"https://oauth-provider.example/mcp"}}}`,
     ]);
   });
 });
