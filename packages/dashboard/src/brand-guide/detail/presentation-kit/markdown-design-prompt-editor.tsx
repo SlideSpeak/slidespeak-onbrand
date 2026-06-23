@@ -1,3 +1,4 @@
+import "@/lib/prism-global";
 import {
   BoldItalicUnderlineToggles,
   headingsPlugin,

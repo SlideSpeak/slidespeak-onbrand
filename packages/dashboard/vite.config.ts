@@ -5,6 +5,9 @@ import { fileURLToPath } from "node:url";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  define: {
+    Prism: "globalThis.Prism",
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

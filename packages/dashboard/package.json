@@ -14,6 +14,7 @@
   "type": "module",
   "dependencies": {
     "@onbrand/core": "workspace:*",
+    "prismjs": "^1.30.0",
     "sonner": "^2.0.7"
   }
 }
