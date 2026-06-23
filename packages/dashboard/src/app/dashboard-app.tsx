@@ -137,11 +137,20 @@ const DashboardRoot = () => {
 const DashboardOverview = () => {
   const loadedBrandGuides = useApi<readonly BrandGuideSummary[]>("/api/brand-guides");
   const brandGuides = useSyncedBrandGuides(loadedBrandGuides);
+  const [selectedPreviewSection, setSelectedPreviewSection] = useState<BrandGuideSection>(
+    DEFAULT_BRAND_GUIDE_SECTION,
+  );
+  const showsEmptyDashboard =
+    brandGuides.status === "READY" && brandGuides.data.length === 0;
 
   return (
     <div className="min-h-screen bg-onbrand-white text-onbrand-charcoal">
       <div className="flex min-h-screen overflow-hidden bg-onbrand-white">
-        <DashboardRail />
+        <DashboardRail
+          inertPreview={showsEmptyDashboard}
+          selectedBrandGuideSection={selectedPreviewSection}
+          onPreviewSectionChange={setSelectedPreviewSection}
+        />
         <div className="min-w-0 flex-1 bg-onbrand-white">
           <HomeTopBar />
           <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
@@ -648,7 +657,7 @@ const CopyableValue = ({
       onClick={() => void copy()}
       className={`group inline-grid min-h-12 max-w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-md border-[0.5px] px-4 py-3 text-left transition ${variantClasses} ${className}`}
     >
-      <code className="max-w-[min(42rem,calc(100vw-3rem))] overflow-hidden font-mono text-base leading-6 break-words whitespace-normal">
+      <code className="max-w-[min(42rem,calc(100vw-3rem))] overflow-hidden font-mono text-base leading-6 whitespace-nowrap">
         {value}
       </code>
       <span className="flex items-center gap-2 text-xs">
@@ -816,7 +825,7 @@ const DashboardTopBar = ({
   );
 };
 
-const DashboardRail = ({
+export const DashboardRail = ({
   inertPreview = false,
   onPreviewSectionChange,
   selectedBrandGuideId,

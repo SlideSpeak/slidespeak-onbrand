@@ -35,7 +35,7 @@ export const onboardingConnections = (
     {
       name: "Cursor",
       icon: "cursor",
-      value: `{\n  "mcpServers": {\n    "onbrand": {\n      "url": "${mcpUrl}"\n    }\n  }\n}`,
+      value: `{"mcpServers":{"onbrand":{"url":"${mcpUrl}"}}}`,
     },
   ] as const;
 
