@@ -47,6 +47,10 @@ http://localhost:8080/dashboard
 http://localhost:8080/.well-known/oauth-protected-resource/mcp
 ```
 
+`deploy/docker-compose.yml` also exposes its bundled Postgres container on host port `5433`, so
+host-side database clients can connect with a URL like
+`postgresql://USER:PASSWORD@HOST:5433/onbrand?schema=public`.
+
 Connect an MCP client:
 
 Third-party product names and marks in these examples identify compatible MCP clients only. See
