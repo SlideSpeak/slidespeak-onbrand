@@ -12,9 +12,10 @@ OnBrand accepts JWT access tokens from any OAuth provider that can satisfy this 
 - The token audience includes the derived MCP resource, `${BASE_URL}/mcp`.
 - The token has an expiration time and verifies against `OAUTH_JWKS_URL`.
 - The token includes an owner identifier in `OAUTH_OWNER_ID_CLAIM`, defaulting to `sub`.
-- The token includes required scopes in the standard space-delimited `scope` claim.
-- Read-only tools require `OAUTH_REQUIRED_READ_SCOPE`.
-- Mutating tools require `OAUTH_REQUIRED_WRITE_SCOPE`.
+- The token includes scopes in the standard space-delimited `scope` claim.
+- The MCP transport requires `OAUTH_REQUIRED_READ_SCOPE` so read-only tools can run with a read-only
+  grant.
+- Mutating tools and dashboard sessions require `OAUTH_REQUIRED_WRITE_SCOPE`.
 
 OnBrand fails closed when issuer, audience, signature, expiry, owner identity, scopes, or JWKS
 verification are invalid.

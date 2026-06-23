@@ -125,13 +125,13 @@ const main = async (): Promise<void> => {
     grant_types_supported: ["authorization_code", "refresh_token"],
     token_endpoint_auth_methods_supported: ["none"],
     code_challenge_methods_supported: ["S256"],
-    scopes_supported: [...runtimeConfig.requiredScopes],
+    scopes_supported: [...runtimeConfig.supportedScopes],
   };
   const protectedResourceMetadataUrl = getOAuthProtectedResourceMetadataUrl(runtimeConfig.mcpUrl);
   const protectedResourceMetadata = {
     resource: runtimeConfig.mcpUrl.href,
     authorization_servers: [runtimeConfig.issuer],
-    scopes_supported: [...runtimeConfig.requiredScopes],
+    scopes_supported: [...runtimeConfig.supportedScopes],
     resource_name: "OnBrand MCP",
   };
 
@@ -142,11 +142,18 @@ const main = async (): Promise<void> => {
     Env.AWS_S3_BUCKET_BRAND_KIT_ASSETS,
     assetDownloadExpiresInSeconds,
   );
-  const verifier = new OAuthAccessTokenVerifier({
+  const mcpVerifier = new OAuthAccessTokenVerifier({
     issuer: runtimeConfig.issuer,
     audience: runtimeConfig.mcpUrl.toString(),
     jwksUrl: runtimeConfig.jwksUrl,
-    requiredScopes: runtimeConfig.requiredScopes,
+    requiredScopes: runtimeConfig.mcpRequiredScopes,
+    ownerIdClaim: runtimeConfig.ownerIdClaim,
+  });
+  const dashboardVerifier = new OAuthAccessTokenVerifier({
+    issuer: runtimeConfig.issuer,
+    audience: runtimeConfig.mcpUrl.toString(),
+    jwksUrl: runtimeConfig.jwksUrl,
+    requiredScopes: runtimeConfig.dashboardRequiredScopes,
     ownerIdClaim: runtimeConfig.ownerIdClaim,
   });
   const app = new Hono();
@@ -164,22 +171,27 @@ const main = async (): Promise<void> => {
     callbackUrl: runtimeConfig.callbackUrl,
     dashboardClientId: runtimeConfig.dashboardClientId,
     mcpUrl: runtimeConfig.mcpUrl,
-    requiredScopes: runtimeConfig.requiredScopes,
+    requiredScopes: runtimeConfig.dashboardRequiredScopes,
     tokenEndpoint: runtimeConfig.backchannelTokenEndpoint,
-    verifier,
+    verifier: dashboardVerifier,
     verifyBearerAuth,
   });
   registerDashboardApiRoutes({
     app,
     brandGuides,
     handleAuthError: (context, error) =>
-      handleOAuthError(context, error, protectedResourceMetadataUrl, runtimeConfig.requiredScopes),
+      handleOAuthError(
+        context,
+        error,
+        protectedResourceMetadataUrl,
+        runtimeConfig.dashboardRequiredScopes,
+      ),
     refreshConfig: {
       baseUrl: runtimeConfig.baseUrl,
       clientId: runtimeConfig.dashboardClientId,
       mcpUrl: runtimeConfig.mcpUrl,
       tokenEndpoint: runtimeConfig.backchannelTokenEndpoint,
-      verifier,
+      verifier: dashboardVerifier,
       verifyBearerAuth,
     },
   });
@@ -187,7 +199,7 @@ const main = async (): Promise<void> => {
 
   app.on(["GET", "POST"], "/mcp", async (context) => {
     try {
-      const authInfo = await verifyBearerAuth(context.req.header("authorization"), verifier);
+      const authInfo = await verifyBearerAuth(context.req.header("authorization"), mcpVerifier);
       const ownerUserId = ownerUserIdFromAuthInfo(authInfo);
       const server = createOnbrandMcpServer(brandGuides, {
         ownerUserId,
@@ -203,21 +215,21 @@ const main = async (): Promise<void> => {
         context,
         error,
         protectedResourceMetadataUrl,
-        runtimeConfig.requiredScopes,
+        runtimeConfig.mcpRequiredScopes,
       );
     }
   });
 
   app.delete("/mcp", async (context) => {
     try {
-      await verifyBearerAuth(context.req.header("authorization"), verifier);
+      await verifyBearerAuth(context.req.header("authorization"), mcpVerifier);
       return context.body(null, 200);
     } catch (error) {
       return handleOAuthError(
         context,
         error,
         protectedResourceMetadataUrl,
-        runtimeConfig.requiredScopes,
+        runtimeConfig.mcpRequiredScopes,
       );
     }
   });

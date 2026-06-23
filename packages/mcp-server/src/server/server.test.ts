@@ -91,6 +91,44 @@ describe("Onbrand MCP tools", () => {
     expect(result.structuredContent).toEqual(ACME_BRAND_GUIDE);
   });
 
+  test("read-only credentials can call read tools but not mutating tools", async () => {
+    const client = await connectedClient(fakeBrandGuides(), ["onbrand:read"]);
+
+    const result = await callTool(client, { name: "list_brand_guides", arguments: {} });
+    expect(result.structuredContent).toEqual({ brandGuides: [ACME_BRAND_GUIDE.brandGuide] });
+    const writeResult = await callTool(client, {
+      name: "write_brand_guide",
+      arguments: {
+        brandGuide: {
+          id: "newco",
+          name: "NewCo Brand Guide",
+          description: "NewCo Brand Guide for crisp editorial business presentations.",
+        },
+        brandKit: {
+          colors: [],
+          logo: {
+            assetId: "primary-logo",
+            name: "Primary Logo",
+            filename: "logo.svg",
+            mimeType: "image/svg+xml",
+            description: "Use on light backgrounds.",
+            s3Key: "test-user/newco/primary-logo/logo.svg",
+            byteSize: 7,
+            sha256: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          },
+          decorativeAssets: [],
+        },
+        presentationKit: {
+          canvas: { width: 1280, height: 720, unit: "px" },
+          designPrompt:
+            "Use crisp editorial slide compositions with strong hierarchy, exact logo usage, accessible contrast, reusable color tokens, disciplined spacing, and action-oriented presentation copy across every generated slide.",
+        },
+      },
+    });
+    expect(writeResult.isError).toBe(true);
+    expect(firstTextContent(writeResult)).toContain("onbrand:write");
+  });
+
   test("get_brand_guide_writer_skill exposes the authoring skill as structured data and readable text", async () => {
     const client = await connectedClient(fakeBrandGuides());
 
@@ -232,10 +270,13 @@ describe("Onbrand MCP tools", () => {
   });
 });
 
-const connectedClient = async (brandGuides: BrandGuideApplicationService): Promise<Client> => {
+const connectedClient = async (
+  brandGuides: BrandGuideApplicationService,
+  scopes: readonly string[] = ["onbrand:read", "onbrand:write"],
+): Promise<Client> => {
   const server = createOnbrandMcpServer(brandGuides, {
     ownerUserId: "test-user",
-    scopes: ["onbrand:read", "onbrand:write"],
+    scopes,
   });
   const client = new Client({ name: "test", version: "1.0.0" });
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
