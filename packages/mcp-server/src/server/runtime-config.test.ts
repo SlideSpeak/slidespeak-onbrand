@@ -35,7 +35,9 @@ describe("OAuth runtime config", () => {
     expect(config.registrationEndpoint).toBe(env.OAUTH_REGISTRATION_ENDPOINT);
     expect(config.jwksUrl).toBe(env.OAUTH_JWKS_URL);
     expect(config.dashboardClientId).toBe(env.OAUTH_DASHBOARD_CLIENT_ID);
-    expect(config.requiredScopes).toEqual(["custom:read", "custom:write"]);
+    expect(config.supportedScopes).toEqual(["custom:read", "custom:write"]);
+    expect(config.mcpRequiredScopes).toEqual(["custom:read"]);
+    expect(config.dashboardRequiredScopes).toEqual(["custom:read", "custom:write"]);
     expect(config.ownerIdClaim).toBe("account_user_id");
   });
 

@@ -11,7 +11,9 @@ export type OAuthRuntimeConfig = Readonly<{
   registrationEndpoint?: string;
   jwksUrl: string;
   dashboardClientId: string;
-  requiredScopes: readonly [string, string];
+  supportedScopes: readonly [string, string];
+  mcpRequiredScopes: readonly [string];
+  dashboardRequiredScopes: readonly [string, string];
   ownerIdClaim: string;
 }>;
 
@@ -31,6 +33,7 @@ export type OAuthRuntimeEnv = Readonly<{
 
 export const buildOAuthRuntimeConfig = (env: OAuthRuntimeEnv = Env): OAuthRuntimeConfig => {
   const baseUrl = stripTrailingSlashes(env.BASE_URL);
+  const supportedScopes = [env.OAUTH_REQUIRED_READ_SCOPE, env.OAUTH_REQUIRED_WRITE_SCOPE] as const;
   return {
     baseUrl,
     mcpUrl: new URL("/mcp", baseUrl),
@@ -43,7 +46,9 @@ export const buildOAuthRuntimeConfig = (env: OAuthRuntimeEnv = Env): OAuthRuntim
     registrationEndpoint: emptyToUndefined(env.OAUTH_REGISTRATION_ENDPOINT),
     jwksUrl: env.OAUTH_JWKS_URL,
     dashboardClientId: env.OAUTH_DASHBOARD_CLIENT_ID,
-    requiredScopes: [env.OAUTH_REQUIRED_READ_SCOPE, env.OAUTH_REQUIRED_WRITE_SCOPE],
+    supportedScopes,
+    mcpRequiredScopes: [env.OAUTH_REQUIRED_READ_SCOPE],
+    dashboardRequiredScopes: supportedScopes,
     ownerIdClaim: env.OAUTH_OWNER_ID_CLAIM,
   };
 };

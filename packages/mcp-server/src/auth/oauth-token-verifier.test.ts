@@ -55,6 +55,17 @@ describe("OAuthAccessTokenVerifier", () => {
     });
   });
 
+  it("accepts a read-only token when the caller only requires the MCP read scope", async () => {
+    const token = await signToken({ scope: "onbrand:read" });
+
+    await expect(
+      verifier({ requiredScopes: ["onbrand:read"] }).verifyAccessToken(token),
+    ).resolves.toMatchObject({
+      scopes: ["onbrand:read"],
+      extra: { ownerUserId: "owner-123" },
+    });
+  });
+
   it.each([
     ["wrong issuer", () => signToken({ issuer: "https://wrong.example" })],
     ["missing audience", () => signToken({ audience: null })],
