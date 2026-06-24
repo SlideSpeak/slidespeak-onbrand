@@ -1,9 +1,11 @@
+import { lookup } from "node:dns/promises";
 import { createEnvRegistry, optionalString } from "@onbrand/env";
 import type { S3 } from "@onbrand/s3";
 import type { PrismaClient } from "@prisma/client";
 import { describe, expect, it, afterAll, vi } from "vitest";
 import { createPrismaClient } from "../database/prisma-client";
 import { PersistentBrandGuideApplication } from "./brand-guide-application";
+import { extractBrandGuideSource } from "./source-url-extraction";
 import {
   DuplicateBrandGuideNameError,
   DuplicateDecorativeAssetNameError,
@@ -14,9 +16,19 @@ import {
 import type { BrandKitAssetRecord } from "./brand-kit/asset-file/record";
 import type { BrandGuideRegistry } from "./brand-guide-store";
 
+vi.mock("./source-url-extraction", () => ({
+  extractBrandGuideSource: vi.fn(),
+}));
+
+vi.mock("node:dns/promises", () => ({
+  lookup: vi.fn(),
+}));
+
 const Env = createEnvRegistry({
   ONBRAND_DATABASE_TESTS: optionalString("ONBRAND_DATABASE_TESTS"),
 });
+
+const extractBrandGuideSourceMock = extractBrandGuideSource as unknown as ReturnType<typeof vi.fn>;
 
 const describeDatabaseIntegration = Env.ONBRAND_DATABASE_TESTS === "1" ? describe : describe.skip;
 
@@ -220,6 +232,66 @@ describe("PersistentBrandGuideApplication Brand Guide generation requests", () =
     await expect(
       service.createBrandGuideGenerationRequest(owner, { sourceUrl: "javascript:alert(1)" }),
     ).rejects.toThrow(InvalidSourceUrlError);
+  });
+
+  it("deletes already uploaded source assets when a later upload fails", async () => {
+    const lookupMock = lookup as unknown as ReturnType<typeof vi.fn>;
+    lookupMock.mockResolvedValueOnce([{ address: "93.184.216.34", family: 4 }]);
+    extractBrandGuideSourceMock.mockResolvedValueOnce({
+      brandName: "Example",
+      colors: [],
+      logo: {
+        assetId: "logo",
+        name: "Logo",
+        filename: "logo.svg",
+        mimeType: "image/svg+xml",
+        description: "Logo",
+        sourceUrl: "https://cdn.example/logo.svg",
+        bytes: new Uint8Array([1]),
+        byteSize: 1,
+        sha256: "00".repeat(32),
+      },
+      decorativeAssets: [
+        {
+          assetId: "hero",
+          name: "Hero",
+          filename: "hero.png",
+          mimeType: "image/png",
+          description: "Hero",
+          sourceUrl: "https://cdn.example/hero.png",
+          bytes: new Uint8Array([2]),
+          byteSize: 1,
+          sha256: "11".repeat(32),
+        },
+      ],
+    });
+    const putObject = vi
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new Error("S3 unavailable"));
+    const deleteObject = vi.fn().mockResolvedValue(undefined);
+    const s3 = {
+      ...fakeS3,
+      putObject,
+      deleteObject,
+    };
+    const prisma = {
+      brandGuide: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        findUnique: vi.fn().mockResolvedValue(null),
+      },
+      $transaction: vi.fn(),
+    } as unknown as PrismaClient;
+    const service = new PersistentBrandGuideApplication(prisma, s3, "brand-kit-assets-test", 900);
+
+    await expect(
+      service.createBrandGuideGenerationRequest(owner, { sourceUrl: "https://example.com" }),
+    ).rejects.toThrow("S3 unavailable");
+
+    expect(deleteObject).toHaveBeenCalledWith({
+      bucket: "brand-kit-assets-test",
+      key: "test-owner-user/example/logo/logo.svg",
+    });
   });
 });
 

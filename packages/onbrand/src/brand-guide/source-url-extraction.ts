@@ -4,6 +4,12 @@ import { extractBrandAssets, type BackdropAsset, type ColorAsset, type LogoAsset
 import type { SupportedAssetMimeType } from "./brand-kit/asset-file/rules";
 import type { ColorToken } from "./brand-kit/color/index";
 import { colorTokenIdFromName, decorativeAssetIdFromName } from "./management-identifiers";
+import {
+  assertPublicOutboundUrl,
+  normalizePublicHttpUrl,
+  OUTBOUND_REQUEST_TIMEOUT_MS,
+} from "./source-url-security";
+import { titleCase } from "./text";
 
 export type ExtractedBrandGuideSource = Readonly<{
   brandName: string | null;
@@ -39,7 +45,13 @@ const USER_AGENT = "Mozilla/5.0 (compatible; Onbrand/1.0; +https://slidespeak.co
 export const extractBrandGuideSource = async (
   sourceUrl: string,
 ): Promise<ExtractedBrandGuideSource> => {
-  const extraction = await extractBrandAssets(sourceUrl);
+  const url = normalizePublicHttpUrl(sourceUrl);
+  if (!url) throw new Error(`Invalid Source URL: ${sourceUrl}`);
+  await assertPublicOutboundUrl(url);
+  const extraction = await withTimeout(
+    extractBrandAssets(url.toString()),
+    OUTBOUND_REQUEST_TIMEOUT_MS,
+  );
   if (!extraction.ok) {
     throw new Error(`Could not extract Source URL: ${extraction.error.message}`);
   }
@@ -141,12 +153,7 @@ const downloadedAssets = async (
 };
 
 const downloadAsset = async (candidate: AssetCandidate): Promise<ExtractedBrandKitAsset | null> => {
-  const response = await fetch(candidate.url, {
-    headers: {
-      Accept: "image/svg+xml,image/png,image/jpeg,image/webp",
-      "User-Agent": USER_AGENT,
-    },
-  });
+  const response = await fetchPublicUrl(candidate.url);
   if (!response.ok) return null;
   const bytes = new Uint8Array(await response.arrayBuffer());
   if (bytes.byteLength === 0 || bytes.byteLength > MAX_ASSET_BYTES) return null;
@@ -246,7 +253,33 @@ const uniqueColorValue = (
   colors: readonly Readonly<{ value: `#${string}` }>[],
 ): boolean => colors.findIndex((candidate) => candidate.value === color.value) === index;
 
-const titleCase = (value: string): string =>
-  value.replace(/\b[a-z]/giu, (character) => character.toUpperCase());
-
 const sanitizeFilename = (value: string): string => value.replace(/[^a-z0-9._-]/giu, "-");
+
+const fetchPublicUrl = async (rawUrl: string, redirects = 0): Promise<Response> => {
+  if (redirects > 5) throw new Error(`Too many redirects while fetching ${rawUrl}`);
+  const url = normalizePublicHttpUrl(rawUrl);
+  if (!url) throw new Error(`Invalid asset URL: ${rawUrl}`);
+  await assertPublicOutboundUrl(url);
+  const response = await fetch(url, {
+    headers: {
+      Accept: "image/svg+xml,image/png,image/jpeg,image/webp",
+      "User-Agent": USER_AGENT,
+    },
+    redirect: "manual",
+    signal: AbortSignal.timeout(OUTBOUND_REQUEST_TIMEOUT_MS),
+  });
+  if (response.status >= 300 && response.status < 400) {
+    const location = response.headers.get("location");
+    if (!location) return response;
+    return fetchPublicUrl(new URL(location, url).toString(), redirects + 1);
+  }
+  return response;
+};
+
+const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+  const timeout = new Promise<never>((_, reject) => {
+    const timeoutId = setTimeout(() => reject(new Error("Outbound request timed out")), timeoutMs);
+    promise.finally(() => clearTimeout(timeoutId)).catch(() => clearTimeout(timeoutId));
+  });
+  return Promise.race([promise, timeout]);
+};

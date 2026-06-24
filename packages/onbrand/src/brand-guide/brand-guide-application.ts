@@ -49,6 +49,8 @@ import {
   PrismaBrandGuideRegistry,
   type BrandGuideRegistry,
 } from "./brand-guide-store";
+import { normalizePublicHttpUrl, assertPublicOutboundUrl } from "./source-url-security";
+import { titleCase } from "./text";
 
 type ExtractedBrandKitAssetForStorage = ExtractedBrandKitAsset &
   Readonly<{ kind: "LOGO" | "DECORATIVE_ASSET"; sortOrder: number }>;
@@ -112,7 +114,7 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
     owner: BrandGuideOwner,
     request: CreateBrandGuideGenerationRequest,
   ): Promise<BrandGuideGenerationRequest> => {
-    const sourceUrl = normalizeSourceUrl(request.sourceUrl);
+    const sourceUrl = await normalizeSourceUrl(request.sourceUrl);
     const extracted = await extractBrandGuideSource(sourceUrl).catch(() => ({
       brandName: null,
       colors: [],
@@ -125,15 +127,19 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
       const { name, slug } = await this.nextAvailableBrandGuideIdentity(owner, baseName, attempt);
       const uploadedAssetKeys: string[] = [];
       try {
-        const assets = await this.uploadExtractedBrandKitAssets(owner, slug, [
-          ...(extracted.logo ? [{ ...extracted.logo, kind: "LOGO" as const, sortOrder: 0 }] : []),
-          ...extracted.decorativeAssets.map((asset, index) => ({
-            ...asset,
-            kind: "DECORATIVE_ASSET" as const,
-            sortOrder: index,
-          })),
-        ]);
-        uploadedAssetKeys.push(...assets.map((asset) => asset.s3Key));
+        const assets = await this.uploadExtractedBrandKitAssets(
+          owner,
+          slug,
+          [
+            ...(extracted.logo ? [{ ...extracted.logo, kind: "LOGO" as const, sortOrder: 0 }] : []),
+            ...extracted.decorativeAssets.map((asset, index) => ({
+              ...asset,
+              kind: "DECORATIVE_ASSET" as const,
+              sortOrder: index,
+            })),
+          ],
+          (s3Key) => uploadedAssetKeys.push(s3Key),
+        );
         const createdAt = new Date();
         const brandGuide = await this.prisma.$transaction(async (tx) =>
           tx.brandGuide.create({
@@ -480,36 +486,39 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
     owner: BrandGuideOwner,
     brandGuideId: string,
     assets: readonly ExtractedBrandKitAssetForStorage[],
-  ) =>
-    Promise.all(
-      assets.map(async (asset) => {
-        const s3Key = brandKitAssetFileObjectKey({
-          ownerUserId: owner.ownerUserId,
-          brandGuideId,
-          assetId: asset.assetId,
-          filename: asset.filename,
-        });
-        await this.s3.putObject({
-          bucket: this.brandKitAssetBucket,
-          key: s3Key,
-          body: asset.bytes,
-          contentType: asset.mimeType,
-          checksumSha256Base64: Buffer.from(asset.sha256, "hex").toString("base64"),
-        });
-        return {
-          assetId: asset.assetId,
-          kind: asset.kind,
-          name: asset.name,
-          filename: asset.filename,
-          mimeType: asset.mimeType,
-          description: asset.description,
-          s3Key,
-          byteSize: asset.byteSize,
-          sha256: asset.sha256,
-          sortOrder: asset.sortOrder,
-        };
-      }),
-    );
+    onUploadedKey: (s3Key: string) => void,
+  ) => {
+    const uploadedAssets = [];
+    for (const asset of assets) {
+      const s3Key = brandKitAssetFileObjectKey({
+        ownerUserId: owner.ownerUserId,
+        brandGuideId,
+        assetId: asset.assetId,
+        filename: asset.filename,
+      });
+      await this.s3.putObject({
+        bucket: this.brandKitAssetBucket,
+        key: s3Key,
+        body: asset.bytes,
+        contentType: asset.mimeType,
+        checksumSha256Base64: Buffer.from(asset.sha256, "hex").toString("base64"),
+      });
+      onUploadedKey(s3Key);
+      uploadedAssets.push({
+        assetId: asset.assetId,
+        kind: asset.kind,
+        name: asset.name,
+        filename: asset.filename,
+        mimeType: asset.mimeType,
+        description: asset.description,
+        s3Key,
+        byteSize: asset.byteSize,
+        sha256: asset.sha256,
+        sortOrder: asset.sortOrder,
+      });
+    }
+    return uploadedAssets;
+  };
 
   private nextAvailableBrandGuideIdentity = async (
     owner: BrandGuideOwner,
@@ -539,14 +548,11 @@ const normalizeOptionalText = (value: string | null | undefined): string | null 
   return trimmed ? trimmed : null;
 };
 
-const normalizeSourceUrl = (value: string): string => {
-  const trimmed = value.trim();
-  const withProtocol = /^[a-z][a-z0-9+.-]*:\/\//iu.test(trimmed) ? trimmed : `https://${trimmed}`;
+const normalizeSourceUrl = async (value: string): Promise<string> => {
+  const url = normalizePublicHttpUrl(value);
+  if (!url) throw new InvalidSourceUrlError(value);
   try {
-    const url = new URL(withProtocol);
-    if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("Unsupported URL");
-    if (!url.hostname.includes(".")) throw new Error("URL must include a public hostname");
-    url.hash = "";
+    await assertPublicOutboundUrl(url);
     return url.toString();
   } catch {
     throw new InvalidSourceUrlError(value);
@@ -558,9 +564,6 @@ const brandGuideNameFromSourceUrl = (sourceUrl: string): string => {
   const name = host.split(".").at(0) ?? host;
   return titleCase(name.replace(/[-_]+/gu, " "));
 };
-
-const titleCase = (value: string): string =>
-  value.replace(/\b[a-z]/giu, (character) => character.toUpperCase());
 
 const toBrandGuideGenerationRequest = (request: {
   id: string;

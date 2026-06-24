@@ -627,6 +627,7 @@ const CreateBrandGuideFromUrlForm = ({
       <div className={fieldsClass}>
         <input
           required
+          type="url"
           inputMode="url"
           aria-label="Source URL"
           className={inputClass}
