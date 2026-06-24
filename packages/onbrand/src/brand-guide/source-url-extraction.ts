@@ -6,8 +6,10 @@ import type { ColorToken } from "./brand-kit/color/index";
 import { colorTokenIdFromName, decorativeAssetIdFromName } from "./management-identifiers";
 import {
   assertPublicOutboundUrl,
+  fetchPublicOutboundUrl,
   normalizePublicHttpUrl,
   OUTBOUND_REQUEST_TIMEOUT_MS,
+  withPublicOutboundFetch,
 } from "./source-url-security";
 import { titleCase } from "./text";
 
@@ -49,7 +51,7 @@ export const extractBrandGuideSource = async (
   if (!url) throw new Error(`Invalid Source URL: ${sourceUrl}`);
   await assertPublicOutboundUrl(url);
   const extraction = await withTimeout(
-    extractBrandAssets(url.toString()),
+    withPublicOutboundFetch(() => extractBrandAssets(url.toString())),
     OUTBOUND_REQUEST_TIMEOUT_MS,
   );
   if (!extraction.ok) {
@@ -260,7 +262,7 @@ const fetchPublicUrl = async (rawUrl: string, redirects = 0): Promise<Response> 
   const url = normalizePublicHttpUrl(rawUrl);
   if (!url) throw new Error(`Invalid asset URL: ${rawUrl}`);
   await assertPublicOutboundUrl(url);
-  const response = await fetch(url, {
+  const response = await fetchPublicOutboundUrl(url, {
     headers: {
       Accept: "image/svg+xml,image/png,image/jpeg,image/webp",
       "User-Agent": USER_AGENT,

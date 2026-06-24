@@ -1,3 +1,5 @@
+import { request as httpRequest } from "node:http";
+import { request as httpsRequest } from "node:https";
 import { isIP } from "node:net";
 import { lookup } from "node:dns/promises";
 
@@ -38,21 +40,39 @@ export const normalizePublicHttpUrl = (value: string): URL | null => {
 };
 
 export const assertPublicOutboundUrl = async (url: URL): Promise<void> => {
-  const hostname = normalizedUrlHostname(url.hostname);
-  if (!isPublicHostnameSyntax(hostname)) throw new UnsafeOutboundUrlError(url.toString());
+  await resolvePublicOutboundAddress(url);
+};
 
-  const hostnameIpVersion = isIP(hostname);
-  if (hostnameIpVersion !== 0) {
-    if (!isPublicIpAddress(hostname, hostnameIpVersion)) {
-      throw new UnsafeOutboundUrlError(url.toString());
-    }
-    return;
+export const fetchPublicOutboundUrl = async (
+  input: RequestInfo | URL,
+  init: RequestInit = {},
+  redirects = 0,
+): Promise<Response> => {
+  const request = new Request(input, init);
+  if (redirects > 5) throw new Error(`Too many redirects while fetching ${request.url}`);
+  const url = normalizePublicHttpUrl(request.url);
+  if (!url) throw new UnsafeOutboundUrlError(request.url);
+  const resolved = await resolvePublicOutboundAddress(url);
+  const response = await fetchResolvedAddress(url, resolved, request);
+
+  if (response.status >= 300 && response.status < 400) {
+    if (request.redirect === "manual") return response;
+    if (request.redirect === "error") throw new Error(`Redirect blocked for ${url.toString()}`);
+    const location = response.headers.get("location");
+    if (!location) return response;
+    return fetchPublicOutboundUrl(new URL(location, url), init, redirects + 1);
   }
 
-  const addresses = await lookup(hostname, { all: true, verbatim: true });
-  if (addresses.length === 0) throw new UnsafeOutboundUrlError(url.toString());
-  if (!addresses.every((address) => isPublicIpAddress(address.address, address.family))) {
-    throw new UnsafeOutboundUrlError(url.toString());
+  return response;
+};
+
+export const withPublicOutboundFetch = async <T>(operation: () => Promise<T>): Promise<T> => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = fetchPublicOutboundUrl;
+  try {
+    return await operation();
+  } finally {
+    globalThis.fetch = originalFetch;
   }
 };
 
@@ -62,6 +82,32 @@ export class UnsafeOutboundUrlError extends Error {
     this.name = "UnsafeOutboundUrlError";
   }
 }
+
+const resolvePublicOutboundAddress = async (
+  url: URL,
+): Promise<Readonly<{ address: string; family: 4 | 6 }>> => {
+  const hostname = normalizedUrlHostname(url.hostname);
+  if (!isPublicHostnameSyntax(hostname)) throw new UnsafeOutboundUrlError(url.toString());
+
+  const hostnameIpVersion = isIP(hostname);
+  if (hostnameIpVersion !== 0) {
+    if (!isPublicIpAddress(hostname, hostnameIpVersion)) {
+      throw new UnsafeOutboundUrlError(url.toString());
+    }
+    return { address: hostname, family: hostnameIpVersion === 4 ? 4 : 6 };
+  }
+
+  const addresses = await lookup(hostname, { all: true, verbatim: true });
+  if (addresses.length === 0) throw new UnsafeOutboundUrlError(url.toString());
+  if (!addresses.every((address) => isPublicIpAddress(address.address, address.family))) {
+    throw new UnsafeOutboundUrlError(url.toString());
+  }
+  const [address] = addresses;
+  if (!address || (address.family !== 4 && address.family !== 6)) {
+    throw new UnsafeOutboundUrlError(url.toString());
+  }
+  return { address: address.address, family: address.family };
+};
 
 const isPublicHostnameSyntax = (hostname: string): boolean => {
   const normalized = normalizedUrlHostname(hostname).toLowerCase();
@@ -147,3 +193,61 @@ const embeddedIpv4FromIpv6 = (address: string): string | null => {
 
 const normalizedUrlHostname = (hostname: string): string =>
   hostname.startsWith("[") && hostname.endsWith("]") ? hostname.slice(1, -1) : hostname;
+
+const fetchResolvedAddress = async (
+  url: URL,
+  resolved: Readonly<{ address: string; family: 4 | 6 }>,
+  request: Request,
+): Promise<Response> =>
+  new Promise((resolve, reject) => {
+    const headers = new Headers(request.headers);
+    headers.set("Host", url.host);
+    const clientRequest = (url.protocol === "https:" ? httpsRequest : httpRequest)(
+      {
+        protocol: url.protocol,
+        host: resolved.address,
+        port: url.port ? Number(url.port) : url.protocol === "https:" ? 443 : 80,
+        family: resolved.family,
+        method: request.method,
+        path: `${url.pathname}${url.search}`,
+        servername: normalizedUrlHostname(url.hostname),
+        headers: Object.fromEntries(headers.entries()),
+        signal: request.signal,
+      },
+      (message) => {
+        const chunks: Buffer[] = [];
+        message.on("data", (chunk: Buffer | string) =>
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)),
+        );
+        message.on("end", () => {
+          resolve(
+            new Response(Buffer.concat(chunks), {
+              status: message.statusCode ?? 500,
+              statusText: message.statusMessage,
+              headers: responseHeaders(message.headers),
+            }),
+          );
+        });
+      },
+    );
+    clientRequest.on("error", reject);
+    if (request.body) {
+      reject(new Error("Outbound fetch request bodies are not supported"));
+      clientRequest.destroy();
+      return;
+    }
+    clientRequest.end();
+  });
+
+const responseHeaders = (headers: Record<string, string | string[] | undefined>): Headers => {
+  const result = new Headers();
+  for (const [key, value] of Object.entries(headers)) {
+    if (value === undefined) continue;
+    if (Array.isArray(value)) {
+      for (const entry of value) result.append(key, entry);
+      continue;
+    }
+    result.set(key, value);
+  }
+  return result;
+};
