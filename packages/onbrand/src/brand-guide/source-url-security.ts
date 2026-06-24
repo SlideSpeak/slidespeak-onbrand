@@ -22,6 +22,8 @@ const PRIVATE_IPV4_RANGES = [
   ["240.0.0.0", 4],
 ] as const;
 
+let outboundFetchPatchQueue: Promise<void> = Promise.resolve();
+
 export const normalizePublicHttpUrl = (value: string): URL | null => {
   const trimmed = value.trim();
   if (!trimmed) return null;
@@ -67,12 +69,20 @@ export const fetchPublicOutboundUrl = async (
 };
 
 export const withPublicOutboundFetch = async <T>(operation: () => Promise<T>): Promise<T> => {
+  const previousPatch = outboundFetchPatchQueue;
+  let releasePatch: () => void = () => undefined;
+  outboundFetchPatchQueue = new Promise((resolve) => {
+    releasePatch = resolve;
+  });
+  await previousPatch;
+
   const originalFetch = globalThis.fetch;
   globalThis.fetch = fetchPublicOutboundUrl;
   try {
     return await operation();
   } finally {
     globalThis.fetch = originalFetch;
+    releasePatch();
   }
 };
 

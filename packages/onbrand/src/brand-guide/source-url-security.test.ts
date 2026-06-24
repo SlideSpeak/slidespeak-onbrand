@@ -6,6 +6,7 @@ import {
   assertPublicOutboundUrl,
   fetchPublicOutboundUrl,
   normalizePublicHttpUrl,
+  withPublicOutboundFetch,
 } from "./source-url-security";
 
 vi.mock("node:dns/promises", () => ({
@@ -123,6 +124,33 @@ describe("source URL security", () => {
     );
 
     expect(requestMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("serializes global fetch patching across concurrent operations", async () => {
+    const nativeFetch = globalThis.fetch;
+    let releaseFirst: () => void = () => undefined;
+    const first = withPublicOutboundFetch(
+      () =>
+        new Promise<string>((resolve) => {
+          releaseFirst = () => resolve("first");
+        }),
+    );
+    await Promise.resolve();
+
+    let secondStarted = false;
+    const second = withPublicOutboundFetch(async () => {
+      secondStarted = true;
+      expect(globalThis.fetch).toBe(fetchPublicOutboundUrl);
+      return "second";
+    });
+    await Promise.resolve();
+
+    expect(secondStarted).toBe(false);
+    expect(globalThis.fetch).toBe(fetchPublicOutboundUrl);
+    releaseFirst();
+    await expect(first).resolves.toBe("first");
+    await expect(second).resolves.toBe("second");
+    expect(globalThis.fetch).toBe(nativeFetch);
   });
 });
 
