@@ -249,13 +249,25 @@ describe("PersistentBrandGuideApplication Brand Guide generation requests", () =
       name: "Stripe",
       description: "Brand Guide extracted from https://stripe.com/.",
     });
+    type CreatedBrandGuideRecord = Readonly<{
+      slug: string;
+      name: string;
+      description: string;
+    }>;
+    const transaction = vi.fn(
+      async (
+        operation: (tx: {
+          brandGuide: { create: () => Promise<CreatedBrandGuideRecord> };
+        }) => Promise<CreatedBrandGuideRecord>,
+      ) => await operation({ brandGuide: { create } }),
+    );
     const prisma = {
       brandGuide: {
         findFirst: vi.fn().mockResolvedValue(null),
         findUnique: vi.fn().mockResolvedValue(null),
         create,
       },
-      $transaction: vi.fn(async (operation) => await operation({ brandGuide: { create } })),
+      $transaction: transaction,
     } as unknown as PrismaClient;
     const service = new PersistentBrandGuideApplication(
       prisma,
