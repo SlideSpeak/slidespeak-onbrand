@@ -57,8 +57,8 @@ If checks are failing:
 
 - Read failing logs with `gh run view` / `gh run watch` / `gh run download` as needed.
 - Reproduce locally where practical with the matching package script from `package.json`.
-- Fix the actual issue in the repo, commit or amend on the relevant PR branch, push, and wait for
-  CI again.
+- Fix the actual issue in the repo, commit or amend on the relevant PR branch, push, and wait for CI
+  again.
 - Do not merge with failing or pending required checks.
 
 ## Merge Release Please into Develop
