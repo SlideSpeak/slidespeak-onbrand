@@ -1,5 +1,5 @@
 import { type FormEvent, type ReactNode, useEffect, useReducer, useRef, useState } from "react";
-import { Copy01Icon } from "@hugeicons/core-free-icons";
+import { Copy01Icon, McpServerIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
@@ -17,6 +17,7 @@ import { sendJson, useApi, useOptionalApi } from "../shared/api/api-state";
 import { publishBrandGuideUpdated, useSyncedBrandGuides } from "../shared/brand-guide-sync";
 import { BrandGuideDetail } from "../brand-guide/detail/brand-guide-detail";
 import type {
+  BrandGuideGenerationRequest,
   BrandGuideSummary,
   BrandGuideView,
 } from "@onbrand/core/brand-guide/application-service";
@@ -36,28 +37,21 @@ import { ThemeToggle } from "./theme-toggle";
 import { type ThemeMode, useDashboardTheme } from "./theme";
 
 const NO_BRAND_GUIDE = "NO_BRAND_GUIDE";
+const PENDING_SOURCE_URL_STORAGE_KEY = "onbrand.pendingSourceUrl";
 
 type DashboardSessionView = Readonly<{ ownerUserId: string; scopes: readonly string[] }>;
 
 const OnboardingPage = () => {
   const { setTheme, theme } = useDashboardTheme();
 
-  return (
-    <PublicDashboardHome
-      onThemeChange={setTheme}
-      promptValue="Generate brand guidelines based on: slidespeak.co"
-      theme={theme}
-    />
-  );
+  return <PublicDashboardHome onThemeChange={setTheme} theme={theme} />;
 };
 
 const PublicDashboardHome = ({
   onThemeChange,
-  promptValue,
   theme,
 }: Readonly<{
   onThemeChange: (theme: ThemeMode) => void;
-  promptValue: string;
   theme: ThemeMode;
 }>) => {
   const [selectedPreviewSection, setSelectedPreviewSection] = useState<BrandGuideSection>(
@@ -78,8 +72,8 @@ const PublicDashboardHome = ({
             selectedBrandGuideSection={selectedPreviewSection}
             theme={theme}
           />
-          <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
-            <OnboardingInstructions promptValue={promptValue} variant={theme} />
+          <main className="min-w-0 overflow-hidden px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
+            <OnboardingInstructions requiresAuthentication variant={theme} />
           </main>
         </div>
       </div>
@@ -140,7 +134,27 @@ const DashboardOverview = () => {
   const [selectedPreviewSection, setSelectedPreviewSection] = useState<BrandGuideSection>(
     DEFAULT_BRAND_GUIDE_SECTION,
   );
+  const [isGeneratingBrandGuide, setIsGeneratingBrandGuide] = useState(false);
+  const pendingSourceUrlConsumed = useRef(false);
   const showsEmptyDashboard = brandGuides.status === "READY" && brandGuides.data.length === 0;
+
+  useEffect(() => {
+    if (pendingSourceUrlConsumed.current || brandGuides.status !== "READY") return;
+    const pendingSourceUrl = consumePendingSourceUrl();
+    if (!pendingSourceUrl) return;
+    pendingSourceUrlConsumed.current = true;
+    setIsGeneratingBrandGuide(true);
+    createBrandGuideFromSourceUrl(pendingSourceUrl)
+      .then((request) => {
+        publishBrandGuideUpdated(request.brandGuide);
+        window.location.href = `/brand-guides/${encodeURIComponent(request.brandGuide.id)}/logo`;
+      })
+      .catch((caught: unknown) => {
+        const message = caught instanceof Error ? caught.message : String(caught);
+        setIsGeneratingBrandGuide(false);
+        toast.error("Could not start Brand Guide creation", { description: message });
+      });
+  }, [brandGuides.status]);
 
   return (
     <div className="min-h-screen bg-onbrand-white text-onbrand-charcoal">
@@ -152,11 +166,18 @@ const DashboardOverview = () => {
         />
         <div className="min-w-0 flex-1 bg-onbrand-white">
           <HomeTopBar />
-          <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
+          <main
+            className={`min-w-0 px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5 ${showsEmptyDashboard || isGeneratingBrandGuide ? "overflow-hidden" : "overflow-y-auto"}`}
+          >
             {brandGuides.status === "ERROR" ? (
               <ErrorMessage message={brandGuides.message} />
+            ) : isGeneratingBrandGuide ? (
+              <GeneratingBrandGuideView />
             ) : brandGuides.status === "READY" ? (
-              <HomeDashboard brandGuides={brandGuides.data} />
+              <HomeDashboard
+                brandGuides={brandGuides.data}
+                onBrandGuideGenerationChange={setIsGeneratingBrandGuide}
+              />
             ) : (
               <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
             )}
@@ -200,7 +221,9 @@ const AuthenticatedDashboardApp = ({ pathname }: Readonly<{ pathname: string }>)
           <main
             className={`min-w-0 px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5 ${route.selectedBrandGuideSection === "PRESENTATION" ? "overflow-hidden" : "overflow-y-auto"}`}
           >
-            {selectedBrandGuideId ? (
+            {selectedBrandGuideId && route.selectedBrandGuideSection === "MCP" ? (
+              <McpConnectionPage />
+            ) : selectedBrandGuideId ? (
               <BrandGuideDetail
                 id={selectedBrandGuideId}
                 section={route.selectedBrandGuideSection}
@@ -256,25 +279,35 @@ const HomeTopBar = () => (
   </header>
 );
 
+const McpConnectionPage = () => (
+  <section className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-3xl items-center justify-center">
+    <div className="w-full -translate-y-8 p-2 text-center sm:p-4">
+      <HugeiconsIcon
+        className="mx-auto mb-3 h-10 w-10 text-onbrand-charcoal"
+        icon={McpServerIcon}
+        strokeWidth={1.8}
+      />
+      <h1 className="m-0 text-xl leading-none font-normal tracking-[-0.035em] text-onbrand-charcoal">
+        Connect to the OnBrand MCP to start using your brand guide.
+      </h1>
+      <ConnectionOptions connections={onboardingConnections()} variant="light" />
+    </div>
+  </section>
+);
+
 export const HomeDashboard = ({
   brandGuides,
-}: Readonly<{ brandGuides: readonly BrandGuideSummary[] }>) => {
+  onBrandGuideGenerationChange,
+}: Readonly<{
+  brandGuides: readonly BrandGuideSummary[];
+  onBrandGuideGenerationChange?: (isGenerating: boolean) => void;
+}>) => {
   if (brandGuides.length === 0)
-    return (
-      <OnboardingInstructions
-        promptValue="Generate brand guidelines based on: slidespeak.co"
-        showSignInStep={false}
-      />
-    );
+    return <OnboardingInstructions onBrandGuideGenerationChange={onBrandGuideGenerationChange} />;
 
   return (
     <section className="grid gap-3">
-      <div className="flex min-h-10 items-center justify-between gap-4">
-        <h1 className="m-0 text-xl leading-none font-normal tracking-[-0.035em] text-onbrand-charcoal">
-          Brand Guides
-        </h1>
-        <CreateBrandGuideButton />
-      </div>
+      <HomeDashboardHeader onBrandGuideGenerationChange={onBrandGuideGenerationChange} />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8">
         {brandGuides.map((brandGuide) => (
           <HomeBrandGuideTile key={brandGuide.id} brandGuide={brandGuide} />
@@ -283,6 +316,19 @@ export const HomeDashboard = ({
     </section>
   );
 };
+
+export const HomeDashboardHeader = ({
+  onBrandGuideGenerationChange,
+}: Readonly<{
+  onBrandGuideGenerationChange?: (isGenerating: boolean) => void;
+}>) => (
+  <div className="flex min-h-10 items-center justify-between gap-4">
+    <h1 className="m-0 text-xl leading-none font-normal tracking-[-0.035em] text-onbrand-charcoal">
+      Brand Guides
+    </h1>
+    <CreateBrandGuideButton onBrandGuideGenerationChange={onBrandGuideGenerationChange} />
+  </div>
+);
 
 const HomeBrandGuideTile = ({ brandGuide }: Readonly<{ brandGuide: BrandGuideSummary }>) => {
   const detail = useApi<BrandGuideView>(`/api/brand-guides/${encodeURIComponent(brandGuide.id)}`);
@@ -383,18 +429,20 @@ const NoBrandGuidesPrompt = () => (
 
 type CreateBrandGuideState = {
   open: boolean;
-  name: string;
   error?: string;
   submitting: boolean;
 };
 
 const createBrandGuideInitialState: CreateBrandGuideState = {
   open: false,
-  name: "",
   submitting: false,
 };
 
-const CreateBrandGuideButton = () => {
+const CreateBrandGuideButton = ({
+  onBrandGuideGenerationChange,
+}: Readonly<{
+  onBrandGuideGenerationChange?: (isGenerating: boolean) => void;
+}>) => {
   const [state, setState] = useReducer(
     (current: CreateBrandGuideState, patch: Partial<CreateBrandGuideState>) => ({
       ...current,
@@ -403,13 +451,12 @@ const CreateBrandGuideButton = () => {
     createBrandGuideInitialState,
   );
 
-  const create = async (event: FormEvent) => {
-    event.preventDefault();
+  const createEmpty = async () => {
     setState({ error: undefined, submitting: true });
     try {
       const view = await sendJson<{ brandGuide: BrandGuideSummary }>("/api/brand-guides", {
         method: "POST",
-        body: { name: state.name, description: null },
+        body: { name: emptyBrandGuideName(), description: null },
       });
       publishBrandGuideUpdated(view.brandGuide);
       window.location.href = `/brand-guides/${encodeURIComponent(view.brandGuide.id)}/colors`;
@@ -431,74 +478,254 @@ const CreateBrandGuideButton = () => {
       >
         Create Brand Guide
       </button>
-      <DialogContent>
-        <form className="grid gap-5 p-6" onSubmit={create}>
+      <DialogContent className="w-[min(560px,calc(100vw-2rem))]">
+        <div className="grid gap-5 p-6">
           <div>
             <DialogTitle className="text-lg font-medium text-onbrand-charcoal">
               Create Brand Guide
             </DialogTitle>
+            <p className="mt-1 text-sm text-onbrand-charcoal/55">Input your URL</p>
           </div>
-          <label className="grid gap-2 text-sm text-onbrand-charcoal">
-            Name
-            <input
-              required
-              className="rounded-md border border-onbrand-charcoal/15 px-3 py-2 outline-none"
-              value={state.name}
-              onChange={(event) => setState({ name: event.target.value })}
-            />
-          </label>
-          {state.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
-          <div className="flex justify-end gap-2">
+          <CreateBrandGuideFromUrlForm
+            layout="stacked"
+            onBrandGuideGenerationChange={(isGenerating) => {
+              if (isGenerating) setState({ open: false });
+              onBrandGuideGenerationChange?.(isGenerating);
+            }}
+            submitLabel="Create Brand Guide"
+          />
+          <div className="grid gap-4">
+            <div className="flex items-center gap-3 text-xs font-medium tracking-[0.22em] text-onbrand-charcoal/35 uppercase">
+              <span className="h-px flex-1 bg-onbrand-charcoal/10" />
+              <span>Or</span>
+              <span className="h-px flex-1 bg-onbrand-charcoal/10" />
+            </div>
             <button
-              className="rounded-md px-4 py-2 text-sm text-onbrand-charcoal/65"
+              className="h-12 w-full rounded-md border border-onbrand-charcoal/15 px-4 text-sm font-medium text-onbrand-charcoal transition hover:bg-onbrand-charcoal/[0.03] disabled:opacity-50"
+              disabled={state.submitting}
               type="button"
-              onClick={() => setState({ open: false })}
+              onClick={createEmpty}
             >
-              Cancel
+              {state.submitting ? "Creating…" : "Create empty"}
             </button>
-            <button
-              className="rounded-md bg-onbrand-charcoal px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-              disabled={state.submitting || !state.name.trim()}
-              type="submit"
-            >
-              {state.submitting ? "Creating…" : "Create"}
-            </button>
+            {state.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
           </div>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );
 };
 
-const OnboardingInstructions = ({
-  showSignInStep = true,
+const emptyBrandGuideName = (): string => {
+  const timestamp = new Date().toISOString().replace(/[-:]/gu, "").replace(/\..+$/u, "");
+  return `Untitled Brand Guide ${timestamp}`;
+};
+
+const createBrandGuideFromSourceUrl = async (
+  sourceUrl: string,
+): Promise<BrandGuideGenerationRequest> =>
+  await sendJson<BrandGuideGenerationRequest>("/api/brand-guide-generation-requests", {
+    method: "POST",
+    body: { sourceUrl },
+  });
+
+const persistPendingSourceUrl = (sourceUrl: string): void => {
+  window.sessionStorage.setItem(PENDING_SOURCE_URL_STORAGE_KEY, sourceUrl);
+};
+
+const consumePendingSourceUrl = (): string | null => {
+  const sourceUrl = window.sessionStorage.getItem(PENDING_SOURCE_URL_STORAGE_KEY);
+  if (sourceUrl) window.sessionStorage.removeItem(PENDING_SOURCE_URL_STORAGE_KEY);
+  return sourceUrl;
+};
+
+type CreateBrandGuideFromUrlState = {
+  sourceUrl: string;
+  error?: string;
+  submitting: boolean;
+};
+
+const createBrandGuideFromUrlInitialState: CreateBrandGuideFromUrlState = {
+  sourceUrl: "",
+  submitting: false,
+};
+
+const CreateBrandGuideFromUrlForm = ({
+  layout = "inline",
+  onBrandGuideGenerationChange,
+  requiresAuthentication = false,
+  submitLabel = "Create",
   variant = "light",
-  promptValue = "Tell me about OnBrand",
-}: Readonly<{ showSignInStep?: boolean; variant?: "light" | "dark"; promptValue?: string }>) => {
-  const connections = onboardingConnections();
+}: Readonly<{
+  layout?: "inline" | "stacked";
+  onBrandGuideGenerationChange?: (isGenerating: boolean) => void;
+  requiresAuthentication?: boolean;
+  submitLabel?: string;
+  variant?: "light" | "dark";
+}>) => {
+  const [state, setState] = useReducer(
+    (current: CreateBrandGuideFromUrlState, patch: Partial<CreateBrandGuideFromUrlState>) => ({
+      ...current,
+      ...patch,
+    }),
+    createBrandGuideFromUrlInitialState,
+  );
+  const isDark = variant === "dark";
+
+  const create = async (event: FormEvent) => {
+    event.preventDefault();
+    setState({ error: undefined, submitting: true });
+    const sourceUrl = state.sourceUrl.trim();
+    if (requiresAuthentication) {
+      persistPendingSourceUrl(sourceUrl);
+      window.location.href = "/login?returnTo=/";
+      return;
+    }
+    onBrandGuideGenerationChange?.(true);
+    try {
+      const request = await createBrandGuideFromSourceUrl(sourceUrl);
+      publishBrandGuideUpdated(request.brandGuide);
+      window.location.href = `/brand-guides/${encodeURIComponent(request.brandGuide.id)}/logo`;
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : String(caught);
+      setState({ error: message, submitting: false });
+      onBrandGuideGenerationChange?.(false);
+      toast.error("Could not start Brand Guide creation", { description: message });
+      return;
+    }
+    setState({ submitting: false });
+  };
+
+  const inputClass =
+    layout === "stacked"
+      ? isDark
+        ? "h-12 min-w-0 flex-1 rounded-md border-[0.5px] border-white bg-[#111111] px-4 text-center text-base text-white outline-none placeholder:text-white/40"
+        : "h-12 min-w-0 flex-1 rounded-md border-[0.5px] border-onbrand-charcoal/20 bg-white px-4 text-center text-base text-onbrand-charcoal outline-none placeholder:text-onbrand-charcoal/35"
+      : isDark
+        ? "h-14 min-w-0 flex-1 rounded-md border-[0.5px] border-white bg-[#111111] px-4 text-center text-lg text-white outline-none placeholder:text-white/40"
+        : "h-14 min-w-0 flex-1 rounded-md border-[0.5px] border-onbrand-charcoal/20 bg-white px-4 text-center text-lg text-onbrand-charcoal outline-none placeholder:text-onbrand-charcoal/35";
+  const buttonClass =
+    layout === "stacked"
+      ? isDark
+        ? "h-12 rounded-md border-[0.5px] border-white bg-white px-5 text-sm font-medium text-[#111111] transition hover:bg-[#111111] hover:text-white disabled:bg-white disabled:text-[#111111]"
+        : "h-12 rounded-md bg-onbrand-charcoal px-5 text-sm font-medium text-white transition hover:bg-black disabled:bg-[#8e8e8e] disabled:text-white"
+      : isDark
+        ? "h-14 rounded-md border-[0.5px] border-white bg-white px-5 text-base font-medium text-[#111111] transition hover:bg-[#111111] hover:text-white disabled:bg-white disabled:text-[#111111]"
+        : "h-14 rounded-md bg-onbrand-charcoal px-5 text-base font-medium text-white transition hover:bg-black disabled:bg-[#8e8e8e] disabled:text-white";
+  const formClass =
+    layout === "stacked"
+      ? isDark
+        ? "grid w-full gap-3 text-left text-white"
+        : "grid w-full gap-3 text-left"
+      : isDark
+        ? "mx-auto grid w-full max-w-sm gap-2 text-left text-white"
+        : "mx-auto grid w-full max-w-sm gap-2 text-left";
+  const fieldsClass = layout === "stacked" ? "grid min-w-0 gap-3" : "grid min-w-0 gap-2";
 
   return (
-    <section className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-3xl items-center">
-      <div className="w-full -translate-y-10 p-2 text-center sm:p-4">
-        <div className="grid gap-10">
-          <OnboardingStep number="01" title="Connect to the OnBrand MCP" variant={variant}>
-            <ConnectionOptions connections={connections} variant={variant} />
+    <form className={formClass} onSubmit={create}>
+      <div className={fieldsClass}>
+        <input
+          required
+          inputMode="url"
+          aria-label="Source URL"
+          className={inputClass}
+          placeholder="https://slidespeak.co"
+          value={state.sourceUrl}
+          onChange={(event) => setState({ sourceUrl: event.target.value })}
+        />
+        <button
+          className={`${buttonClass} w-full`}
+          disabled={state.submitting || !state.sourceUrl.trim()}
+          type="submit"
+        >
+          {state.submitting ? "Creating…" : submitLabel}
+        </button>
+      </div>
+      {state.error ? (
+        <p className={isDark ? "text-sm text-white/70" : "text-sm text-red-600"}>{state.error}</p>
+      ) : null}
+    </form>
+  );
+};
+
+export const GeneratingBrandGuideView = () => (
+  <section
+    className="grid min-h-[calc(100vh-8rem)] place-items-center text-center"
+    role="status"
+    aria-live="polite"
+  >
+    <div className="grid place-items-center gap-5">
+      <OnbrandLoadingMark />
+      <p className="text-xl font-medium text-onbrand-charcoal">Generating Brand Guide</p>
+    </div>
+  </section>
+);
+
+const OnbrandLoadingMark = () => (
+  <OnbrandMark className="onbrand-loading-mark h-24 w-24 text-onbrand-charcoal" />
+);
+
+const OnbrandBackgroundMark = ({ variant }: Readonly<{ variant: "light" | "dark" }>) => (
+  <OnbrandMark
+    className={`onbrand-background-mark pointer-events-none h-[clamp(38rem,82vmin,72rem)] w-[clamp(38rem,82vmin,72rem)] ${variant === "dark" ? "text-white/[0.02]" : "text-onbrand-charcoal/[0.02]"}`}
+  />
+);
+
+const OnbrandMark = ({ className }: Readonly<{ className: string }>) => (
+  <svg
+    aria-hidden="true"
+    className={className}
+    viewBox="0 0 299 298"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <g>
+      <path
+        d="M135 30.2c0 2.5-1.9 4.6-4.3 5C76.4 44.5 35 91.7 35 148.7s41.4 104.2 95.7 113.3c2.4.5 4.3 2.6 4.3 5.1v25.3c0 3-2.6 5.3-5.5 4.9C56.4 287.3 0 224.5 0 148.7S56.4 10 129.5 0c2.9-.4 5.5 2 5.5 4.9v25.3Z"
+        fill="currentColor"
+      />
+      <path
+        d="M293.7 163.7c3 0 5.3 2.5 4.9 5.4-9.1 66.5-61.7 119.1-128.1 128.2-3 .4-5.5-1.9-5.5-4.9v-25.3c0-2.5 1.9-4.6 4.3-5.1 48.1-8.1 85.9-46 94.1-94 .4-2.5 2.5-4.3 5-4.3h25.3Z"
+        fill="currentColor"
+      />
+      <path
+        d="M165 4.9c0-2.9 2.6-5.3 5.5-4.9 66.4 9.1 119 61.7 128.1 128.2.4 2.9-1.9 5.5-4.9 5.5h-25.3c-2.5 0-4.6-1.9-5-4.4-8.2-48-46-85.9-94.1-94-2.4-.5-4.3-2.5-4.3-5.1V4.9Z"
+        fill="currentColor"
+      />
+    </g>
+    <path
+      d="M93.4 162.8c-7.8-7.8-7.8-20.5 0-28.3l42.5-42.4c7.8-7.8 20.4-7.8 28.2 0l42.5 42.4c7.8 7.8 7.8 20.5 0 28.3l-42.5 42.4c-7.8 7.8-20.4 7.8-28.2 0l-42.5-42.4Z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
+const OnboardingInstructions = ({
+  onBrandGuideGenerationChange,
+  requiresAuthentication = false,
+  variant = "light",
+}: Readonly<{
+  onBrandGuideGenerationChange?: (isGenerating: boolean) => void;
+  requiresAuthentication?: boolean;
+  variant?: "light" | "dark";
+}>) => {
+  return (
+    <section className="relative flex min-h-[calc(100vh-5rem)] w-full items-center justify-center overflow-hidden lg:h-full lg:min-h-0">
+      <div className="absolute inset-0 grid place-items-center" aria-hidden="true">
+        <OnbrandBackgroundMark variant={variant} />
+      </div>
+      <div className="relative z-10 w-full max-w-3xl -translate-y-10 p-2 text-center sm:p-4">
+        <div className="relative z-10 grid gap-10">
+          <OnboardingStep title="First, let's onboard your brand." variant={variant}>
+            <div className="mt-6">
+              <CreateBrandGuideFromUrlForm
+                onBrandGuideGenerationChange={onBrandGuideGenerationChange}
+                requiresAuthentication={requiresAuthentication}
+                variant={variant}
+              />
+            </div>
           </OnboardingStep>
-          <OnboardingStep
-            number="02"
-            title="Prompt your agent"
-            value={promptValue}
-            variant={variant}
-          />
-          {showSignInStep ? (
-            <OnboardingStep
-              number="03"
-              title="Sign in to see your dashboard and brands"
-              href="/login?returnTo=/"
-              value="Sign in"
-              variant={variant}
-            />
-          ) : null}
         </div>
       </div>
     </section>
@@ -513,7 +740,7 @@ const OnboardingStep = ({
   children,
   variant = "light",
 }: Readonly<{
-  number: string;
+  number?: string;
   title?: string;
   value?: string;
   href?: string;
@@ -524,21 +751,23 @@ const OnboardingStep = ({
 
   return (
     <div className="min-w-0 text-center">
-      <div
-        className={
-          isDark
-            ? "mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-md text-xl font-semibold text-white"
-            : "mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-md text-xl font-semibold text-onbrand-charcoal"
-        }
-      >
-        {number}
-      </div>
+      {number ? (
+        <div
+          className={
+            isDark
+              ? "mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-md text-xl font-semibold text-white"
+              : "mx-auto mb-1 flex h-10 w-10 items-center justify-center rounded-md text-xl font-semibold text-onbrand-charcoal"
+          }
+        >
+          {number}
+        </div>
+      ) : null}
       {title ? (
         <h2
           className={
             isDark
-              ? "text-base font-normal text-white"
-              : "text-base font-normal text-onbrand-charcoal"
+              ? "text-2xl leading-tight font-semibold text-white"
+              : "text-2xl leading-tight font-semibold text-onbrand-charcoal"
           }
         >
           {title}
@@ -584,7 +813,7 @@ const ConnectionOptions = ({
   if (!selectedConnection) return null;
 
   return (
-    <div className="mt-3 grid justify-items-center gap-3">
+    <div className="mt-6 grid justify-items-center gap-4">
       <div className="flex flex-wrap justify-center gap-2">
         {connections.map((connection) => {
           const isSelected = connection.name === selectedConnection.name;
@@ -698,7 +927,10 @@ const CursorIcon = ({ className }: Readonly<{ className?: string }>) => (
   </svg>
 );
 
-const EditableBrandGuideName = ({ brandGuide }: Readonly<{ brandGuide?: BrandGuideSummary }>) => {
+const EditableBrandGuideName = ({
+  brandGuide,
+  fallback = "Getting started",
+}: Readonly<{ brandGuide?: BrandGuideSummary; fallback?: string }>) => {
   const [name, setName] = useState(brandGuide?.name ?? "");
   const editedByUser = useRef(false);
 
@@ -723,7 +955,7 @@ const EditableBrandGuideName = ({ brandGuide }: Readonly<{ brandGuide?: BrandGui
     return () => window.clearTimeout(timeout);
   }, [brandGuide, name]);
   if (!brandGuide)
-    return <span className="truncate font-normal text-onbrand-charcoal">Getting started</span>;
+    return <span className="truncate font-normal text-onbrand-charcoal">{fallback}</span>;
   return (
     <label className="relative inline-grid max-w-[min(42rem,45vw)] flex-none items-center overflow-hidden">
       <span className="invisible font-normal whitespace-pre" aria-hidden>
@@ -749,6 +981,7 @@ const DashboardTopBar = ({
   selectedBrandGuideId,
   selectedBrandGuide,
   selectedBrandGuideSection = DEFAULT_BRAND_GUIDE_SECTION,
+  titleFallback,
   theme,
 }: Readonly<{
   brandGuides: ApiState<readonly BrandGuideSummary[]>;
@@ -756,6 +989,7 @@ const DashboardTopBar = ({
   selectedBrandGuideId?: string;
   selectedBrandGuide?: BrandGuideSummary;
   selectedBrandGuideSection?: BrandGuideSection;
+  titleFallback?: string;
   theme: ThemeMode;
 }>) => {
   const navigate = useNavigate();
@@ -773,6 +1007,7 @@ const DashboardTopBar = ({
         <EditableBrandGuideName
           key={selectedBrandGuide ? `${selectedBrandGuide.id}:${selectedBrandGuide.name}` : "empty"}
           brandGuide={selectedBrandGuide}
+          fallback={titleFallback}
         />
         {selectedBrandGuide ? (
           <>
@@ -854,85 +1089,127 @@ export const DashboardRail = ({
         <img alt="Onbrand" className="onbrand-dashboard-logo h-6 w-6" src={onbrandLogoUrl} />
       </Link>
     )}
-    {inertPreview || selectedBrandGuideId ? (
-      <TooltipProvider delayDuration={150}>
-        <nav className="flex flex-1 flex-col items-center gap-2" aria-label="Brand Guide sections">
-          {BRAND_GUIDE_SECTION_LINKS.map(({ section, pathSegment, label, icon }) => {
-            if (section === "METADATA") return null;
-            const isActive = (selectedBrandGuideSection ?? DEFAULT_BRAND_GUIDE_SECTION) === section;
-            const className = isActive
-              ? "grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
-              : "grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600";
-            return (
-              <Tooltip key={section}>
-                <TooltipTrigger asChild>
-                  {inertPreview ? (
-                    <button
-                      type="button"
-                      aria-label={label}
-                      aria-current={isActive ? "page" : undefined}
-                      className={className}
-                      onClick={() => onPreviewSectionChange?.(section)}
-                    >
-                      <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
-                    </button>
-                  ) : (
-                    <Link
-                      to="/brand-guides/$brandGuideId/$section"
-                      params={{ brandGuideId: selectedBrandGuideId ?? "", section: pathSegment }}
-                      aria-label={label}
-                      aria-current={isActive ? "page" : undefined}
-                      className={className}
-                    >
-                      <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
-                    </Link>
-                  )}
-                </TooltipTrigger>
-                <TooltipContent side="right">{label}</TooltipContent>
-              </Tooltip>
-            );
-          })}
-          {(() => {
-            const metadataLink = BRAND_GUIDE_SECTION_LINKS.find(
-              ({ section }) => section === "METADATA",
-            );
-            if (!metadataLink) return null;
-            const { section, pathSegment, label, icon } = metadataLink;
-            const isActive = selectedBrandGuideSection === section;
-            const className = isActive
-              ? "mt-auto grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
-              : "mt-auto grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600";
-            return (
-              <Tooltip key={section}>
-                <TooltipTrigger asChild>
-                  {inertPreview ? (
-                    <button
-                      type="button"
-                      aria-label={label}
-                      aria-current={isActive ? "page" : undefined}
-                      className={className}
-                      onClick={() => onPreviewSectionChange?.(section)}
-                    >
-                      <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
-                    </button>
-                  ) : (
-                    <Link
-                      to="/brand-guides/$brandGuideId/$section"
-                      params={{ brandGuideId: selectedBrandGuideId ?? "", section: pathSegment }}
-                      aria-label={label}
-                      aria-current={isActive ? "page" : undefined}
-                      className={className}
-                    >
-                      <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
-                    </Link>
-                  )}
-                </TooltipTrigger>
-                <TooltipContent side="right">{label}</TooltipContent>
-              </Tooltip>
-            );
-          })()}
-        </nav>
-      </TooltipProvider>
-    ) : null}
+    <TooltipProvider delayDuration={150}>
+      <nav className="flex flex-1 flex-col items-center gap-2" aria-label="Dashboard navigation">
+        {inertPreview || selectedBrandGuideId
+          ? BRAND_GUIDE_SECTION_LINKS.map(({ section, pathSegment, label, icon }) => {
+              if (section === "METADATA" || section === "MCP") return null;
+              const isActive =
+                (selectedBrandGuideSection ?? DEFAULT_BRAND_GUIDE_SECTION) === section;
+              const className = isActive
+                ? "grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
+                : "grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600";
+              return (
+                <Tooltip key={section}>
+                  <TooltipTrigger asChild>
+                    {inertPreview ? (
+                      <button
+                        type="button"
+                        aria-label={label}
+                        aria-current={isActive ? "page" : undefined}
+                        className={className}
+                        onClick={() => onPreviewSectionChange?.(section)}
+                      >
+                        <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
+                      </button>
+                    ) : (
+                      <Link
+                        to="/brand-guides/$brandGuideId/$section"
+                        params={{ brandGuideId: selectedBrandGuideId ?? "", section: pathSegment }}
+                        aria-label={label}
+                        aria-current={isActive ? "page" : undefined}
+                        className={className}
+                      >
+                        <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
+                      </Link>
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{label}</TooltipContent>
+                </Tooltip>
+              );
+            })
+          : null}
+        {inertPreview || selectedBrandGuideId
+          ? (() => {
+              const mcpLink = BRAND_GUIDE_SECTION_LINKS.find(({ section }) => section === "MCP");
+              if (!mcpLink) return null;
+              const { section, pathSegment, label, icon } = mcpLink;
+              const isActive = selectedBrandGuideSection === section;
+              const className = isActive
+                ? "mt-auto grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
+                : "mt-auto grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600";
+              return (
+                <Tooltip key={section}>
+                  <TooltipTrigger asChild>
+                    {inertPreview ? (
+                      <button
+                        type="button"
+                        aria-label={label}
+                        aria-current={isActive ? "page" : undefined}
+                        className={className}
+                        onClick={() => onPreviewSectionChange?.(section)}
+                      >
+                        <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
+                      </button>
+                    ) : (
+                      <Link
+                        to="/brand-guides/$brandGuideId/$section"
+                        params={{ brandGuideId: selectedBrandGuideId ?? "", section: pathSegment }}
+                        aria-label={label}
+                        aria-current={isActive ? "page" : undefined}
+                        className={className}
+                      >
+                        <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
+                      </Link>
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{label}</TooltipContent>
+                </Tooltip>
+              );
+            })()
+          : null}
+        {inertPreview || selectedBrandGuideId
+          ? (() => {
+              const metadataLink = BRAND_GUIDE_SECTION_LINKS.find(
+                ({ section }) => section === "METADATA",
+              );
+              if (!metadataLink) return null;
+              const { section, pathSegment, label, icon } = metadataLink;
+              const isActive = selectedBrandGuideSection === section;
+              const className = isActive
+                ? "grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
+                : "grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600";
+              return (
+                <Tooltip key={section}>
+                  <TooltipTrigger asChild>
+                    {inertPreview ? (
+                      <button
+                        type="button"
+                        aria-label={label}
+                        aria-current={isActive ? "page" : undefined}
+                        className={className}
+                        onClick={() => onPreviewSectionChange?.(section)}
+                      >
+                        <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
+                      </button>
+                    ) : (
+                      <Link
+                        to="/brand-guides/$brandGuideId/$section"
+                        params={{ brandGuideId: selectedBrandGuideId ?? "", section: pathSegment }}
+                        aria-label={label}
+                        aria-current={isActive ? "page" : undefined}
+                        className={className}
+                      >
+                        <HugeiconsIcon className="h-[18px] w-[18px]" icon={icon} strokeWidth={2} />
+                      </Link>
+                    )}
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{label}</TooltipContent>
+                </Tooltip>
+              );
+            })()
+          : null}
+      </nav>
+    </TooltipProvider>
   </aside>
 );

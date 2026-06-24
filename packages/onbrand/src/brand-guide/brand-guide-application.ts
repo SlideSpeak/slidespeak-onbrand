@@ -18,9 +18,14 @@ import {
   DuplicateBrandGuideNameError,
   DuplicateColorTokenNameError,
   DuplicateDecorativeAssetNameError,
+  InvalidSourceUrlError,
 } from "./application-service";
+import { brandKitAssetFileObjectKey } from "./brand-kit/asset-file/object-key";
+import { toColorTokenCreateRecords } from "./brand-kit/color/record";
+import { extractBrandGuideSource, type ExtractedBrandKitAsset } from "./source-url-extraction";
 import type {
   BrandGuideApplicationService,
+  BrandGuideGenerationRequest,
   MaterializeBrandKitAssetsRequest,
   GetBrandKitAssetPreviewUrlRequest,
   BrandGuideView,
@@ -29,6 +34,7 @@ import type {
   WriteBrandGuideRequest,
   WriteBrandGuideResult,
   CreateBrandGuideRequest,
+  CreateBrandGuideGenerationRequest,
   UpdateBrandGuideMetadataRequest,
   UpsertColorTokenRequest,
   DeleteColorTokenRequest,
@@ -44,14 +50,20 @@ import {
   type BrandGuideRegistry,
 } from "./brand-guide-store";
 
+type ExtractedBrandKitAssetForStorage = ExtractedBrandKitAsset &
+  Readonly<{ kind: "LOGO" | "DECORATIVE_ASSET"; sortOrder: number }>;
+
 export class PersistentBrandGuideApplication implements BrandGuideApplicationService {
   private readonly brandKitAssetFiles: BrandKitAssetFileWorkflow;
   private readonly brandGuides: BrandGuideRegistry;
 
   constructor(
     private readonly prisma: PrismaClient,
-    s3: Pick<typeof S3, "getPresigned" | "putPresigned" | "deleteObject">,
-    brandKitAssetBucket: string,
+    private readonly s3: Pick<
+      typeof S3,
+      "getPresigned" | "putPresigned" | "putObject" | "deleteObject"
+    >,
+    private readonly brandKitAssetBucket: string,
     assetPresignedUrlExpiresInSeconds: number,
     brandGuides: BrandGuideRegistry = new PrismaBrandGuideRegistry(prisma),
   ) {
@@ -94,6 +106,76 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
       throw error;
     }
     return this.getBrandGuide(owner, slug);
+  };
+
+  createBrandGuideGenerationRequest = async (
+    owner: BrandGuideOwner,
+    request: CreateBrandGuideGenerationRequest,
+  ): Promise<BrandGuideGenerationRequest> => {
+    const sourceUrl = normalizeSourceUrl(request.sourceUrl);
+    const extracted = await extractBrandGuideSource(sourceUrl).catch(() => ({
+      brandName: null,
+      colors: [],
+      logo: null,
+      decorativeAssets: [],
+    }));
+    const baseName = extracted.brandName ?? brandGuideNameFromSourceUrl(sourceUrl);
+
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const { name, slug } = await this.nextAvailableBrandGuideIdentity(owner, baseName, attempt);
+      const uploadedAssetKeys: string[] = [];
+      try {
+        const assets = await this.uploadExtractedBrandKitAssets(owner, slug, [
+          ...(extracted.logo ? [{ ...extracted.logo, kind: "LOGO" as const, sortOrder: 0 }] : []),
+          ...extracted.decorativeAssets.map((asset, index) => ({
+            ...asset,
+            kind: "DECORATIVE_ASSET" as const,
+            sortOrder: index,
+          })),
+        ]);
+        uploadedAssetKeys.push(...assets.map((asset) => asset.s3Key));
+        const createdAt = new Date();
+        const brandGuide = await this.prisma.$transaction(async (tx) =>
+          tx.brandGuide.create({
+            data: {
+              ownerUserId: owner.ownerUserId,
+              slug,
+              schemaVersion: 1,
+              name,
+              description: `Brand Guide extracted from ${sourceUrl}.`,
+              brandKit: {
+                create: {
+                  colors: { create: toColorTokenCreateRecords(extracted.colors) },
+                  assets: { create: assets },
+                },
+              },
+              presentationKit: { create: {} },
+            },
+          }),
+        );
+        return toBrandGuideGenerationRequest({
+          id: brandGuide.slug,
+          sourceUrl,
+          status: "COMPLETED",
+          errorMessage: null,
+          createdAt,
+          updatedAt: createdAt,
+          brandGuide: {
+            slug: brandGuide.slug,
+            name: brandGuide.name,
+            description: brandGuide.description,
+          },
+        });
+      } catch (error) {
+        await Promise.allSettled(
+          uploadedAssetKeys.map((key) => this.brandKitAssetFiles.delete(key)),
+        );
+        if (isPrismaUniqueConstraintError(error)) continue;
+        throw error;
+      }
+    }
+
+    throw new DuplicateBrandGuideNameError(baseName);
   };
 
   updateBrandGuideMetadata = async (
@@ -393,12 +475,114 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
     const brandKit = await this.prisma.brandKit.create({ data: { brandGuideId: record.id } });
     return brandKit.id;
   };
+
+  private uploadExtractedBrandKitAssets = async (
+    owner: BrandGuideOwner,
+    brandGuideId: string,
+    assets: readonly ExtractedBrandKitAssetForStorage[],
+  ) =>
+    Promise.all(
+      assets.map(async (asset) => {
+        const s3Key = brandKitAssetFileObjectKey({
+          ownerUserId: owner.ownerUserId,
+          brandGuideId,
+          assetId: asset.assetId,
+          filename: asset.filename,
+        });
+        await this.s3.putObject({
+          bucket: this.brandKitAssetBucket,
+          key: s3Key,
+          body: asset.bytes,
+          contentType: asset.mimeType,
+          checksumSha256Base64: Buffer.from(asset.sha256, "hex").toString("base64"),
+        });
+        return {
+          assetId: asset.assetId,
+          kind: asset.kind,
+          name: asset.name,
+          filename: asset.filename,
+          mimeType: asset.mimeType,
+          description: asset.description,
+          s3Key,
+          byteSize: asset.byteSize,
+          sha256: asset.sha256,
+          sortOrder: asset.sortOrder,
+        };
+      }),
+    );
+
+  private nextAvailableBrandGuideIdentity = async (
+    owner: BrandGuideOwner,
+    baseName: string,
+    startAt: number,
+  ): Promise<Readonly<{ name: string; slug: string }>> => {
+    for (let offset = startAt; offset < startAt + 20; offset += 1) {
+      const name = offset === 0 ? baseName : `${baseName} ${offset + 1}`;
+      const slug = brandGuideSlugFromName(name);
+      const existingName = await this.prisma.brandGuide.findFirst({
+        where: { ownerUserId: owner.ownerUserId, name },
+        select: { id: true },
+      });
+      if (existingName) continue;
+      const existingSlug = await this.prisma.brandGuide.findUnique({
+        where: { ownerUserId_slug: { ownerUserId: owner.ownerUserId, slug } },
+        select: { id: true },
+      });
+      if (!existingSlug) return { name, slug };
+    }
+    throw new DuplicateBrandGuideNameError(baseName);
+  };
 }
 
 const normalizeOptionalText = (value: string | null | undefined): string | null => {
   const trimmed = value?.trim();
   return trimmed ? trimmed : null;
 };
+
+const normalizeSourceUrl = (value: string): string => {
+  const trimmed = value.trim();
+  const withProtocol = /^[a-z][a-z0-9+.-]*:\/\//iu.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const url = new URL(withProtocol);
+    if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("Unsupported URL");
+    if (!url.hostname.includes(".")) throw new Error("URL must include a public hostname");
+    url.hash = "";
+    return url.toString();
+  } catch {
+    throw new InvalidSourceUrlError(value);
+  }
+};
+
+const brandGuideNameFromSourceUrl = (sourceUrl: string): string => {
+  const host = new URL(sourceUrl).hostname.replace(/^www\./iu, "");
+  const name = host.split(".").at(0) ?? host;
+  return titleCase(name.replace(/[-_]+/gu, " "));
+};
+
+const titleCase = (value: string): string =>
+  value.replace(/\b[a-z]/giu, (character) => character.toUpperCase());
+
+const toBrandGuideGenerationRequest = (request: {
+  id: string;
+  sourceUrl: string;
+  status: "PENDING" | "COMPLETED" | "FAILED";
+  errorMessage: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  brandGuide: { slug: string; name: string; description: string | null };
+}): BrandGuideGenerationRequest => ({
+  id: request.id,
+  sourceUrl: request.sourceUrl,
+  status: request.status,
+  errorMessage: request.errorMessage,
+  createdAt: request.createdAt.toISOString(),
+  updatedAt: request.updatedAt.toISOString(),
+  brandGuide: {
+    id: request.brandGuide.slug,
+    name: request.brandGuide.name,
+    description: request.brandGuide.description,
+  },
+});
 
 const isPrismaUniqueConstraintError = (error: unknown): boolean =>
   typeof error === "object" && error !== null && "code" in error && error.code === "P2002";

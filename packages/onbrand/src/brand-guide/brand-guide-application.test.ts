@@ -7,6 +7,7 @@ import { PersistentBrandGuideApplication } from "./brand-guide-application";
 import {
   DuplicateBrandGuideNameError,
   DuplicateDecorativeAssetNameError,
+  InvalidSourceUrlError,
   UnknownBrandGuideError,
   type BrandGuideView,
 } from "./application-service";
@@ -19,9 +20,10 @@ const Env = createEnvRegistry({
 
 const describeDatabaseIntegration = Env.ONBRAND_DATABASE_TESTS === "1" ? describe : describe.skip;
 
-const fakeS3: Pick<typeof S3, "getPresigned" | "putPresigned" | "deleteObject"> = {
+const fakeS3: Pick<typeof S3, "getPresigned" | "putPresigned" | "putObject" | "deleteObject"> = {
   getPresigned: async ({ key }) => `https://s3.example/${key}`,
   putPresigned: async ({ key }) => `https://s3.example/upload/${key}`,
+  putObject: async () => undefined,
   deleteObject: async () => undefined,
 };
 
@@ -199,6 +201,25 @@ describe("PersistentBrandGuideApplication duplicate Brand Guide handling", () =>
 
     await expect(result).rejects.toThrow(DuplicateBrandGuideNameError);
     await expect(result).rejects.not.toMatchObject({ code: "P2002" });
+  });
+});
+
+describe("PersistentBrandGuideApplication Brand Guide generation requests", () => {
+  const owner = {
+    ownerUserId: "test-owner-user",
+  };
+
+  it("rejects unsupported Source URLs", async () => {
+    const service = new PersistentBrandGuideApplication(
+      {} as never,
+      fakeS3,
+      "brand-kit-assets-test",
+      900,
+    );
+
+    await expect(
+      service.createBrandGuideGenerationRequest(owner, { sourceUrl: "javascript:alert(1)" }),
+    ).rejects.toThrow(InvalidSourceUrlError);
   });
 });
 

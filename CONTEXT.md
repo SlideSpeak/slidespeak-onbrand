@@ -66,6 +66,15 @@ previous-name handling for renamed Color Tokens and Decorative Assets, and dashb
 toast policy. It preserves the granular autosave behaviour from ADR-0005 while keeping UI modules
 focused on local editing state. _Avoid_: Autosave helper, dashboard API wrapper
 
+**Brand Guide Generation Request**: A request to create a **Brand Guide** from user-provided source
+material such as a public website URL. In the current Dashboard flow this is a response-only API
+shape: Onbrand shows a loading state while it studies the Source URL, then creates the Brand Guide
+directly without storing a separate request row. _Avoid_: Brand import, URL save, brand creation
+
+**Source URL**: A public web address used as source material for a **Brand Guide Generation
+Request**. The URL is evidence Onbrand studies; it is not itself a Brand Guide. _Avoid_: Website
+brand, homepage prompt
+
 **Slide Canvas**: The optional canonical coordinate space used by a **Presentation Kit** to describe
 slide size and aspect ratio. _Avoid_: Page size, viewport, artboard
 

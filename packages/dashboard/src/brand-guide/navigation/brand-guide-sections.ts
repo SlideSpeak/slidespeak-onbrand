@@ -3,11 +3,12 @@ import {
   ColorsIcon,
   GeometricShapesIcon,
   ClipboardPenLineIcon,
+  McpServerIcon,
   PresentationIcon,
   SealIcon,
 } from "@hugeicons/core-free-icons";
 
-export type BrandGuideSection = "METADATA" | "COLORS" | "LOGO" | "ASSETS" | "PRESENTATION";
+export type BrandGuideSection = "METADATA" | "COLORS" | "LOGO" | "ASSETS" | "PRESENTATION" | "MCP";
 
 export const DEFAULT_BRAND_GUIDE_SECTION: BrandGuideSection = "COLORS";
 
@@ -27,6 +28,7 @@ export const BRAND_GUIDE_SECTION_LINKS = [
     label: "Presentation Kit",
     icon: PresentationIcon,
   },
+  { section: "MCP", pathSegment: "mcp", label: "MCP Connection", icon: McpServerIcon },
 ] as const satisfies readonly {
   section: BrandGuideSection;
   pathSegment: string;

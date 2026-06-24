@@ -228,6 +228,26 @@
     }
   }
 
+  @keyframes onbrand-loading-spin {
+    from {
+      transform: rotateZ(0deg);
+    }
+
+    to {
+      transform: rotateZ(360deg);
+    }
+  }
+
+  @keyframes onbrand-background-spin {
+    from {
+      transform: rotateZ(0deg);
+    }
+
+    to {
+      transform: rotateZ(360deg);
+    }
+  }
+
   .animate-onbrand-gradient-drift {
     animation: onbrand-gradient-drift 30s cubic-bezier(0.45, 0, 0.55, 1) infinite;
     transform-origin: 50% 50%;
@@ -248,6 +268,20 @@
   .animate-onbrand-texture-drift {
     animation: onbrand-texture-drift 45s linear infinite;
     will-change: background-position;
+  }
+
+  .onbrand-loading-mark {
+    overflow: visible;
+    transform-origin: center;
+    animation: onbrand-loading-spin 3.8s linear infinite;
+    will-change: transform;
+  }
+
+  .onbrand-background-mark {
+    overflow: visible;
+    transform-origin: center;
+    animation: onbrand-background-spin 96s linear infinite;
+    will-change: transform;
   }
 
   .onbrand-markdown-editor {
@@ -350,7 +384,9 @@
     .animate-onbrand-gradient-drift,
     .animate-onbrand-light-breathe,
     .animate-onbrand-aurora-sweep,
-    .animate-onbrand-texture-drift {
+    .animate-onbrand-texture-drift,
+    .onbrand-background-mark,
+    .onbrand-loading-mark {
       animation: none;
     }
   }
