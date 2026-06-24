@@ -631,7 +631,7 @@ const CreateBrandGuideFromUrlForm = ({
           inputMode="url"
           aria-label="Source URL"
           className={inputClass}
-          placeholder="stripe.com"
+          placeholder="slidespeak.co"
           value={state.sourceUrl}
           onChange={(event) => setState({ sourceUrl: event.target.value })}
         />

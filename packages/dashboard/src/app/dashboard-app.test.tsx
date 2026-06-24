@@ -53,7 +53,7 @@ describe("HomeDashboard", () => {
 
     expect(html).toContain('type="text"');
     expect(html).toContain('inputMode="url"');
-    expect(html).toContain('placeholder="stripe.com"');
+    expect(html).toContain('placeholder="slidespeak.co"');
     expect(html).not.toContain('type="url"');
   });
 
