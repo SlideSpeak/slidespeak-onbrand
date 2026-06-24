@@ -10,6 +10,7 @@ import {
   DuplicateBrandGuideNameError,
   DuplicateDecorativeAssetNameError,
   InvalidSourceUrlError,
+  SourceUrlNotFoundError,
   UnknownBrandGuideError,
   type BrandGuideView,
 } from "./application-service";
@@ -232,6 +233,71 @@ describe("PersistentBrandGuideApplication Brand Guide generation requests", () =
     await expect(
       service.createBrandGuideGenerationRequest(owner, { sourceUrl: "javascript:alert(1)" }),
     ).rejects.toThrow(InvalidSourceUrlError);
+  });
+
+  it("accepts bare domains as Source URLs", async () => {
+    const lookupMock = lookup as unknown as ReturnType<typeof vi.fn>;
+    lookupMock.mockResolvedValueOnce([{ address: "93.184.216.34", family: 4 }]);
+    extractBrandGuideSourceMock.mockResolvedValueOnce({
+      brandName: "Stripe",
+      colors: [],
+      logo: null,
+      decorativeAssets: [],
+    });
+    const create = vi.fn().mockResolvedValue({
+      slug: "stripe",
+      name: "Stripe",
+      description: "Brand Guide extracted from https://stripe.com/.",
+    });
+    const prisma = {
+      brandGuide: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        findUnique: vi.fn().mockResolvedValue(null),
+        create,
+      },
+      $transaction: vi.fn(async (operation) => await operation({ brandGuide: { create } })),
+    } as unknown as PrismaClient;
+    const service = new PersistentBrandGuideApplication(
+      prisma,
+      fakeS3,
+      "brand-kit-assets-test",
+      900,
+    );
+
+    const request = await service.createBrandGuideGenerationRequest(owner, {
+      sourceUrl: "stripe.com",
+    });
+
+    expect(extractBrandGuideSourceMock).toHaveBeenCalledWith("https://stripe.com/");
+    expect(request.sourceUrl).toBe("https://stripe.com/");
+    expect(request.brandGuide.id).toBe("stripe");
+  });
+
+  it("rejects Source URLs when brand extraction cannot find a brand", async () => {
+    const lookupMock = lookup as unknown as ReturnType<typeof vi.fn>;
+    lookupMock.mockResolvedValueOnce([{ address: "93.184.216.34", family: 4 }]);
+    extractBrandGuideSourceMock.mockRejectedValueOnce(new Error("No brand found"));
+    const create = vi.fn();
+    const prisma = {
+      brandGuide: {
+        findFirst: vi.fn(),
+        findUnique: vi.fn(),
+        create,
+      },
+      $transaction: vi.fn(),
+    } as unknown as PrismaClient;
+    const service = new PersistentBrandGuideApplication(
+      prisma,
+      fakeS3,
+      "brand-kit-assets-test",
+      900,
+    );
+
+    await expect(
+      service.createBrandGuideGenerationRequest(owner, { sourceUrl: "missing.example" }),
+    ).rejects.toThrow(SourceUrlNotFoundError);
+
+    expect(create).not.toHaveBeenCalled();
   });
 
   it("deletes already uploaded source assets when a later upload fails", async () => {

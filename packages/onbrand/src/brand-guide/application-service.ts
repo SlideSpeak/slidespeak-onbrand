@@ -53,6 +53,15 @@ export class InvalidSourceUrlError extends Error {
   }
 }
 
+export class SourceUrlNotFoundError extends Error {
+  constructor(readonly sourceUrl: string) {
+    super(
+      "We couldn't find that brand just yet. Try another brand name or check the address and give it another go.",
+    );
+    this.name = "SourceUrlNotFoundError";
+  }
+}
+
 export type BrandGuideView = Readonly<{
   brandGuide: BrandGuideSummary;
   brandKit: BrandKitView;

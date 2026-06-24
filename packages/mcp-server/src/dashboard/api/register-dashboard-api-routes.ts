@@ -1,4 +1,5 @@
 import {
+  SourceUrlNotFoundError,
   UnknownBrandGuideError,
   type BrandGuideApplicationService,
 } from "@onbrand/core/brand-guide/application-service";
@@ -267,7 +268,11 @@ const handleDashboardApiError = (
   handleAuthError: (context: Context, error: unknown) => Response,
 ): Response => {
   const message = error instanceof Error ? error.message : String(error);
-  if (error instanceof UnknownBrandGuideError || isPrismaRecordNotFoundError(error)) {
+  if (
+    error instanceof UnknownBrandGuideError ||
+    error instanceof SourceUrlNotFoundError ||
+    isPrismaRecordNotFoundError(error)
+  ) {
     return context.text(message, 404);
   }
   if (

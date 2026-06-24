@@ -19,6 +19,7 @@ import {
   DuplicateColorTokenNameError,
   DuplicateDecorativeAssetNameError,
   InvalidSourceUrlError,
+  SourceUrlNotFoundError,
 } from "./application-service";
 import { brandKitAssetFileObjectKey } from "./brand-kit/asset-file/object-key";
 import { toColorTokenCreateRecords } from "./brand-kit/color/record";
@@ -115,12 +116,9 @@ export class PersistentBrandGuideApplication implements BrandGuideApplicationSer
     request: CreateBrandGuideGenerationRequest,
   ): Promise<BrandGuideGenerationRequest> => {
     const sourceUrl = await normalizeSourceUrl(request.sourceUrl);
-    const extracted = await extractBrandGuideSource(sourceUrl).catch(() => ({
-      brandName: null,
-      colors: [],
-      logo: null,
-      decorativeAssets: [],
-    }));
+    const extracted = await extractBrandGuideSource(sourceUrl).catch(() => {
+      throw new SourceUrlNotFoundError(sourceUrl);
+    });
     const baseName = extracted.brandName ?? brandGuideNameFromSourceUrl(sourceUrl);
 
     for (let attempt = 0; attempt < 20; attempt += 1) {
