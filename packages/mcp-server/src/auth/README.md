@@ -159,6 +159,38 @@ openssl rand -hex 32
 
 Rotating this value invalidates existing dashboard sessions.
 
+## Reauthorization Contract
+
+After a dashboard user or MCP client authorizes OnBrand, OnBrand should not ask them to authorize
+again until the OAuth grant is actually gone: the user removes or revokes it, the provider revokes
+it, or the refresh token reaches its provider-side expiration. Short-lived access-token expiry is an
+internal refresh event, not a user-visible reauthorization event.
+
+Dashboard access is backed by two cookies:
+
+- `onbrand_dashboard_session` stores the short-lived signed dashboard access session.
+- `onbrand_dashboard_refresh` stores the encrypted refresh token used to recover when the access
+  session expires.
+
+OnBrand clears both dashboard cookies only when local cookie state proves the refresh token is
+missing, malformed, expired, or otherwise unreadable. Token endpoint failures are not automatically
+destructive. A provider `invalid_grant`, a network failure, a malformed token response, or a fresh
+access token that fails verification causes the current request to fail closed, but the refresh
+cookie is preserved so a parallel refresh request can still complete and rotate the cookies. This is
+intentional because some providers rotate refresh tokens strictly, so two concurrent refreshes can
+produce one success and one `invalid_grant` even though the user's grant is still valid.
+
+Dashboard refresh emits structured operational logs to stderr:
+
+- `dashboard_session_refresh.attempt`
+- `dashboard_session_refresh.success`
+- `dashboard_session_refresh.failure`, including `classification` and `clearsCookies`
+- `dashboard_session_refresh.cookies_cleared`, including the clearing `reason`
+
+The dashboard frontend also treats an API `401` as recoverable for a short window. Before
+redirecting to `/login`, it probes `/api/me`; if another in-flight refresh has already restored the
+session, the original API request is retried with the new cookies.
+
 ## S3 Setup Notes
 
 OnBrand stores uploaded Brand Kit assets in S3 and gives MCP clients short-lived presigned upload
