@@ -46,6 +46,13 @@ export class DuplicateDecorativeAssetNameError extends Error {
   }
 }
 
+export class InvalidSourceUrlError extends Error {
+  constructor(readonly sourceUrl: string) {
+    super(`Invalid Source URL: ${sourceUrl}`);
+    this.name = "InvalidSourceUrlError";
+  }
+}
+
 export type BrandGuideView = Readonly<{
   brandGuide: BrandGuideSummary;
   brandKit: BrandKitView;
@@ -125,7 +132,19 @@ export type WriteBrandGuideResult = Readonly<{
   brandGuide: BrandGuideView;
 }>;
 
+export type BrandGuideGenerationStatus = "PENDING" | "COMPLETED" | "FAILED";
+export type BrandGuideGenerationRequest = Readonly<{
+  id: string;
+  sourceUrl: string;
+  status: BrandGuideGenerationStatus;
+  brandGuide: BrandGuideSummary;
+  errorMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+}>;
+
 export type CreateBrandGuideRequest = Readonly<{ name: string; description?: string | null }>;
+export type CreateBrandGuideGenerationRequest = Readonly<{ sourceUrl: string }>;
 export type UpdateBrandGuideMetadataRequest = Readonly<{
   brandGuideId: string;
   name?: string;
@@ -163,6 +182,10 @@ export interface BrandGuideApplicationService {
     owner: BrandGuideOwner,
     request: CreateBrandGuideRequest,
   ): Promise<BrandGuideView>;
+  createBrandGuideGenerationRequest(
+    owner: BrandGuideOwner,
+    request: CreateBrandGuideGenerationRequest,
+  ): Promise<BrandGuideGenerationRequest>;
   updateBrandGuideMetadata(
     owner: BrandGuideOwner,
     request: UpdateBrandGuideMetadataRequest,

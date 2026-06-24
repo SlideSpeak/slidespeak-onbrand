@@ -146,5 +146,7 @@ const BrandGuideSectionPage = ({
           onPresentationKitChange={onPresentationKitChange}
         />
       );
+    case "MCP":
+      return null;
   }
 };

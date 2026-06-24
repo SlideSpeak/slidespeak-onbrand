@@ -31,6 +31,8 @@ describe("dashboard asset routes", () => {
 
   it("serves direct visits for dashboard routes", () => {
     expect(DASHBOARD_SPA_PATHS).toEqual(expect.arrayContaining(["/", "/brand-guides"]));
+    expect(DASHBOARD_SPA_PATHS).not.toContain("/mcp");
+    expect(DASHBOARD_SPA_PATHS).not.toContain("/brand-guide-generation-requests/:id");
     expect(DASHBOARD_SPA_PATHS).not.toContain("/home");
     expect(DASHBOARD_SPA_PATHS).not.toContain("/onboard");
   });
