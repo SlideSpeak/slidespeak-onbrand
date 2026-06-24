@@ -37,6 +37,18 @@ export type DashboardSessionRefreshConfig = Readonly<{
   ) => Promise<AuthInfo>;
 }>;
 
+type DashboardRefreshFailureClassification =
+  | "local_refresh_cookie_missing"
+  | "local_refresh_cookie_expired"
+  | "local_refresh_cookie_invalid"
+  | "token_endpoint_network_error"
+  | "token_endpoint_rejected"
+  | "token_endpoint_invalid_grant"
+  | "token_endpoint_malformed_response"
+  | "token_endpoint_missing_access_token"
+  | "token_endpoint_missing_refresh_token"
+  | "refreshed_access_token_invalid";
+
 export const dashboardSessionFromAuthInfo = (authInfo: AuthInfo): DashboardSession => {
   if (typeof authInfo.expiresAt !== "number") {
     throw new InvalidTokenError("Dashboard access token is missing expiration");
@@ -62,11 +74,12 @@ export const createDashboardSessionCookie = async (
 export const createDashboardRefreshCookie = async (
   refreshToken: string,
   secret: string,
+  maxAgeSeconds = DASHBOARD_REFRESH_COOKIE_MAX_AGE_SECONDS,
 ): Promise<string> =>
   new EncryptJWT({ refreshToken })
     .setProtectedHeader({ alg: "dir", enc: "A256GCM" })
     .setIssuedAt()
-    .setExpirationTime(`${DASHBOARD_REFRESH_COOKIE_MAX_AGE_SECONDS}s`)
+    .setExpirationTime(`${maxAgeSeconds}s`)
     .encrypt(encryptionKey(secret));
 
 export const verifyDashboardRefreshCookie = async (
@@ -144,41 +157,94 @@ const refreshDashboardSession = async (
     verifyBearerAuth,
   }: DashboardSessionRefreshConfig,
 ): Promise<DashboardSession> => {
-  const refreshToken = await verifyDashboardRefreshCookie(
-    getCookie(context, DASHBOARD_REFRESH_COOKIE),
-    Env.DASHBOARD_SESSION_SECRET,
-  );
-  const tokenResponse = await fetch(tokenEndpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-      client_id: clientId,
-      resource: mcpUrl.toString(),
-    }),
-  });
-  if (!tokenResponse.ok) {
-    clearDashboardAuthCookies(context);
-    throw new InvalidTokenError(await tokenResponse.text());
+  const refreshCookie = getCookie(context, DASHBOARD_REFRESH_COOKIE);
+  let refreshToken: string;
+  try {
+    refreshToken = await verifyDashboardRefreshCookie(refreshCookie, Env.DASHBOARD_SESSION_SECRET);
+  } catch (error) {
+    const classification: DashboardRefreshFailureClassification = refreshCookie
+      ? localRefreshCookieFailureClassification(error)
+      : "local_refresh_cookie_missing";
+    logDashboardRefreshFailure(classification, { clearsCookies: true });
+    clearDashboardAuthCookies(context, classification);
+    throw error;
   }
 
-  const tokenJson = (await tokenResponse.json()) as {
+  logDashboardRefreshEvent("attempt", { tokenEndpoint });
+
+  let tokenResponse: Response;
+  try {
+    tokenResponse = await fetch(tokenEndpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+        client_id: clientId,
+        resource: mcpUrl.toString(),
+      }),
+    });
+  } catch (error) {
+    logDashboardRefreshFailure("token_endpoint_network_error", {
+      clearsCookies: false,
+      message: errorMessage(error),
+    });
+    throw new InvalidTokenError("Dashboard session refresh temporarily unavailable");
+  }
+
+  if (!tokenResponse.ok) {
+    const bodyText = await tokenResponse.text();
+    const oauthError = parseOAuthError(bodyText);
+    const classification: DashboardRefreshFailureClassification =
+      oauthError === "invalid_grant" ? "token_endpoint_invalid_grant" : "token_endpoint_rejected";
+    logDashboardRefreshFailure(classification, {
+      clearsCookies: false,
+      status: tokenResponse.status,
+      oauthError,
+    });
+    throw new InvalidTokenError(
+      bodyText || `Dashboard session refresh rejected with ${tokenResponse.status}`,
+    );
+  }
+
+  let tokenJson: {
     access_token?: unknown;
     refresh_token?: unknown;
   };
+  try {
+    tokenJson = (await tokenResponse.json()) as typeof tokenJson;
+  } catch (error) {
+    logDashboardRefreshFailure("token_endpoint_malformed_response", {
+      clearsCookies: false,
+      message: errorMessage(error),
+    });
+    throw new InvalidTokenError("Refresh response is not valid JSON");
+  }
   if (typeof tokenJson.access_token !== "string") {
-    clearDashboardAuthCookies(context);
+    logDashboardRefreshFailure("token_endpoint_missing_access_token", { clearsCookies: false });
     throw new InvalidTokenError("Refresh response is missing access token");
   }
   if (typeof tokenJson.refresh_token !== "string") {
-    clearDashboardAuthCookies(context);
+    logDashboardRefreshFailure("token_endpoint_missing_refresh_token", { clearsCookies: false });
     throw new InvalidTokenError("Refresh response is missing refresh token");
   }
 
-  const authInfo = await verifyBearerAuth(`Bearer ${tokenJson.access_token}`, verifier);
+  let authInfo: AuthInfo;
+  try {
+    authInfo = await verifyBearerAuth(`Bearer ${tokenJson.access_token}`, verifier);
+  } catch (error) {
+    logDashboardRefreshFailure("refreshed_access_token_invalid", {
+      clearsCookies: false,
+      message: errorMessage(error),
+    });
+    throw error;
+  }
   const session = dashboardSessionFromAuthInfo(authInfo);
   await setDashboardAuthCookies(context, baseUrl, session, tokenJson.refresh_token);
+  logDashboardRefreshEvent("success", {
+    ownerUserId: session.ownerUserId,
+    expiresAt: session.expiresAt,
+  });
   return session;
 };
 
@@ -214,9 +280,46 @@ export const setDashboardAuthCookies = async (
   );
 };
 
-export const clearDashboardAuthCookies = (context: Context): void => {
+export const clearDashboardAuthCookies = (
+  context: Context,
+  reason: DashboardRefreshFailureClassification | "explicit_clear" = "explicit_clear",
+): void => {
   setCookie(context, DASHBOARD_SESSION_COOKIE, "", { path: "/", maxAge: 0 });
   setCookie(context, DASHBOARD_REFRESH_COOKIE, "", { path: "/", maxAge: 0 });
+  logDashboardRefreshEvent("cookies_cleared", { reason });
 };
 
 const secureCookie = (baseUrl: string): boolean => new URL(baseUrl).protocol === "https:";
+
+const parseOAuthError = (bodyText: string): string | undefined => {
+  try {
+    const body = JSON.parse(bodyText) as { error?: unknown };
+    return typeof body.error === "string" ? body.error : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const localRefreshCookieFailureClassification = (
+  error: unknown,
+): DashboardRefreshFailureClassification =>
+  error instanceof Error && /expired|exp.*claim/i.test(error.message)
+    ? "local_refresh_cookie_expired"
+    : "local_refresh_cookie_invalid";
+
+const logDashboardRefreshFailure = (
+  classification: DashboardRefreshFailureClassification,
+  details: Readonly<Record<string, unknown>>,
+): void => {
+  logDashboardRefreshEvent("failure", { classification, ...details });
+};
+
+const logDashboardRefreshEvent = (
+  event: "attempt" | "success" | "failure" | "cookies_cleared",
+  details: Readonly<Record<string, unknown>>,
+): void => {
+  console.error(JSON.stringify({ event: `dashboard_session_refresh.${event}`, ...details }));
+};
+
+const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
