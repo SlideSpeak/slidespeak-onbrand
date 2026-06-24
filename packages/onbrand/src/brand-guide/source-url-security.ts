@@ -38,17 +38,18 @@ export const normalizePublicHttpUrl = (value: string): URL | null => {
 };
 
 export const assertPublicOutboundUrl = async (url: URL): Promise<void> => {
-  if (!isPublicHostnameSyntax(url.hostname)) throw new UnsafeOutboundUrlError(url.toString());
+  const hostname = normalizedUrlHostname(url.hostname);
+  if (!isPublicHostnameSyntax(hostname)) throw new UnsafeOutboundUrlError(url.toString());
 
-  const hostnameIpVersion = isIP(url.hostname);
+  const hostnameIpVersion = isIP(hostname);
   if (hostnameIpVersion !== 0) {
-    if (!isPublicIpAddress(url.hostname, hostnameIpVersion)) {
+    if (!isPublicIpAddress(hostname, hostnameIpVersion)) {
       throw new UnsafeOutboundUrlError(url.toString());
     }
     return;
   }
 
-  const addresses = await lookup(url.hostname, { all: true, verbatim: true });
+  const addresses = await lookup(hostname, { all: true, verbatim: true });
   if (addresses.length === 0) throw new UnsafeOutboundUrlError(url.toString());
   if (!addresses.every((address) => isPublicIpAddress(address.address, address.family))) {
     throw new UnsafeOutboundUrlError(url.toString());
@@ -63,7 +64,7 @@ export class UnsafeOutboundUrlError extends Error {
 }
 
 const isPublicHostnameSyntax = (hostname: string): boolean => {
-  const normalized = hostname.toLowerCase();
+  const normalized = normalizedUrlHostname(hostname).toLowerCase();
   if (!normalized.includes(".") && isIP(normalized) === 0) return false;
   if (normalized === "localhost" || normalized.endsWith(".localhost")) return false;
   return true;
@@ -101,6 +102,8 @@ const ipv4ToNumber = (address: string): number | null => {
 
 const isPublicIpv6Address = (address: string): boolean => {
   const normalized = address.toLowerCase();
+  const embeddedIpv4 = embeddedIpv4FromIpv6(normalized);
+  if (embeddedIpv4) return isPublicIpv4Address(embeddedIpv4);
   if (
     normalized === "::" ||
     normalized === "::1" ||
@@ -112,9 +115,35 @@ const isPublicIpv6Address = (address: string): boolean => {
     normalized.startsWith("feb")
   )
     return false;
-  if (normalized.startsWith("::ffff:")) {
-    const embeddedIpv4 = normalized.slice("::ffff:".length);
-    return isPublicIpv4Address(embeddedIpv4);
-  }
   return true;
 };
+
+const embeddedIpv4FromIpv6 = (address: string): string | null => {
+  const normalized = normalizedUrlHostname(address).toLowerCase();
+  const prefix = normalized.startsWith("::ffff:")
+    ? "::ffff:"
+    : normalized.startsWith("::")
+      ? "::"
+      : null;
+  if (!prefix) return null;
+  const embedded = normalized.slice(prefix.length);
+  if (embedded.includes(".")) return embedded;
+  const hextets = embedded.split(":");
+  if (hextets.length !== 2) return null;
+  const [high, low] = hextets.map((hextet) => Number.parseInt(hextet, 16));
+  if (
+    high === undefined ||
+    low === undefined ||
+    !Number.isInteger(high) ||
+    !Number.isInteger(low) ||
+    high < 0 ||
+    high > 0xffff ||
+    low < 0 ||
+    low > 0xffff
+  )
+    return null;
+  return `${high >> 8}.${high & 0xff}.${low >> 8}.${low & 0xff}`;
+};
+
+const normalizedUrlHostname = (hostname: string): string =>
+  hostname.startsWith("[") && hostname.endsWith("]") ? hostname.slice(1, -1) : hostname;

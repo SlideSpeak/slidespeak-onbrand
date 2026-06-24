@@ -20,12 +20,28 @@ describe("source URL security", () => {
     await expect(assertPublicOutboundUrl(url as URL)).rejects.toThrow("Outbound URL is not public");
   });
 
+  it("rejects IPv4-compatible IPv6 literals that embed private addresses", async () => {
+    const url = normalizePublicHttpUrl("http://[::192.168.1.1]/logo.svg");
+
+    expect(url).not.toBeNull();
+    await expect(assertPublicOutboundUrl(url as URL)).rejects.toThrow("Outbound URL is not public");
+  });
+
   it("rejects hostnames that resolve to private addresses", async () => {
     const lookupMock = lookup as unknown as ReturnType<typeof vi.fn>;
     lookupMock.mockResolvedValueOnce([
       { address: "93.184.216.34", family: 4 },
       { address: "169.254.169.254", family: 4 },
     ]);
+
+    await expect(
+      assertPublicOutboundUrl(new URL("https://assets.example/logo.svg")),
+    ).rejects.toThrow("Outbound URL is not public");
+  });
+
+  it("rejects DNS results with IPv4-compatible IPv6 private addresses", async () => {
+    const lookupMock = lookup as unknown as ReturnType<typeof vi.fn>;
+    lookupMock.mockResolvedValueOnce([{ address: "::192.168.1.1", family: 6 }]);
 
     await expect(
       assertPublicOutboundUrl(new URL("https://assets.example/logo.svg")),
