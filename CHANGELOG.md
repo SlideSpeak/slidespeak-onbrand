@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1](https://github.com/SlideSpeak/slidespeak-onbrand/compare/v0.3.0...v0.3.1) (2026-06-24)
+
+
+### Bug Fixes
+
+* allow bare brand URLs ([#73](https://github.com/SlideSpeak/slidespeak-onbrand/issues/73)) ([932dac3](https://github.com/SlideSpeak/slidespeak-onbrand/commit/932dac334bdcf69331a704ccd5189a61b63c938f))
+* update default brand url placeholder ([#75](https://github.com/SlideSpeak/slidespeak-onbrand/issues/75)) ([9d1113b](https://github.com/SlideSpeak/slidespeak-onbrand/commit/9d1113bec366a2c1016036407d510de2850664a1))
+
 ## [0.3.0](https://github.com/SlideSpeak/slidespeak-onbrand/compare/v0.2.1...v0.3.0) (2026-06-24)
 
 ### Features
