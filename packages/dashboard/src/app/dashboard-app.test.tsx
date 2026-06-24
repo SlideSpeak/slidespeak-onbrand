@@ -48,6 +48,15 @@ describe("HomeDashboard", () => {
     expect(html).not.toContain("https://slidespeak.co");
   });
 
+  it("lets the Source URL field accept bare brand domains", () => {
+    const html = renderToStaticMarkup(<HomeDashboard brandGuides={[]} />);
+
+    expect(html).toContain('type="text"');
+    expect(html).toContain('inputMode="url"');
+    expect(html).toContain('placeholder="slidespeak.co"');
+    expect(html).not.toContain('type="url"');
+  });
+
   it("renders the Brand Guide section icons for the empty authenticated dashboard", () => {
     const html = renderToStaticMarkup(<DashboardRail inertPreview />);
     const visibleSectionLabels = BRAND_GUIDE_SECTION_LINKS.filter(
