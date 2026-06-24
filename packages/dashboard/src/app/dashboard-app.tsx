@@ -38,6 +38,8 @@ import { type ThemeMode, useDashboardTheme } from "./theme";
 
 const NO_BRAND_GUIDE = "NO_BRAND_GUIDE";
 const PENDING_SOURCE_URL_STORAGE_KEY = "onbrand.pendingSourceUrl";
+const BRAND_SOURCE_NOT_FOUND_MESSAGE =
+  "We couldn't find that brand just yet. Try another brand name or check the address and give it another go.";
 
 type DashboardSessionView = Readonly<{ ownerUserId: string; scopes: readonly string[] }>;
 
@@ -149,10 +151,9 @@ const DashboardOverview = () => {
         publishBrandGuideUpdated(request.brandGuide);
         window.location.href = `/brand-guides/${encodeURIComponent(request.brandGuide.id)}/logo`;
       })
-      .catch((caught: unknown) => {
-        const message = caught instanceof Error ? caught.message : String(caught);
+      .catch(() => {
         setIsGeneratingBrandGuide(false);
-        toast.error("Could not start Brand Guide creation", { description: message });
+        toast.error(BRAND_SOURCE_NOT_FOUND_MESSAGE);
       });
   }, [brandGuides.status]);
 
@@ -586,11 +587,10 @@ const CreateBrandGuideFromUrlForm = ({
       const request = await createBrandGuideFromSourceUrl(sourceUrl);
       publishBrandGuideUpdated(request.brandGuide);
       window.location.href = `/brand-guides/${encodeURIComponent(request.brandGuide.id)}/logo`;
-    } catch (caught) {
-      const message = caught instanceof Error ? caught.message : String(caught);
-      setState({ error: message, submitting: false });
+    } catch {
+      setState({ error: BRAND_SOURCE_NOT_FOUND_MESSAGE, submitting: false });
       onBrandGuideGenerationChange?.(false);
-      toast.error("Could not start Brand Guide creation", { description: message });
+      toast.error(BRAND_SOURCE_NOT_FOUND_MESSAGE);
       return;
     }
     setState({ submitting: false });
@@ -627,11 +627,11 @@ const CreateBrandGuideFromUrlForm = ({
       <div className={fieldsClass}>
         <input
           required
-          type="url"
+          type="text"
           inputMode="url"
           aria-label="Source URL"
           className={inputClass}
-          placeholder="https://slidespeak.co"
+          placeholder="stripe.com"
           value={state.sourceUrl}
           onChange={(event) => setState({ sourceUrl: event.target.value })}
         />
