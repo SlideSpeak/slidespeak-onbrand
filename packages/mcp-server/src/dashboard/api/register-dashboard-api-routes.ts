@@ -52,6 +52,21 @@ export const registerDashboardApiRoutes = ({
     }
   });
 
+  app.post("/api/brand-guide-generation-requests", async (context) => {
+    try {
+      const session = await getDashboardSession(context, refreshConfig);
+      return context.json(
+        await brandGuides.createBrandGuideGenerationRequest(
+          { ownerUserId: session.ownerUserId },
+          await context.req.json(),
+        ),
+        201,
+      );
+    } catch (error) {
+      return handleDashboardApiError(context, error, handleAuthError);
+    }
+  });
+
   app.post("/api/brand-guides/:id/asset-uploads", async (context) => {
     try {
       const session = await getDashboardSession(context, refreshConfig);
