@@ -11,7 +11,7 @@ type OptionalApiResponse<T> =
   | Readonly<{ status: "UNAUTHENTICATED" }>
   | Readonly<{ status: "READY"; data: T }>;
 
-const AUTH_RECOVERY_DELAYS_MS = [75, 200] as const;
+type AuthRecoveryProbe = "RECOVERED" | "UNAUTHENTICATED" | "FAILED";
 
 const fetchJson = async <T>(path: string): Promise<T> => {
   const request = () => fetch(path, { credentials: "include" });
@@ -63,15 +63,18 @@ const recoverUnauthorizedResponse = async (
 };
 
 const waitForDashboardSessionRecovery = async (): Promise<boolean> => {
-  for (const delayMs of AUTH_RECOVERY_DELAYS_MS) {
-    await delay(delayMs);
-    const response = await fetch("/api/me", {
-      credentials: "include",
-    });
-    if (response.ok) return true;
-    if (response.status !== 401) return false;
-  }
-  return false;
+  const firstProbe = await probeDashboardSessionRecoveryAfter(75);
+  if (firstProbe !== "UNAUTHENTICATED") return firstProbe === "RECOVERED";
+  return (await probeDashboardSessionRecoveryAfter(200)) === "RECOVERED";
+};
+
+const probeDashboardSessionRecoveryAfter = async (delayMs: number): Promise<AuthRecoveryProbe> => {
+  await delay(delayMs);
+  const response = await fetch("/api/me", {
+    credentials: "include",
+  });
+  if (response.ok) return "RECOVERED";
+  return response.status === 401 ? "UNAUTHENTICATED" : "FAILED";
 };
 
 const redirectToLogin = (): void => {
