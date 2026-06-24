@@ -134,21 +134,38 @@ describe("source URL security", () => {
         new Promise<string>((resolve) => {
           releaseFirst = () => resolve("first");
         }),
+      10_000,
     );
     await Promise.resolve();
 
     let secondStarted = false;
     const second = withPublicOutboundFetch(async () => {
       secondStarted = true;
-      expect(globalThis.fetch).toBe(fetchPublicOutboundUrl);
+      expect(globalThis.fetch).not.toBe(nativeFetch);
       return "second";
-    });
+    }, 10_000);
     await Promise.resolve();
 
     expect(secondStarted).toBe(false);
-    expect(globalThis.fetch).toBe(fetchPublicOutboundUrl);
+    expect(globalThis.fetch).not.toBe(nativeFetch);
     releaseFirst();
     await expect(first).resolves.toBe("first");
+    await expect(second).resolves.toBe("second");
+    expect(globalThis.fetch).toBe(nativeFetch);
+  });
+
+  it("aborts patched fetches and releases the queue when the operation times out", async () => {
+    const lookupMock = lookup as unknown as ReturnType<typeof vi.fn>;
+    const requestMock = httpsRequest as unknown as ReturnType<typeof vi.fn>;
+    lookupMock.mockResolvedValueOnce([{ address: "93.184.216.34", family: 4 }]);
+    requestMock.mockImplementationOnce(() => requestHandle());
+    const nativeFetch = globalThis.fetch;
+    const first = withPublicOutboundFetch(() => fetch("https://slow.example/logo.svg"), 1);
+    await Promise.resolve();
+
+    const second = withPublicOutboundFetch(async () => "second", 10_000);
+
+    await expect(first).rejects.toThrow("Outbound request timed out");
     await expect(second).resolves.toBe("second");
     expect(globalThis.fetch).toBe(nativeFetch);
   });

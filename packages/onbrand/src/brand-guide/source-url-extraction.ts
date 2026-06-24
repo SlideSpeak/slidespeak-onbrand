@@ -50,8 +50,8 @@ export const extractBrandGuideSource = async (
   const url = normalizePublicHttpUrl(sourceUrl);
   if (!url) throw new Error(`Invalid Source URL: ${sourceUrl}`);
   await assertPublicOutboundUrl(url);
-  const extraction = await withTimeout(
-    withPublicOutboundFetch(() => extractBrandAssets(url.toString())),
+  const extraction = await withPublicOutboundFetch(
+    () => extractBrandAssets(url.toString()),
     OUTBOUND_REQUEST_TIMEOUT_MS,
   );
   if (!extraction.ok) {
@@ -276,12 +276,4 @@ const fetchPublicUrl = async (rawUrl: string, redirects = 0): Promise<Response> 
     return fetchPublicUrl(new URL(location, url).toString(), redirects + 1);
   }
   return response;
-};
-
-const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
-  const timeout = new Promise<never>((_, reject) => {
-    const timeoutId = setTimeout(() => reject(new Error("Outbound request timed out")), timeoutMs);
-    promise.finally(() => clearTimeout(timeoutId)).catch(() => clearTimeout(timeoutId));
-  });
-  return Promise.race([promise, timeout]);
 };

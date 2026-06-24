@@ -68,7 +68,10 @@ export const fetchPublicOutboundUrl = async (
   return response;
 };
 
-export const withPublicOutboundFetch = async <T>(operation: () => Promise<T>): Promise<T> => {
+export const withPublicOutboundFetch = async <T>(
+  operation: () => Promise<T>,
+  timeoutMs: number,
+): Promise<T> => {
   const previousPatch = outboundFetchPatchQueue;
   let releasePatch: () => void = () => undefined;
   outboundFetchPatchQueue = new Promise((resolve) => {
@@ -77,10 +80,29 @@ export const withPublicOutboundFetch = async <T>(operation: () => Promise<T>): P
   await previousPatch;
 
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = fetchPublicOutboundUrl;
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
+  globalThis.fetch = (input, init = {}) =>
+    fetchPublicOutboundUrl(input, {
+      ...init,
+      signal: mergedAbortSignal(init.signal, abortController.signal),
+    });
+  const operationPromise = operation();
   try {
-    return await operation();
+    return await Promise.race([
+      operationPromise,
+      new Promise<never>((_, reject) => {
+        abortController.signal.addEventListener(
+          "abort",
+          () => reject(new Error("Outbound request timed out")),
+          { once: true },
+        );
+      }),
+    ]);
   } finally {
+    operationPromise.catch(() => undefined);
+    clearTimeout(timeoutId);
+    abortController.abort();
     globalThis.fetch = originalFetch;
     releasePatch();
   }
@@ -203,6 +225,20 @@ const embeddedIpv4FromIpv6 = (address: string): string | null => {
 
 const normalizedUrlHostname = (hostname: string): string =>
   hostname.startsWith("[") && hostname.endsWith("]") ? hostname.slice(1, -1) : hostname;
+
+const mergedAbortSignal = (
+  requestSignal: AbortSignal | null | undefined,
+  operationSignal: AbortSignal,
+): AbortSignal => {
+  if (!requestSignal) return operationSignal;
+  if (requestSignal.aborted) return requestSignal;
+  if (operationSignal.aborted) return operationSignal;
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  requestSignal.addEventListener("abort", abort, { once: true });
+  operationSignal.addEventListener("abort", abort, { once: true });
+  return controller.signal;
+};
 
 const fetchResolvedAddress = async (
   url: URL,
