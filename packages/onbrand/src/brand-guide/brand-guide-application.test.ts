@@ -1,7 +1,7 @@
 import { lookup } from "node:dns/promises";
 import { createEnvRegistry, optionalString } from "@onbrand/env";
 import type { S3 } from "@onbrand/s3";
-import type { PrismaClient } from "@prisma/client";
+import type { Prisma, PrismaClient } from "@prisma/client";
 import { describe, expect, it, afterAll, vi } from "vitest";
 import { createPrismaClient } from "../database/prisma-client";
 import { PersistentBrandGuideApplication } from "./brand-guide-application";
@@ -431,6 +431,60 @@ describe("PersistentBrandGuideApplication decorative asset duplicate handling", 
     });
     expect(update).not.toHaveBeenCalled();
     expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it("lets Prisma generate decorative asset primary keys instead of storing the asset slug", async () => {
+    const findUnique = vi.fn().mockResolvedValue(null);
+    const upsert = vi.fn();
+    const prisma = {
+      brandGuide: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: "brand-guide-row",
+          slug: "skyleague",
+          name: "SKYLEAGUE Brand Guide",
+          description: null,
+          brandKit: { id: "brand-kit-row", assets: [], colors: [] },
+          presentationKit: null,
+        }),
+      },
+      brandKitAsset: {
+        findUnique,
+        upsert,
+      },
+    } as unknown as PrismaClient;
+    const service = new PersistentBrandGuideApplication(
+      prisma,
+      fakeS3,
+      "brand-kit-assets-test",
+      900,
+    );
+
+    await service.upsertDecorativeAsset(owner, {
+      brandGuideId: "skyleague",
+      asset: {
+        name: "Hero Orb",
+        filename: "hero.png",
+        mimeType: "image/png",
+        description: "Use as a decorative background accent.",
+        s3Key: "test-owner-user/skyleague/hero-orb/hero.png",
+        byteSize: 123,
+        sha256: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      },
+    });
+
+    const [upsertRequest] = upsert.mock.calls[0] as [Prisma.BrandKitAssetUpsertArgs];
+    expect(upsertRequest.where).toEqual({ id: "missing" });
+    expect(upsertRequest.create).not.toHaveProperty("id");
+    expect(upsertRequest.create).toMatchObject({
+      brandKitId: "brand-kit-row",
+      assetId: "hero-orb",
+      kind: "DECORATIVE_ASSET",
+    });
+    expect(upsertRequest.update).not.toHaveProperty("id");
+    expect(upsertRequest.update).toMatchObject({
+      assetId: "hero-orb",
+      kind: "DECORATIVE_ASSET",
+    });
   });
 });
 
