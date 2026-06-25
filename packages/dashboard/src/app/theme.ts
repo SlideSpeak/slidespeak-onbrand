@@ -11,13 +11,12 @@ export const isThemeMode = (value: unknown): value is ThemeMode =>
 
 export const resolveInitialTheme = ({
   storedTheme,
-  systemPrefersDark,
 }: Readonly<{
   storedTheme: string | null;
   systemPrefersDark: boolean;
 }>): ThemeMode => {
   if (isThemeMode(storedTheme)) return storedTheme;
-  return systemPrefersDark ? "dark" : "light";
+  return "light";
 };
 
 const systemPrefersDark = (): boolean =>
