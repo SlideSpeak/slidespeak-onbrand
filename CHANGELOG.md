@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/SlideSpeak/slidespeak-onbrand/compare/v0.4.0...v0.4.1) (2026-06-25)
+
+### Bug Fixes
+
+- **dashboard:** improve markdown editor dark mode
+  ([#83](https://github.com/SlideSpeak/slidespeak-onbrand/issues/83))
+  ([a92060f](https://github.com/SlideSpeak/slidespeak-onbrand/commit/a92060fa83e5664efeda4bb59c7b04836132b848))
+
 ## [0.4.0](https://github.com/SlideSpeak/slidespeak-onbrand/compare/v0.3.1...v0.4.0) (2026-06-25)
 
 ### Features
