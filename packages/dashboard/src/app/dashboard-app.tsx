@@ -75,7 +75,15 @@ const PublicDashboardHome = ({
             theme={theme}
           />
           <main className="min-w-0 overflow-hidden px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
-            <OnboardingInstructions requiresAuthentication variant={theme} />
+            {selectedPreviewSection === "MCP" ? (
+              <McpConnectionPage />
+            ) : (
+              <OnboardingInstructions
+                requiresAuthentication
+                variant={theme}
+                onMcpConnectionSelect={() => setSelectedPreviewSection("MCP")}
+              />
+            )}
           </main>
         </div>
       </div>
@@ -174,10 +182,13 @@ const DashboardOverview = () => {
               <ErrorMessage message={brandGuides.message} />
             ) : isGeneratingBrandGuide ? (
               <GeneratingBrandGuideView />
+            ) : showsEmptyDashboard && selectedPreviewSection === "MCP" ? (
+              <McpConnectionPage />
             ) : brandGuides.status === "READY" ? (
               <HomeDashboard
                 brandGuides={brandGuides.data}
                 onBrandGuideGenerationChange={setIsGeneratingBrandGuide}
+                onMcpConnectionSelect={() => setSelectedPreviewSection("MCP")}
               />
             ) : (
               <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
@@ -280,7 +291,7 @@ const HomeTopBar = () => (
   </header>
 );
 
-const McpConnectionPage = () => (
+export const McpConnectionPage = () => (
   <section className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-3xl items-center justify-center">
     <div className="w-full -translate-y-8 p-2 text-center sm:p-4">
       <HugeiconsIcon
@@ -299,12 +310,19 @@ const McpConnectionPage = () => (
 export const HomeDashboard = ({
   brandGuides,
   onBrandGuideGenerationChange,
+  onMcpConnectionSelect,
 }: Readonly<{
   brandGuides: readonly BrandGuideSummary[];
   onBrandGuideGenerationChange?: (isGenerating: boolean) => void;
+  onMcpConnectionSelect?: () => void;
 }>) => {
   if (brandGuides.length === 0)
-    return <OnboardingInstructions onBrandGuideGenerationChange={onBrandGuideGenerationChange} />;
+    return (
+      <OnboardingInstructions
+        onBrandGuideGenerationChange={onBrandGuideGenerationChange}
+        onMcpConnectionSelect={onMcpConnectionSelect}
+      />
+    );
 
   return (
     <section className="grid gap-3">
@@ -496,11 +514,7 @@ const CreateBrandGuideButton = ({
             submitLabel="Create Brand Guide"
           />
           <div className="grid gap-4">
-            <div className="flex items-center gap-3 text-xs font-medium tracking-[0.22em] text-onbrand-charcoal/35 uppercase">
-              <span className="h-px flex-1 bg-onbrand-charcoal/10" />
-              <span>Or</span>
-              <span className="h-px flex-1 bg-onbrand-charcoal/10" />
-            </div>
+            <OrDivider />
             <button
               className="h-12 w-full rounded-md border border-onbrand-charcoal/15 px-4 text-sm font-medium text-onbrand-charcoal transition hover:bg-onbrand-charcoal/[0.03] disabled:opacity-50"
               disabled={state.submitting}
@@ -704,10 +718,12 @@ const OnbrandMark = ({ className }: Readonly<{ className: string }>) => (
 
 const OnboardingInstructions = ({
   onBrandGuideGenerationChange,
+  onMcpConnectionSelect,
   requiresAuthentication = false,
   variant = "light",
 }: Readonly<{
   onBrandGuideGenerationChange?: (isGenerating: boolean) => void;
+  onMcpConnectionSelect?: () => void;
   requiresAuthentication?: boolean;
   variant?: "light" | "dark";
 }>) => {
@@ -726,10 +742,41 @@ const OnboardingInstructions = ({
                 variant={variant}
               />
             </div>
+            <div className="mx-auto mt-7 grid w-full max-w-sm gap-4">
+              <OrDivider variant={variant} />
+              <button
+                className={
+                  variant === "dark"
+                    ? "h-12 w-full rounded-md border-[0.5px] border-white bg-white px-4 text-sm font-medium text-[#111111] transition hover:bg-[#111111] hover:text-white"
+                    : "h-12 w-full rounded-md border border-onbrand-charcoal/15 bg-white px-4 text-sm font-medium text-onbrand-charcoal transition hover:bg-onbrand-charcoal hover:text-white"
+                }
+                type="button"
+                onClick={onMcpConnectionSelect}
+              >
+                Connect to MCP
+              </button>
+            </div>
           </OnboardingStep>
         </div>
       </div>
     </section>
+  );
+};
+
+const OrDivider = ({ variant = "light" }: Readonly<{ variant?: "light" | "dark" }>) => {
+  const isDark = variant === "dark";
+  return (
+    <div
+      className={
+        isDark
+          ? "flex items-center gap-3 text-xs font-medium tracking-[0.22em] text-white/45 uppercase"
+          : "flex items-center gap-3 text-xs font-medium tracking-[0.22em] text-onbrand-charcoal/35 uppercase"
+      }
+    >
+      <span className={isDark ? "h-px flex-1 bg-white/20" : "h-px flex-1 bg-onbrand-charcoal/10"} />
+      <span>Or</span>
+      <span className={isDark ? "h-px flex-1 bg-white/20" : "h-px flex-1 bg-onbrand-charcoal/10"} />
+    </div>
   );
 };
 
