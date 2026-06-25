@@ -46,15 +46,31 @@ type DashboardSessionView = Readonly<{ ownerUserId: string; scopes: readonly str
 const OnboardingPage = () => {
   const { setTheme, theme } = useDashboardTheme();
 
-  return <PublicDashboardHome onThemeChange={setTheme} theme={theme} />;
+  return (
+    <OnboardingDashboardSurface
+      requiresAuthentication
+      theme={theme}
+      topBar={(selectedPreviewSection) => (
+        <PublicDashboardTopBar
+          onThemeChange={setTheme}
+          selectedBrandGuideSection={selectedPreviewSection}
+          theme={theme}
+        />
+      )}
+    />
+  );
 };
 
-const PublicDashboardHome = ({
-  onThemeChange,
+export const OnboardingDashboardSurface = ({
+  onBrandGuideGenerationChange,
+  requiresAuthentication = false,
   theme,
+  topBar,
 }: Readonly<{
-  onThemeChange: (theme: ThemeMode) => void;
+  onBrandGuideGenerationChange?: (isGenerating: boolean) => void;
+  requiresAuthentication?: boolean;
   theme: ThemeMode;
+  topBar: (selectedPreviewSection: BrandGuideSection) => ReactNode;
 }>) => {
   const [selectedPreviewSection, setSelectedPreviewSection] = useState<BrandGuideSection>(
     DEFAULT_BRAND_GUIDE_SECTION,
@@ -69,20 +85,15 @@ const PublicDashboardHome = ({
           onPreviewSectionChange={setSelectedPreviewSection}
         />
       }
-      topBar={
-        <PublicDashboardTopBar
-          onThemeChange={onThemeChange}
-          selectedBrandGuideSection={selectedPreviewSection}
-          theme={theme}
-        />
-      }
+      topBar={topBar(selectedPreviewSection)}
       mainClassName="overflow-hidden"
     >
       {selectedPreviewSection === "MCP" ? (
         <McpConnectionPage variant={theme} />
       ) : (
         <OnboardingInstructions
-          requiresAuthentication
+          onBrandGuideGenerationChange={onBrandGuideGenerationChange}
+          requiresAuthentication={requiresAuthentication}
           variant={theme}
           onMcpConnectionSelect={() => setSelectedPreviewSection("MCP")}
         />
@@ -99,18 +110,25 @@ export const DashboardApp = () => {
 
 const DashboardRoot = () => {
   const session = useOptionalApi<DashboardSessionView>("/api/me");
+  const { setTheme, theme } = useDashboardTheme();
 
   if (session.status === "UNAUTHENTICATED") return <OnboardingPage />;
   if (session.status === "ERROR") {
     return (
-      <DashboardShell rail={<DashboardRail />} topBar={<HomeTopBar />}>
+      <DashboardShell
+        rail={<DashboardRail />}
+        topBar={<HomeTopBar onThemeChange={setTheme} theme={theme} />}
+      >
         <ErrorMessage message={session.message} />
       </DashboardShell>
     );
   }
   if (session.status === "LOADING") {
     return (
-      <DashboardShell rail={<DashboardRail />} topBar={<HomeTopBar />}>
+      <DashboardShell
+        rail={<DashboardRail />}
+        topBar={<HomeTopBar onThemeChange={setTheme} theme={theme} />}
+      >
         <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
       </DashboardShell>
     );
@@ -122,10 +140,7 @@ const DashboardRoot = () => {
 const DashboardOverview = () => {
   const loadedBrandGuides = useApi<readonly BrandGuideSummary[]>("/api/brand-guides");
   const brandGuides = useSyncedBrandGuides(loadedBrandGuides);
-  const { theme } = useDashboardTheme();
-  const [selectedPreviewSection, setSelectedPreviewSection] = useState<BrandGuideSection>(
-    DEFAULT_BRAND_GUIDE_SECTION,
-  );
+  const { setTheme, theme } = useDashboardTheme();
   const [isGeneratingBrandGuide, setIsGeneratingBrandGuide] = useState(false);
   const pendingSourceUrlConsumed = useRef(false);
   const showsEmptyDashboard = brandGuides.status === "READY" && brandGuides.data.length === 0;
@@ -147,29 +162,30 @@ const DashboardOverview = () => {
       });
   }, [brandGuides.status]);
 
+  if (showsEmptyDashboard && !isGeneratingBrandGuide) {
+    return (
+      <OnboardingDashboardSurface
+        onBrandGuideGenerationChange={setIsGeneratingBrandGuide}
+        theme={theme}
+        topBar={() => <HomeTopBar onThemeChange={setTheme} theme={theme} />}
+      />
+    );
+  }
+
   return (
     <DashboardShell
-      rail={
-        <DashboardRail
-          inertPreview={showsEmptyDashboard}
-          selectedBrandGuideSection={selectedPreviewSection}
-          onPreviewSectionChange={setSelectedPreviewSection}
-        />
-      }
-      topBar={<HomeTopBar />}
-      mainClassName={showsEmptyDashboard || isGeneratingBrandGuide ? "overflow-hidden" : undefined}
+      rail={<DashboardRail />}
+      topBar={<HomeTopBar onThemeChange={setTheme} theme={theme} />}
+      mainClassName={isGeneratingBrandGuide ? "overflow-hidden" : undefined}
     >
       {brandGuides.status === "ERROR" ? (
         <ErrorMessage message={brandGuides.message} />
       ) : isGeneratingBrandGuide ? (
         <GeneratingBrandGuideView />
-      ) : showsEmptyDashboard && selectedPreviewSection === "MCP" ? (
-        <McpConnectionPage variant={theme} />
       ) : brandGuides.status === "READY" ? (
         <HomeDashboard
           brandGuides={brandGuides.data}
           onBrandGuideGenerationChange={setIsGeneratingBrandGuide}
-          onMcpConnectionSelect={() => setSelectedPreviewSection("MCP")}
         />
       ) : (
         <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
@@ -283,11 +299,18 @@ const PublicDashboardTopBar = ({
   </header>
 );
 
-const HomeTopBar = () => (
-  <header className="flex h-16 items-center border-b border-onbrand-charcoal/8 px-4 sm:px-6 lg:px-7">
+export const HomeTopBar = ({
+  onThemeChange,
+  theme,
+}: Readonly<{
+  onThemeChange: (theme: ThemeMode) => void;
+  theme: ThemeMode;
+}>) => (
+  <header className="flex h-16 items-center justify-between gap-4 border-b border-onbrand-charcoal/8 px-4 sm:px-6 lg:px-7">
     <h1 className="text-sm font-medium tracking-[-0.02em] text-onbrand-charcoal">
       Welcome to OnBrand by SlideSpeak
     </h1>
+    <ThemeToggle onThemeChange={onThemeChange} theme={theme} />
   </header>
 );
 
@@ -312,20 +335,10 @@ export const McpConnectionPage = ({
 export const HomeDashboard = ({
   brandGuides,
   onBrandGuideGenerationChange,
-  onMcpConnectionSelect,
 }: Readonly<{
   brandGuides: readonly BrandGuideSummary[];
   onBrandGuideGenerationChange?: (isGenerating: boolean) => void;
-  onMcpConnectionSelect?: () => void;
 }>) => {
-  if (brandGuides.length === 0)
-    return (
-      <OnboardingInstructions
-        onBrandGuideGenerationChange={onBrandGuideGenerationChange}
-        onMcpConnectionSelect={onMcpConnectionSelect}
-      />
-    );
-
   return (
     <section className="grid gap-3">
       <HomeDashboardHeader onBrandGuideGenerationChange={onBrandGuideGenerationChange} />
@@ -748,12 +761,12 @@ const OnboardingInstructions = ({
                 variant={variant}
               />
             </div>
-            <div className="mx-auto mt-7 grid w-full max-w-sm gap-4">
+            <div className="mx-auto mt-4 grid w-full max-w-sm gap-4">
               <OrDivider variant={variant} />
               <button
                 className={
                   variant === "dark"
-                    ? "h-12 w-full rounded-md border-[0.5px] border-white bg-white px-4 text-sm font-medium text-[#111111] transition hover:bg-[#111111] hover:text-white"
+                    ? "h-12 w-full rounded-md border-[0.5px] border-white bg-[#111111] px-4 text-sm font-medium text-white transition hover:bg-white hover:text-[#111111]"
                     : "h-12 w-full rounded-md border border-onbrand-charcoal/15 bg-white px-4 text-sm font-medium text-onbrand-charcoal transition hover:bg-onbrand-charcoal hover:text-white"
                 }
                 type="button"
@@ -775,12 +788,12 @@ const OrDivider = ({ variant = "light" }: Readonly<{ variant?: "light" | "dark" 
     <div
       className={
         isDark
-          ? "flex items-center gap-3 text-xs font-medium tracking-[0.22em] text-white/45 uppercase"
-          : "flex items-center gap-3 text-xs font-medium tracking-[0.22em] text-onbrand-charcoal/35 uppercase"
+          ? "grid grid-cols-[1fr_auto_1fr] items-center gap-6 text-xs font-medium text-white/45 uppercase"
+          : "grid grid-cols-[1fr_auto_1fr] items-center gap-6 text-xs font-medium text-onbrand-charcoal/35 uppercase"
       }
     >
       <span className={isDark ? "h-px flex-1 bg-white/20" : "h-px flex-1 bg-onbrand-charcoal/10"} />
-      <span>Or</span>
+      <span className="leading-none tracking-[0.22em]">Or</span>
       <span className={isDark ? "h-px flex-1 bg-white/20" : "h-px flex-1 bg-onbrand-charcoal/10"} />
     </div>
   );
@@ -1151,7 +1164,7 @@ export const DashboardRail = ({
               const isActive =
                 (selectedBrandGuideSection ?? DEFAULT_BRAND_GUIDE_SECTION) === section;
               const className = isActive
-                ? "grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
+                ? "grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 ring-1 ring-onbrand-blue-200"
                 : "grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600";
               return (
                 <Tooltip key={section}>
@@ -1190,7 +1203,7 @@ export const DashboardRail = ({
               const { section, pathSegment, label, icon } = mcpLink;
               const isActive = selectedBrandGuideSection === section;
               const className = isActive
-                ? "mt-auto grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
+                ? "mt-auto grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 ring-1 ring-onbrand-blue-200"
                 : "mt-auto grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600";
               return (
                 <Tooltip key={section}>
@@ -1231,7 +1244,7 @@ export const DashboardRail = ({
               const { section, pathSegment, label, icon } = metadataLink;
               const isActive = selectedBrandGuideSection === section;
               const className = isActive
-                ? "grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 shadow-[0_8px_22px_rgba(21,112,239,0.12)] ring-1 ring-onbrand-blue-200"
+                ? "grid h-9 w-9 place-items-center rounded-md bg-onbrand-blue-50 text-onbrand-blue-600 ring-1 ring-onbrand-blue-200"
                 : "grid h-9 w-9 place-items-center rounded-md text-onbrand-charcoal transition hover:text-onbrand-blue-600";
               return (
                 <Tooltip key={section}>

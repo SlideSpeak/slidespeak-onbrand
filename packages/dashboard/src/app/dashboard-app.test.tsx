@@ -26,7 +26,9 @@ import {
   GeneratingBrandGuideView,
   HomeDashboard,
   HomeDashboardHeader,
+  HomeTopBar,
   McpConnectionPage,
+  OnboardingDashboardSurface,
 } from "./dashboard-app";
 import { BRAND_GUIDE_SECTION_LINKS } from "../brand-guide/navigation/brand-guide-sections";
 
@@ -69,7 +71,9 @@ describe("HomeDashboard", () => {
   });
 
   it("renders URL-based creation without the sign-in CTA when the authenticated user has no Brand Guides", () => {
-    const html = renderToStaticMarkup(<HomeDashboard brandGuides={[]} />);
+    const html = renderToStaticMarkup(
+      <OnboardingDashboardSurface theme="light" topBar={() => <div />} />,
+    );
 
     expect(html).toContain("First, let&#x27;s onboard your brand.");
     expect(html).toContain("Create");
@@ -78,6 +82,18 @@ describe("HomeDashboard", () => {
     expect(html).not.toContain("Connect to the OnBrand MCP to start using your brand guide.");
     expect(html).not.toContain("Sign in to see your dashboard and brands");
     expect(html).not.toContain("/login?returnTo=/");
+  });
+
+  it("renders the dark onboarding MCP CTA as charcoal with white text and border", () => {
+    const html = renderToStaticMarkup(
+      <OnboardingDashboardSurface theme="dark" topBar={() => <div />} />,
+    );
+    const mcpCtaIndex = html.indexOf("Connect to MCP");
+
+    expect(mcpCtaIndex).toBeGreaterThan(-1);
+    expect(html.slice(mcpCtaIndex - 420, mcpCtaIndex)).toContain(
+      "border-white bg-[#111111] px-4 text-sm font-medium text-white",
+    );
   });
 
   it("renders the MCP connection screen with all supported client commands", () => {
@@ -99,8 +115,18 @@ describe("HomeDashboard", () => {
     expect(html).not.toContain("https://slidespeak.co");
   });
 
+  it("renders the theme switcher in the authenticated home top bar", () => {
+    const html = renderToStaticMarkup(<HomeTopBar onThemeChange={() => undefined} theme="dark" />);
+
+    expect(html).toContain("Welcome to OnBrand by SlideSpeak");
+    expect(html).toContain('aria-label="Light mode"');
+    expect(html).toContain('aria-label="Dark mode"');
+  });
+
   it("lets the Source URL field accept bare brand domains", () => {
-    const html = renderToStaticMarkup(<HomeDashboard brandGuides={[]} />);
+    const html = renderToStaticMarkup(
+      <OnboardingDashboardSurface theme="light" topBar={() => <div />} />,
+    );
 
     expect(html).toContain('type="text"');
     expect(html).toContain('inputMode="url"');
