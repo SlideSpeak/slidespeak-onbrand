@@ -2,16 +2,20 @@
 
 ## [0.4.0](https://github.com/SlideSpeak/slidespeak-onbrand/compare/v0.3.1...v0.4.0) (2026-06-25)
 
-
 ### Features
 
-* **dashboard:** add MCP onboarding CTA ([#78](https://github.com/SlideSpeak/slidespeak-onbrand/issues/78)) ([4ebd1c8](https://github.com/SlideSpeak/slidespeak-onbrand/commit/4ebd1c899eb847cab81627903cbffebfbe1a57e6))
-
+- **dashboard:** add MCP onboarding CTA
+  ([#78](https://github.com/SlideSpeak/slidespeak-onbrand/issues/78))
+  ([4ebd1c8](https://github.com/SlideSpeak/slidespeak-onbrand/commit/4ebd1c899eb847cab81627903cbffebfbe1a57e6))
 
 ### Bug Fixes
 
-* improve dashboard theme contrast ([#80](https://github.com/SlideSpeak/slidespeak-onbrand/issues/80)) ([1a827f1](https://github.com/SlideSpeak/slidespeak-onbrand/commit/1a827f1b599c667cbeefebc9680b05ae90fbb9e0))
-* use generated keys for decorative assets ([#81](https://github.com/SlideSpeak/slidespeak-onbrand/issues/81)) ([28ea42a](https://github.com/SlideSpeak/slidespeak-onbrand/commit/28ea42a95d0326c24bdc6d759dadba471b2735b1))
+- improve dashboard theme contrast
+  ([#80](https://github.com/SlideSpeak/slidespeak-onbrand/issues/80))
+  ([1a827f1](https://github.com/SlideSpeak/slidespeak-onbrand/commit/1a827f1b599c667cbeefebc9680b05ae90fbb9e0))
+- use generated keys for decorative assets
+  ([#81](https://github.com/SlideSpeak/slidespeak-onbrand/issues/81))
+  ([28ea42a](https://github.com/SlideSpeak/slidespeak-onbrand/commit/28ea42a95d0326c24bdc6d759dadba471b2735b1))
 
 ## [0.3.1](https://github.com/SlideSpeak/slidespeak-onbrand/compare/v0.3.0...v0.3.1) (2026-06-24)
 
