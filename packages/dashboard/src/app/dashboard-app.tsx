@@ -332,7 +332,7 @@ export const McpConnectionPage = ({
   </section>
 );
 
-export const HomeDashboard = ({
+const HomeDashboard = ({
   brandGuides,
   onBrandGuideGenerationChange,
 }: Readonly<{
