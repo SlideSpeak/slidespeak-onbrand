@@ -63,7 +63,7 @@ export const MarkdownDesignPromptEditor = ({
       onChange={onMarkdownChange}
       plugins={plugins}
       className="onbrand-markdown-editor"
-      contentEditableClassName="onbrand-markdown-editor-content prose prose-sm max-w-none prose-headings:text-onbrand-charcoal prose-headings:tracking-[-0.04em] prose-h1:text-3xl prose-h1:font-semibold prose-h2:text-xl prose-h2:font-semibold prose-h3:text-base prose-h3:font-semibold prose-p:text-onbrand-charcoal/70 prose-li:text-onbrand-charcoal/70 prose-strong:text-onbrand-charcoal prose-code:rounded prose-code:bg-onbrand-charcoal/6 prose-code:px-1 prose-code:py-0.5 prose-code:text-onbrand-charcoal prose-code:before:content-none prose-code:after:content-none prose-hr:border-onbrand-charcoal/12 prose-blockquote:border-onbrand-charcoal/20 prose-blockquote:text-onbrand-charcoal/58"
+      contentEditableClassName="onbrand-markdown-editor-content prose prose-sm max-w-none prose-headings:tracking-[-0.04em] prose-h1:text-3xl prose-h1:font-semibold prose-h2:text-xl prose-h2:font-semibold prose-h3:text-base prose-h3:font-semibold prose-code:before:content-none prose-code:after:content-none"
       placeholder="Plain language presentation guidance…"
     />
   );
