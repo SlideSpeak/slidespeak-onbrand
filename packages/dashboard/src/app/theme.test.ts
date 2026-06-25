@@ -11,8 +11,10 @@ describe("theme preference", () => {
     expect(resolveInitialTheme({ storedTheme: "dark", systemPrefersDark: false })).toBe("dark");
   });
 
-  it("uses the system preference only when no valid mode has been stored", () => {
-    expect(resolveInitialTheme({ storedTheme: null, systemPrefersDark: true })).toBe("dark");
+  it("defaults to light when no valid mode has been stored", () => {
+    expect(resolveInitialTheme({ storedTheme: null, systemPrefersDark: true })).toBe("light");
+    expect(resolveInitialTheme({ storedTheme: null, systemPrefersDark: false })).toBe("light");
+    expect(resolveInitialTheme({ storedTheme: "system", systemPrefersDark: true })).toBe("light");
     expect(resolveInitialTheme({ storedTheme: "system", systemPrefersDark: false })).toBe("light");
   });
 

@@ -36,7 +36,7 @@ export const ColorTokensSection = ({
         <Dialog open={adding} onOpenChange={setAdding}>
           <DialogTrigger asChild>
             <button
-              className="rounded-md bg-onbrand-charcoal px-3 py-2 text-sm text-white"
+              className="rounded-md bg-onbrand-inverse px-3 py-2 text-sm text-onbrand-inverse-foreground transition hover:opacity-82"
               type="button"
             >
               Add Color

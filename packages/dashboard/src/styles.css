@@ -68,23 +68,23 @@
   }
 
   :root.dark {
-    --onbrand-surface: #0d1420;
-    --onbrand-canvas: #05070d;
-    --onbrand-panel: #090f19;
-    --onbrand-ink: #f3f7fb;
-    --onbrand-inverse: #f3f7fb;
-    --onbrand-inverse-foreground: #08101a;
+    --onbrand-surface: #111111;
+    --onbrand-canvas: #080808;
+    --onbrand-panel: #151515;
+    --onbrand-ink: #ffffff;
+    --onbrand-inverse: #ffffff;
+    --onbrand-inverse-foreground: #111111;
 
-    --onbrand-blue-25: #091a2e;
-    --onbrand-blue-50: #102846;
-    --onbrand-blue-100: #173a63;
-    --onbrand-blue-200: #205382;
-    --onbrand-blue-300: #2b6da3;
-    --onbrand-blue-400: #3b8ad0;
-    --onbrand-blue-500: #58a7f5;
-    --onbrand-blue-600: #7ab8ff;
-    --onbrand-blue-700: #a7d2ff;
-    --onbrand-blue-800: #d3e9ff;
+    --onbrand-blue-25: #181818;
+    --onbrand-blue-50: #202020;
+    --onbrand-blue-100: #2a2a2a;
+    --onbrand-blue-200: #3a3a3a;
+    --onbrand-blue-300: #5a5a5a;
+    --onbrand-blue-400: #888888;
+    --onbrand-blue-500: #cfcfcf;
+    --onbrand-blue-600: #ffffff;
+    --onbrand-blue-700: #ffffff;
+    --onbrand-blue-800: #ffffff;
   }
 
   html {
@@ -376,8 +376,8 @@
   }
 
   :root.dark .onbrand-asset-preview-surface {
-    --onbrand-asset-preview-base: #111827;
-    --onbrand-asset-preview-check: rgba(248, 250, 252, 0.08);
+    --onbrand-asset-preview-base: #151515;
+    --onbrand-asset-preview-check: rgba(255, 255, 255, 0.1);
   }
 
   @media (prefers-reduced-motion: reduce) {
