@@ -75,7 +75,15 @@ const PublicDashboardHome = ({
             theme={theme}
           />
           <main className="min-w-0 overflow-hidden px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
-            <OnboardingInstructions requiresAuthentication variant={theme} />
+            {selectedPreviewSection === "MCP" ? (
+              <McpConnectionPage variant={theme} />
+            ) : (
+              <OnboardingInstructions
+                requiresAuthentication
+                variant={theme}
+                onMcpConnectionSelect={() => setSelectedPreviewSection("MCP")}
+              />
+            )}
           </main>
         </div>
       </div>
@@ -133,6 +141,7 @@ const DashboardRoot = () => {
 const DashboardOverview = () => {
   const loadedBrandGuides = useApi<readonly BrandGuideSummary[]>("/api/brand-guides");
   const brandGuides = useSyncedBrandGuides(loadedBrandGuides);
+  const { theme } = useDashboardTheme();
   const [selectedPreviewSection, setSelectedPreviewSection] = useState<BrandGuideSection>(
     DEFAULT_BRAND_GUIDE_SECTION,
   );
@@ -174,10 +183,13 @@ const DashboardOverview = () => {
               <ErrorMessage message={brandGuides.message} />
             ) : isGeneratingBrandGuide ? (
               <GeneratingBrandGuideView />
+            ) : showsEmptyDashboard && selectedPreviewSection === "MCP" ? (
+              <McpConnectionPage variant={theme} />
             ) : brandGuides.status === "READY" ? (
               <HomeDashboard
                 brandGuides={brandGuides.data}
                 onBrandGuideGenerationChange={setIsGeneratingBrandGuide}
+                onMcpConnectionSelect={() => setSelectedPreviewSection("MCP")}
               />
             ) : (
               <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
@@ -223,7 +235,7 @@ const AuthenticatedDashboardApp = ({ pathname }: Readonly<{ pathname: string }>)
             className={`min-w-0 px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5 ${route.selectedBrandGuideSection === "PRESENTATION" ? "overflow-hidden" : "overflow-y-auto"}`}
           >
             {selectedBrandGuideId && route.selectedBrandGuideSection === "MCP" ? (
-              <McpConnectionPage />
+              <McpConnectionPage variant={theme} />
             ) : selectedBrandGuideId ? (
               <BrandGuideDetail
                 id={selectedBrandGuideId}
@@ -280,7 +292,9 @@ const HomeTopBar = () => (
   </header>
 );
 
-const McpConnectionPage = () => (
+export const McpConnectionPage = ({
+  variant = "light",
+}: Readonly<{ variant?: ThemeMode }> = {}) => (
   <section className="mx-auto flex min-h-[calc(100vh-8rem)] max-w-3xl items-center justify-center">
     <div className="w-full -translate-y-8 p-2 text-center sm:p-4">
       <HugeiconsIcon
@@ -291,7 +305,7 @@ const McpConnectionPage = () => (
       <h1 className="m-0 text-xl leading-none font-normal tracking-[-0.035em] text-onbrand-charcoal">
         Connect to the OnBrand MCP to start using your brand guide.
       </h1>
-      <ConnectionOptions connections={onboardingConnections()} variant="light" />
+      <ConnectionOptions connections={onboardingConnections()} variant={variant} />
     </div>
   </section>
 );
@@ -299,12 +313,19 @@ const McpConnectionPage = () => (
 export const HomeDashboard = ({
   brandGuides,
   onBrandGuideGenerationChange,
+  onMcpConnectionSelect,
 }: Readonly<{
   brandGuides: readonly BrandGuideSummary[];
   onBrandGuideGenerationChange?: (isGenerating: boolean) => void;
+  onMcpConnectionSelect?: () => void;
 }>) => {
   if (brandGuides.length === 0)
-    return <OnboardingInstructions onBrandGuideGenerationChange={onBrandGuideGenerationChange} />;
+    return (
+      <OnboardingInstructions
+        onBrandGuideGenerationChange={onBrandGuideGenerationChange}
+        onMcpConnectionSelect={onMcpConnectionSelect}
+      />
+    );
 
   return (
     <section className="grid gap-3">
@@ -337,7 +358,7 @@ const HomeBrandGuideTile = ({ brandGuide }: Readonly<{ brandGuide: BrandGuideSum
   const logo = detail.status === "READY" ? detail.data.brandKit.logo : null;
 
   return (
-    <div className="group relative overflow-hidden rounded-md border border-onbrand-charcoal/10 bg-white shadow-sm transition hover:-translate-y-0.5 hover:border-onbrand-blue-200 hover:shadow-md">
+    <div className="group relative overflow-hidden rounded-md border border-onbrand-charcoal/10 bg-onbrand-white shadow-sm transition hover:-translate-y-0.5 hover:border-onbrand-charcoal/28 hover:shadow-md">
       <Link
         to="/brand-guides/$brandGuideId/$section"
         params={{ brandGuideId: brandGuide.id, section: "colors" }}
@@ -406,7 +427,11 @@ const HomeLogoPreview = ({ src }: Readonly<{ src: string }>) => {
   };
 
   return (
-    <div className={background === "charcoal" ? "h-full bg-onbrand-charcoal" : "h-full bg-white"}>
+    <div
+      className={
+        background === "charcoal" ? "h-full bg-onbrand-charcoal" : "h-full bg-onbrand-white"
+      }
+    >
       <img
         alt=""
         className="h-full w-full object-contain p-3"
@@ -473,7 +498,7 @@ const CreateBrandGuideButton = ({
   return (
     <Dialog open={state.open} onOpenChange={(open) => setState({ open })}>
       <button
-        className="rounded-md bg-onbrand-charcoal px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-black disabled:opacity-50"
+        className="rounded-md bg-onbrand-inverse px-5 py-2.5 text-sm font-medium text-onbrand-inverse-foreground shadow-sm transition hover:opacity-82 disabled:opacity-50"
         type="button"
         onClick={() => setState({ open: true })}
       >
@@ -496,11 +521,7 @@ const CreateBrandGuideButton = ({
             submitLabel="Create Brand Guide"
           />
           <div className="grid gap-4">
-            <div className="flex items-center gap-3 text-xs font-medium tracking-[0.22em] text-onbrand-charcoal/35 uppercase">
-              <span className="h-px flex-1 bg-onbrand-charcoal/10" />
-              <span>Or</span>
-              <span className="h-px flex-1 bg-onbrand-charcoal/10" />
-            </div>
+            <OrDivider />
             <button
               className="h-12 w-full rounded-md border border-onbrand-charcoal/15 px-4 text-sm font-medium text-onbrand-charcoal transition hover:bg-onbrand-charcoal/[0.03] disabled:opacity-50"
               disabled={state.submitting}
@@ -599,19 +620,19 @@ const CreateBrandGuideFromUrlForm = ({
   const inputClass =
     layout === "stacked"
       ? isDark
-        ? "h-12 min-w-0 flex-1 rounded-md border-[0.5px] border-white bg-[#111111] px-4 text-center text-base text-white outline-none placeholder:text-white/40"
-        : "h-12 min-w-0 flex-1 rounded-md border-[0.5px] border-onbrand-charcoal/20 bg-white px-4 text-center text-base text-onbrand-charcoal outline-none placeholder:text-onbrand-charcoal/35"
+        ? "h-12 min-w-0 flex-1 rounded-md border-[0.5px] border-white bg-[#111111] px-4 text-center text-base text-white outline-none placeholder:text-white/55"
+        : "h-12 min-w-0 flex-1 rounded-md border-[0.5px] border-onbrand-charcoal/20 bg-onbrand-white px-4 text-center text-base text-onbrand-charcoal outline-none placeholder:text-onbrand-charcoal/35"
       : isDark
-        ? "h-14 min-w-0 flex-1 rounded-md border-[0.5px] border-white bg-[#111111] px-4 text-center text-lg text-white outline-none placeholder:text-white/40"
-        : "h-14 min-w-0 flex-1 rounded-md border-[0.5px] border-onbrand-charcoal/20 bg-white px-4 text-center text-lg text-onbrand-charcoal outline-none placeholder:text-onbrand-charcoal/35";
+        ? "h-14 min-w-0 flex-1 rounded-md border-[0.5px] border-white bg-[#111111] px-4 text-center text-lg text-white outline-none placeholder:text-white/55"
+        : "h-14 min-w-0 flex-1 rounded-md border-[0.5px] border-onbrand-charcoal/20 bg-onbrand-white px-4 text-center text-lg text-onbrand-charcoal outline-none placeholder:text-onbrand-charcoal/35";
   const buttonClass =
     layout === "stacked"
       ? isDark
-        ? "h-12 rounded-md border-[0.5px] border-white bg-white px-5 text-sm font-medium text-[#111111] transition hover:bg-[#111111] hover:text-white disabled:bg-white disabled:text-[#111111]"
-        : "h-12 rounded-md bg-onbrand-charcoal px-5 text-sm font-medium text-white transition hover:bg-black disabled:bg-[#8e8e8e] disabled:text-white"
+        ? "h-12 rounded-md border-[0.5px] border-white bg-white px-5 text-sm font-medium text-[#111111] transition hover:opacity-82 disabled:bg-white disabled:text-[#111111] disabled:opacity-100"
+        : "h-12 rounded-md bg-onbrand-inverse px-5 text-sm font-medium text-onbrand-inverse-foreground transition hover:opacity-82 disabled:bg-onbrand-inverse disabled:text-onbrand-inverse-foreground disabled:opacity-100"
       : isDark
-        ? "h-14 rounded-md border-[0.5px] border-white bg-white px-5 text-base font-medium text-[#111111] transition hover:bg-[#111111] hover:text-white disabled:bg-white disabled:text-[#111111]"
-        : "h-14 rounded-md bg-onbrand-charcoal px-5 text-base font-medium text-white transition hover:bg-black disabled:bg-[#8e8e8e] disabled:text-white";
+        ? "h-14 rounded-md border-[0.5px] border-white bg-white px-5 text-base font-medium text-[#111111] transition hover:opacity-82 disabled:bg-white disabled:text-[#111111] disabled:opacity-100"
+        : "h-14 rounded-md bg-onbrand-inverse px-5 text-base font-medium text-onbrand-inverse-foreground transition hover:opacity-82 disabled:bg-onbrand-inverse disabled:text-onbrand-inverse-foreground disabled:opacity-100";
   const formClass =
     layout === "stacked"
       ? isDark
@@ -669,7 +690,7 @@ const OnbrandLoadingMark = () => (
 
 const OnbrandBackgroundMark = ({ variant }: Readonly<{ variant: "light" | "dark" }>) => (
   <OnbrandMark
-    className={`onbrand-background-mark pointer-events-none h-[clamp(38rem,82vmin,72rem)] w-[clamp(38rem,82vmin,72rem)] ${variant === "dark" ? "text-white/[0.02]" : "text-onbrand-charcoal/[0.02]"}`}
+    className={`onbrand-background-mark pointer-events-none h-[clamp(38rem,82vmin,72rem)] w-[clamp(38rem,82vmin,72rem)] ${variant === "dark" ? "text-white/[0.045]" : "text-onbrand-charcoal/[0.02]"}`}
   />
 );
 
@@ -704,10 +725,12 @@ const OnbrandMark = ({ className }: Readonly<{ className: string }>) => (
 
 const OnboardingInstructions = ({
   onBrandGuideGenerationChange,
+  onMcpConnectionSelect,
   requiresAuthentication = false,
   variant = "light",
 }: Readonly<{
   onBrandGuideGenerationChange?: (isGenerating: boolean) => void;
+  onMcpConnectionSelect?: () => void;
   requiresAuthentication?: boolean;
   variant?: "light" | "dark";
 }>) => {
@@ -726,10 +749,41 @@ const OnboardingInstructions = ({
                 variant={variant}
               />
             </div>
+            <div className="mx-auto mt-7 grid w-full max-w-sm gap-4">
+              <OrDivider variant={variant} />
+              <button
+                className={
+                  variant === "dark"
+                    ? "h-12 w-full rounded-md border-[0.5px] border-white bg-white px-4 text-sm font-medium text-[#111111] transition hover:bg-[#111111] hover:text-white"
+                    : "h-12 w-full rounded-md border border-onbrand-charcoal/15 bg-white px-4 text-sm font-medium text-onbrand-charcoal transition hover:bg-onbrand-charcoal hover:text-white"
+                }
+                type="button"
+                onClick={onMcpConnectionSelect}
+              >
+                Connect to MCP
+              </button>
+            </div>
           </OnboardingStep>
         </div>
       </div>
     </section>
+  );
+};
+
+const OrDivider = ({ variant = "light" }: Readonly<{ variant?: "light" | "dark" }>) => {
+  const isDark = variant === "dark";
+  return (
+    <div
+      className={
+        isDark
+          ? "flex items-center gap-3 text-xs font-medium tracking-[0.22em] text-white/45 uppercase"
+          : "flex items-center gap-3 text-xs font-medium tracking-[0.22em] text-onbrand-charcoal/35 uppercase"
+      }
+    >
+      <span className={isDark ? "h-px flex-1 bg-white/20" : "h-px flex-1 bg-onbrand-charcoal/10"} />
+      <span>Or</span>
+      <span className={isDark ? "h-px flex-1 bg-white/20" : "h-px flex-1 bg-onbrand-charcoal/10"} />
+    </div>
   );
 };
 
@@ -780,8 +834,8 @@ const OnboardingStep = ({
             href={href}
             className={
               isDark
-                ? "mt-2 inline-flex h-12 cursor-pointer items-center justify-center rounded-md border-[0.5px] border-white bg-white px-6 text-base font-medium text-[#111111] transition hover:bg-[#111111] hover:text-white"
-                : "mt-2 inline-flex h-12 cursor-pointer items-center justify-center rounded-md border-[0.5px] border-[#111111] bg-[#111111] px-6 text-base font-medium text-white transition hover:bg-white hover:text-[#111111]"
+                ? "mt-2 inline-flex h-12 cursor-pointer items-center justify-center rounded-md border-[0.5px] border-white bg-white px-6 text-base font-medium text-[#111111] transition hover:opacity-82"
+                : "mt-2 inline-flex h-12 cursor-pointer items-center justify-center rounded-md border-[0.5px] border-onbrand-inverse bg-onbrand-inverse px-6 text-base font-medium text-onbrand-inverse-foreground transition hover:bg-onbrand-white hover:text-onbrand-charcoal"
             }
           >
             {value}
@@ -789,7 +843,7 @@ const OnboardingStep = ({
         ) : href ? (
           <Link
             to={href}
-            className="mt-2 inline-flex h-14 cursor-pointer items-center justify-center rounded-md border-[0.5px] border-onbrand-charcoal bg-white px-6 text-lg text-onbrand-charcoal transition hover:bg-onbrand-charcoal hover:text-white"
+            className="mt-2 inline-flex h-14 cursor-pointer items-center justify-center rounded-md border-[0.5px] border-onbrand-charcoal bg-onbrand-white px-6 text-lg text-onbrand-charcoal transition hover:bg-onbrand-inverse hover:text-onbrand-inverse-foreground"
           >
             {value}
           </Link>
@@ -824,15 +878,15 @@ const ConnectionOptions = ({
                 ? "grid cursor-pointer place-items-center rounded-md border-[0.5px] border-white bg-white p-2 text-[#111111]"
                 : "grid cursor-pointer place-items-center rounded-md border-[0.5px] border-white bg-[#111111] p-2 text-white"
               : isSelected
-                ? "grid cursor-pointer place-items-center rounded-md border-[0.5px] border-onbrand-charcoal bg-onbrand-charcoal p-2 text-white"
-                : "grid cursor-pointer place-items-center rounded-md border-[0.5px] border-onbrand-charcoal bg-white p-2 text-onbrand-charcoal";
+                ? "grid cursor-pointer place-items-center rounded-md border-[0.5px] border-onbrand-inverse bg-onbrand-inverse p-2 text-onbrand-inverse-foreground"
+                : "grid cursor-pointer place-items-center rounded-md border-[0.5px] border-onbrand-charcoal bg-onbrand-white p-2 text-onbrand-charcoal";
           const iconClass =
             variant === "dark"
               ? isSelected
                 ? "h-8 w-8 text-[#111111]"
                 : "h-8 w-8 text-white"
               : isSelected
-                ? "h-8 w-8 text-white"
+                ? "h-8 w-8 text-onbrand-inverse-foreground"
                 : "h-8 w-8 text-onbrand-charcoal";
 
           return (
@@ -877,8 +931,8 @@ const CopyableValue = ({
 
   const variantClasses =
     variant === "dark"
-      ? "border-white bg-white text-[#111111] hover:bg-[#111111] hover:text-white active:bg-[#111111] active:text-white"
-      : "border-onbrand-inverse bg-onbrand-inverse text-onbrand-inverse-foreground hover:bg-white hover:text-[#111111] active:bg-[#111111] active:text-white";
+      ? "border-white bg-white text-[#111111] hover:opacity-82 active:opacity-82"
+      : "border-onbrand-inverse bg-onbrand-inverse text-onbrand-inverse-foreground hover:bg-onbrand-white hover:text-onbrand-charcoal active:bg-onbrand-charcoal active:text-onbrand-white";
 
   return (
     <button

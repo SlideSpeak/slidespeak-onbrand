@@ -184,7 +184,7 @@ const LogoEditor = ({
                 {file ? file.name : "Drop or choose a logo file"}
               </span>
             )}
-            <span className="absolute inset-0 grid place-items-center bg-white/58 p-4 opacity-0 transition duration-200 group-hover:opacity-100">
+            <span className="absolute inset-0 grid place-items-center bg-onbrand-white/82 p-4 opacity-0 transition duration-200 group-hover:opacity-100">
               <span className="grid h-full w-full place-items-center rounded-md px-8">
                 <span className="flex flex-col items-center gap-3 text-center text-sm font-normal tracking-[-0.02em] text-onbrand-charcoal">
                   <HugeiconsIcon className="h-7 w-7" icon={Upload01Icon} strokeWidth={2} />

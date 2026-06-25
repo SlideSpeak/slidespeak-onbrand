@@ -25,6 +25,7 @@ import {
   GeneratingBrandGuideView,
   HomeDashboard,
   HomeDashboardHeader,
+  McpConnectionPage,
 } from "./dashboard-app";
 import { BRAND_GUIDE_SECTION_LINKS } from "../brand-guide/navigation/brand-guide-sections";
 
@@ -34,9 +35,21 @@ describe("HomeDashboard", () => {
 
     expect(html).toContain("First, let&#x27;s onboard your brand.");
     expect(html).toContain("Create");
+    expect(html).toContain("Or");
+    expect(html).toContain("Connect to MCP");
     expect(html).not.toContain("Connect to the OnBrand MCP to start using your brand guide.");
     expect(html).not.toContain("Sign in to see your dashboard and brands");
     expect(html).not.toContain("/login?returnTo=/");
+  });
+
+  it("renders the MCP connection screen with all supported client commands", () => {
+    const html = renderToStaticMarkup(<McpConnectionPage />);
+
+    expect(html).toContain("Connect to the OnBrand MCP to start using your brand guide.");
+    expect(html).toContain('aria-label="Codex"');
+    expect(html).toContain('aria-label="Claude Code"');
+    expect(html).toContain('aria-label="Cursor"');
+    expect(html).toContain("codex mcp add onbrand --url http://localhost:8080/mcp");
   });
 
   it("renders existing Brand Guides with only the title and create CTA above the grid", () => {
