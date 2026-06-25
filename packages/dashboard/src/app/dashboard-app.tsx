@@ -61,34 +61,33 @@ const PublicDashboardHome = ({
   );
 
   return (
-    <div className="min-h-screen bg-onbrand-canvas text-onbrand-charcoal">
-      <div className="flex min-h-screen overflow-hidden border border-onbrand-charcoal/10 bg-onbrand-panel shadow-[0_32px_120px_rgba(10,10,10,0.16)]">
+    <DashboardShell
+      rail={
         <DashboardRail
           inertPreview
           selectedBrandGuideSection={selectedPreviewSection}
           onPreviewSectionChange={setSelectedPreviewSection}
         />
-        <div className="min-w-0 flex-1 bg-onbrand-white">
-          <PublicDashboardTopBar
-            onThemeChange={onThemeChange}
-            selectedBrandGuideSection={selectedPreviewSection}
-            theme={theme}
-          />
-          <main className="min-w-0 overflow-hidden px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
-            {selectedPreviewSection === "MCP" ? (
-              <McpConnectionPage variant={theme} />
-            ) : (
-              <OnboardingInstructions
-                requiresAuthentication
-                variant={theme}
-                onMcpConnectionSelect={() => setSelectedPreviewSection("MCP")}
-              />
-            )}
-          </main>
-        </div>
-      </div>
-      <Toaster variant="dark" position="bottom-right" visibleToasts={4} />
-    </div>
+      }
+      topBar={
+        <PublicDashboardTopBar
+          onThemeChange={onThemeChange}
+          selectedBrandGuideSection={selectedPreviewSection}
+          theme={theme}
+        />
+      }
+      mainClassName="overflow-hidden"
+    >
+      {selectedPreviewSection === "MCP" ? (
+        <McpConnectionPage variant={theme} />
+      ) : (
+        <OnboardingInstructions
+          requiresAuthentication
+          variant={theme}
+          onMcpConnectionSelect={() => setSelectedPreviewSection("MCP")}
+        />
+      )}
+    </DashboardShell>
   );
 };
 
@@ -104,34 +103,16 @@ const DashboardRoot = () => {
   if (session.status === "UNAUTHENTICATED") return <OnboardingPage />;
   if (session.status === "ERROR") {
     return (
-      <div className="min-h-screen bg-onbrand-white text-onbrand-charcoal">
-        <div className="flex min-h-screen overflow-hidden bg-onbrand-white">
-          <DashboardRail />
-          <div className="min-w-0 flex-1 bg-onbrand-white">
-            <HomeTopBar />
-            <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
-              <ErrorMessage message={session.message} />
-            </main>
-          </div>
-        </div>
-        <Toaster variant="dark" position="bottom-right" visibleToasts={4} />
-      </div>
+      <DashboardShell rail={<DashboardRail />} topBar={<HomeTopBar />}>
+        <ErrorMessage message={session.message} />
+      </DashboardShell>
     );
   }
   if (session.status === "LOADING") {
     return (
-      <div className="min-h-screen bg-onbrand-white text-onbrand-charcoal">
-        <div className="flex min-h-screen overflow-hidden bg-onbrand-white">
-          <DashboardRail />
-          <div className="min-w-0 flex-1 bg-onbrand-white">
-            <HomeTopBar />
-            <main className="min-w-0 overflow-y-auto px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5">
-              <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
-            </main>
-          </div>
-        </div>
-        <Toaster variant="dark" position="bottom-right" visibleToasts={4} />
-      </div>
+      <DashboardShell rail={<DashboardRail />} topBar={<HomeTopBar />}>
+        <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
+      </DashboardShell>
     );
   }
 
@@ -167,38 +148,33 @@ const DashboardOverview = () => {
   }, [brandGuides.status]);
 
   return (
-    <div className="min-h-screen bg-onbrand-white text-onbrand-charcoal">
-      <div className="flex min-h-screen overflow-hidden bg-onbrand-white">
+    <DashboardShell
+      rail={
         <DashboardRail
           inertPreview={showsEmptyDashboard}
           selectedBrandGuideSection={selectedPreviewSection}
           onPreviewSectionChange={setSelectedPreviewSection}
         />
-        <div className="min-w-0 flex-1 bg-onbrand-white">
-          <HomeTopBar />
-          <main
-            className={`min-w-0 px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5 ${showsEmptyDashboard || isGeneratingBrandGuide ? "overflow-hidden" : "overflow-y-auto"}`}
-          >
-            {brandGuides.status === "ERROR" ? (
-              <ErrorMessage message={brandGuides.message} />
-            ) : isGeneratingBrandGuide ? (
-              <GeneratingBrandGuideView />
-            ) : showsEmptyDashboard && selectedPreviewSection === "MCP" ? (
-              <McpConnectionPage variant={theme} />
-            ) : brandGuides.status === "READY" ? (
-              <HomeDashboard
-                brandGuides={brandGuides.data}
-                onBrandGuideGenerationChange={setIsGeneratingBrandGuide}
-                onMcpConnectionSelect={() => setSelectedPreviewSection("MCP")}
-              />
-            ) : (
-              <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
-            )}
-          </main>
-        </div>
-      </div>
-      <Toaster variant="dark" position="bottom-right" visibleToasts={4} />
-    </div>
+      }
+      topBar={<HomeTopBar />}
+      mainClassName={showsEmptyDashboard || isGeneratingBrandGuide ? "overflow-hidden" : undefined}
+    >
+      {brandGuides.status === "ERROR" ? (
+        <ErrorMessage message={brandGuides.message} />
+      ) : isGeneratingBrandGuide ? (
+        <GeneratingBrandGuideView />
+      ) : showsEmptyDashboard && selectedPreviewSection === "MCP" ? (
+        <McpConnectionPage variant={theme} />
+      ) : brandGuides.status === "READY" ? (
+        <HomeDashboard
+          brandGuides={brandGuides.data}
+          onBrandGuideGenerationChange={setIsGeneratingBrandGuide}
+          onMcpConnectionSelect={() => setSelectedPreviewSection("MCP")}
+        />
+      ) : (
+        <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
+      )}
+    </DashboardShell>
   );
 };
 
@@ -216,45 +192,68 @@ const AuthenticatedDashboardApp = ({ pathname }: Readonly<{ pathname: string }>)
       : undefined;
 
   return (
-    <div className="min-h-screen bg-onbrand-canvas text-onbrand-charcoal">
-      <div className="flex min-h-screen overflow-hidden border border-onbrand-charcoal/10 bg-onbrand-panel shadow-[0_32px_120px_rgba(10,10,10,0.16)]">
+    <DashboardShell
+      rail={
         <DashboardRail
           selectedBrandGuideId={selectedBrandGuideId}
           selectedBrandGuideSection={route.selectedBrandGuideSection}
         />
-        <div className="min-w-0 flex-1 bg-onbrand-white">
-          <DashboardTopBar
-            brandGuides={brandGuides}
-            selectedBrandGuideId={selectedBrandGuideId}
-            selectedBrandGuide={selectedBrandGuide}
-            selectedBrandGuideSection={route.selectedBrandGuideSection}
-            onThemeChange={setTheme}
-            theme={theme}
-          />
-          <main
-            className={`min-w-0 px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5 ${route.selectedBrandGuideSection === "PRESENTATION" ? "overflow-hidden" : "overflow-y-auto"}`}
-          >
-            {selectedBrandGuideId && route.selectedBrandGuideSection === "MCP" ? (
-              <McpConnectionPage variant={theme} />
-            ) : selectedBrandGuideId ? (
-              <BrandGuideDetail
-                id={selectedBrandGuideId}
-                section={route.selectedBrandGuideSection}
-              />
-            ) : brandGuides.status === "ERROR" ? (
-              <ErrorMessage message={brandGuides.message} />
-            ) : brandGuides.status === "READY" ? (
-              <NoBrandGuidesPrompt />
-            ) : (
-              <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
-            )}
-          </main>
-        </div>
-      </div>
-      <Toaster variant="dark" position="bottom-right" visibleToasts={4} />
-    </div>
+      }
+      topBar={
+        <DashboardTopBar
+          brandGuides={brandGuides}
+          selectedBrandGuideId={selectedBrandGuideId}
+          selectedBrandGuide={selectedBrandGuide}
+          selectedBrandGuideSection={route.selectedBrandGuideSection}
+          onThemeChange={setTheme}
+          theme={theme}
+        />
+      }
+      mainClassName={
+        route.selectedBrandGuideSection === "PRESENTATION" ? "overflow-hidden" : undefined
+      }
+    >
+      {selectedBrandGuideId && route.selectedBrandGuideSection === "MCP" ? (
+        <McpConnectionPage variant={theme} />
+      ) : selectedBrandGuideId ? (
+        <BrandGuideDetail id={selectedBrandGuideId} section={route.selectedBrandGuideSection} />
+      ) : brandGuides.status === "ERROR" ? (
+        <ErrorMessage message={brandGuides.message} />
+      ) : brandGuides.status === "READY" ? (
+        <NoBrandGuidesPrompt />
+      ) : (
+        <p className="text-onbrand-charcoal/45">Loading your Brand Guides…</p>
+      )}
+    </DashboardShell>
   );
 };
+
+export const DashboardShell = ({
+  children,
+  mainClassName = "overflow-y-auto",
+  rail,
+  topBar,
+}: Readonly<{
+  children: ReactNode;
+  mainClassName?: string;
+  rail: ReactNode;
+  topBar: ReactNode;
+}>) => (
+  <div className="min-h-screen bg-onbrand-canvas text-onbrand-charcoal">
+    <div className="flex min-h-screen overflow-hidden border border-onbrand-charcoal/10 bg-onbrand-panel shadow-[0_32px_120px_rgba(10,10,10,0.16)]">
+      {rail}
+      <div className="min-w-0 flex-1 bg-onbrand-white">
+        {topBar}
+        <main
+          className={`min-w-0 px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5 ${mainClassName}`}
+        >
+          {children}
+        </main>
+      </div>
+    </div>
+    <Toaster variant="dark" position="bottom-right" visibleToasts={4} />
+  </div>
+);
 
 const PublicDashboardTopBar = ({
   onThemeChange,
