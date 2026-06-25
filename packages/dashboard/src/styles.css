@@ -431,7 +431,38 @@
   }
 
   :root.dark .onbrand-markdown-editor .mdxeditor-toolbar {
-    background: rgb(255 255 255 / 0.055) !important;
+    background: var(--onbrand-inverse) !important;
+    color: var(--onbrand-inverse-foreground) !important;
+  }
+
+  :root.dark .onbrand-markdown-editor .mdxeditor-toolbar button,
+  :root.dark .onbrand-markdown-editor .mdxeditor-toolbar [role="button"],
+  :root.dark .onbrand-markdown-editor .mdxeditor-toolbar [role="radio"] {
+    color: var(--onbrand-inverse-foreground) !important;
+  }
+
+  :root.dark .onbrand-markdown-editor .mdxeditor-toolbar button:hover,
+  :root.dark .onbrand-markdown-editor .mdxeditor-toolbar [role="button"]:hover,
+  :root.dark .onbrand-markdown-editor .mdxeditor-toolbar [role="radio"]:hover {
+    background: rgb(17 17 17 / 0.08) !important;
+    color: var(--onbrand-inverse-foreground) !important;
+  }
+
+  :root.dark .onbrand-markdown-editor .mdxeditor-toolbar button[data-state="on"],
+  :root.dark .onbrand-markdown-editor .mdxeditor-toolbar [role="button"][data-state="on"],
+  :root.dark .onbrand-markdown-editor .mdxeditor-toolbar [role="radio"][data-state="checked"] {
+    background: var(--onbrand-inverse-foreground) !important;
+    color: var(--onbrand-inverse) !important;
+  }
+
+  :root.dark .onbrand-markdown-editor .mdxeditor-toolbar svg,
+  :root.dark .onbrand-markdown-editor .mdxeditor-toolbar [class*="separator"] {
+    color: currentColor !important;
+  }
+
+  :root.dark .onbrand-markdown-editor .mdxeditor-toolbar [role="separator"],
+  :root.dark .onbrand-markdown-editor .mdxeditor-toolbar [data-orientation="vertical"] {
+    background: rgb(17 17 17 / 0.28) !important;
   }
 
   :root.dark .onbrand-markdown-editor-content {
