@@ -19,7 +19,7 @@ export const PopoverContent = ({
       align={align}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 rounded-md bg-white shadow-[0_24px_70px_rgba(17,17,17,0.18)] outline-none",
+        "z-50 rounded-md border border-onbrand-charcoal/10 bg-onbrand-white text-onbrand-charcoal shadow-[0_24px_70px_rgba(17,17,17,0.18)] outline-none",
         className,
       )}
       {...props}
