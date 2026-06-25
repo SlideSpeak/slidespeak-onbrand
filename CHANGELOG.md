@@ -2,11 +2,14 @@
 
 ## [0.4.2](https://github.com/SlideSpeak/slidespeak-onbrand/compare/v0.4.1...v0.4.2) (2026-06-25)
 
-
 ### Bug Fixes
 
-* **dashboard:** harmonize public and app shell ([#86](https://github.com/SlideSpeak/slidespeak-onbrand/issues/86)) ([2d84523](https://github.com/SlideSpeak/slidespeak-onbrand/commit/2d84523081f44806f718e230bd2b2f09e444530d))
-* **dashboard:** polish dark mode onboarding ([#88](https://github.com/SlideSpeak/slidespeak-onbrand/issues/88)) ([466a8d5](https://github.com/SlideSpeak/slidespeak-onbrand/commit/466a8d54725f00a4039ee9db8acf13781a7d6bd3))
+- **dashboard:** harmonize public and app shell
+  ([#86](https://github.com/SlideSpeak/slidespeak-onbrand/issues/86))
+  ([2d84523](https://github.com/SlideSpeak/slidespeak-onbrand/commit/2d84523081f44806f718e230bd2b2f09e444530d))
+- **dashboard:** polish dark mode onboarding
+  ([#88](https://github.com/SlideSpeak/slidespeak-onbrand/issues/88))
+  ([466a8d5](https://github.com/SlideSpeak/slidespeak-onbrand/commit/466a8d54725f00a4039ee9db8acf13781a7d6bd3))
 
 ## [0.4.1](https://github.com/SlideSpeak/slidespeak-onbrand/compare/v0.4.0...v0.4.1) (2026-06-25)
 
