@@ -22,6 +22,7 @@ vi.mock("@tanstack/react-router", () => ({
 
 import {
   DashboardRail,
+  DashboardShell,
   GeneratingBrandGuideView,
   HomeDashboard,
   HomeDashboardHeader,
@@ -30,6 +31,43 @@ import {
 import { BRAND_GUIDE_SECTION_LINKS } from "../brand-guide/navigation/brand-guide-sections";
 
 describe("HomeDashboard", () => {
+  it("uses one dashboard shell geometry for public and authenticated dashboard surfaces", () => {
+    const html = renderToStaticMarkup(
+      <DashboardShell rail={<DashboardRail />} topBar={<div data-testid="topbar" />}>
+        <p>Dashboard content</p>
+      </DashboardShell>,
+    );
+
+    expect(html).toContain('class="min-h-screen bg-onbrand-canvas text-onbrand-charcoal"');
+    expect(html).toContain(
+      'class="flex min-h-screen overflow-hidden border border-onbrand-charcoal/10 bg-onbrand-panel shadow-[0_32px_120px_rgba(10,10,10,0.16)]"',
+    );
+    expect(html).toContain('class="min-w-0 flex-1 bg-onbrand-white"');
+    expect(html).toContain(
+      'class="min-w-0 px-4 py-4 sm:px-6 lg:h-[calc(100vh-4rem)] lg:px-7 lg:py-5 overflow-y-auto"',
+    );
+  });
+
+  it("keeps preview and real rails on identical logo and divider geometry", () => {
+    const previewHtml = renderToStaticMarkup(<DashboardRail inertPreview />);
+    const realHtml = renderToStaticMarkup(<DashboardRail selectedBrandGuideId="acme" />);
+
+    expect(previewHtml).toContain(
+      'class="hidden w-16 shrink-0 flex-col items-center border-r border-onbrand-charcoal/8 bg-onbrand-panel px-2 py-5 text-onbrand-charcoal lg:flex"',
+    );
+    expect(realHtml).toContain(
+      'class="hidden w-16 shrink-0 flex-col items-center border-r border-onbrand-charcoal/8 bg-onbrand-panel px-2 py-5 text-onbrand-charcoal lg:flex"',
+    );
+    expect(previewHtml).toContain(
+      'class="mb-6 grid h-9 w-9 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5"',
+    );
+    expect(realHtml).toContain(
+      'class="mb-6 grid h-9 w-9 place-items-center rounded-md transition hover:bg-onbrand-charcoal/5"',
+    );
+    expect(previewHtml).toContain('class="onbrand-dashboard-logo h-6 w-6"');
+    expect(realHtml).toContain('class="onbrand-dashboard-logo h-6 w-6"');
+  });
+
   it("renders URL-based creation without the sign-in CTA when the authenticated user has no Brand Guides", () => {
     const html = renderToStaticMarkup(<HomeDashboard brandGuides={[]} />);
 
