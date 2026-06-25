@@ -52,6 +52,15 @@ export const toBrandKitAssetFileRecord = (
   input: BrandKitAssetFileRecordInput,
 ): WritableBrandKitAssetFileRecord => {
   const assetId = input.kind === "LOGO" ? input.asset.assetId : input.asset.id;
+  const assetRecord: WritableBrandKitAssetRecord = {
+    name: input.asset.name,
+    filename: input.asset.filename,
+    mimeType: input.asset.mimeType,
+    description: input.asset.description,
+    s3Key: input.asset.s3Key,
+    byteSize: input.asset.byteSize,
+    sha256: input.asset.sha256,
+  };
   const expectedS3Key = brandKitAssetFileObjectKey({
     ownerUserId: input.ownerUserId,
     brandGuideId: input.brandGuideId,
@@ -65,7 +74,7 @@ export const toBrandKitAssetFileRecord = (
   }
 
   return {
-    ...input.asset,
+    ...assetRecord,
     assetId,
     kind: input.kind,
     sortOrder: input.kind === "LOGO" ? 0 : input.sortOrder,

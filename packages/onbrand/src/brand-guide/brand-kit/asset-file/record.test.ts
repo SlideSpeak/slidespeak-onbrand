@@ -23,20 +23,21 @@ const writableAsset = (
 
 describe("Brand Kit Asset File records", () => {
   it("validates prepared upload keys while building writable records", () => {
-    expect(
-      toBrandKitAssetFileRecord({
-        kind: "DECORATIVE_ASSET",
-        ownerUserId: "owner",
-        brandGuideId: "guide",
-        asset: { ...writableAsset(), id: "hero-orb" },
-        sortOrder: 3,
-      }),
-    ).toMatchObject({
+    const record = toBrandKitAssetFileRecord({
+      kind: "DECORATIVE_ASSET",
+      ownerUserId: "owner",
+      brandGuideId: "guide",
+      asset: { ...writableAsset(), id: "hero-orb" },
+      sortOrder: 3,
+    });
+
+    expect(record).toMatchObject({
       assetId: "hero-orb",
       kind: "DECORATIVE_ASSET",
       sortOrder: 3,
       s3Key: "owner/guide/hero-orb/hero%20orb.png",
     });
+    expect(record).not.toHaveProperty("id");
   });
 
   it("rejects records that bypass prepared Brand Kit Asset File upload keys", () => {
