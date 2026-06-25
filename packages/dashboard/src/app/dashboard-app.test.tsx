@@ -24,7 +24,6 @@ import {
   DashboardRail,
   DashboardShell,
   GeneratingBrandGuideView,
-  HomeDashboard,
   HomeDashboardHeader,
   HomeTopBar,
   McpConnectionPage,
