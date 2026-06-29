@@ -71,7 +71,7 @@
     "@radix-ui/react-select": "^2.3.1",
     "@radix-ui/react-toggle-group": "1.1.11",
     "@radix-ui/react-tooltip": "^1.2.10",
-    "@tanstack/react-router": "^1.170.15",
+    "@tanstack/react-router": "^1.170.16",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "color-sorter": "8.0.0",
